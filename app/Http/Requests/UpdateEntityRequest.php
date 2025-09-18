@@ -3,63 +3,51 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule; // ¡Importante para las reglas complejas!
 
 class UpdateEntityRequest extends FormRequest
 {
     /**
      * Determina si el usuario está autorizado para hacer esta solicitud.
-     *
-     * La autorización real la manejará la EntityPolicy en el controlador,
-     * pero aquí nos aseguramos de que el usuario al menos esté logueado.
      */
     public function authorize(): bool
     {
-        return true; // O return auth()->check(); para ser más explícito.
+        // La autorización de pertenencia la maneja la Policy.
+        return true;
     }
 
     /**
-     * Obtiene las reglas de validación que se aplican a la solicitud de actualización.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+     * Obtiene las reglas de validación que se aplican a la solicitud.
      */
     public function rules(): array
     {
-        // La lógica aquí es idéntica a StoreEntityRequest porque no tenemos
-        // campos únicos que necesiten una regla especial. Sin embargo, te muestro
-        // cómo lo harías si 'name' tuviera que ser único.
-
-        // Obtenemos la entidad que estamos intentando actualizar desde la ruta.
-        // Por ejemplo, si la URL es /entities/5/edit, esto nos dará la entidad con ID 5.
-        $entityId = $this->route('entity')->id; 
-
         return [
-            'name' => [
-                'required', 
-                'string', 
-                'max:255',
-                // Ejemplo de cómo manejarías una regla 'unique' en una actualización:
-                // Rule::unique('entities')->ignore($entityId), 
-                // Esto le dice a Laravel: "El nombre debe ser único en la tabla 'entities',
-                // pero ignora la fila que tenga el ID que estamos editando".
-            ],
+            // ===============================================
+            // REGLAS PARA LOS CAMPOS PRINCIPALES (Fuera del JSON)
+            // ===============================================
+            'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'in:hogar,oficina,comercio'],
             'locality_id' => ['required', 'exists:localities,id'],
             'address_street' => ['nullable', 'string', 'max:255'],
-            // Puedes mantener las mismas reglas para los detalles
-            // 'details.bedrooms_count' => ['required_if:type,hogar', 'integer', 'min:0']
-        ];
-    }
+            
+            // =================================================================
+            // REGLAS PARA LOS CAMPOS ANIDADOS EN 'details' (NUEVA ESTRUCTURA)
+            // =================================================================
+            'details' => ['nullable', 'array'],
 
-    /**
-     * (Opcional) Puedes personalizar los mensajes de error aquí si quieres.
-     */
-    public function messages(): array
-    {
-        return [
-            'name.required' => 'El nombre de la entidad es obligatorio.',
-            'locality_id.required' => 'Debes seleccionar una localidad.',
-            'type.in' => 'El tipo de entidad seleccionado no es válido.',
+            // Campos generales dentro de 'details' que aún podríamos querer
+            'details.property_type' => ['nullable', 'string', 'max:50'],
+            'details.occupants_count' => ['nullable', 'integer', 'min:1'],
+            
+            // Reglas para nuestro nuevo sistema de habitaciones dinámicas
+            'details.rooms' => ['nullable', 'array'], // Debe ser un array de habitaciones
+            
+            // Esta es la regla clave: para CADA (*) item dentro del array 'details.rooms',
+            // la clave 'name' debe existir, ser un texto y tener máximo 100 caracteres.
+            'details.rooms.*.name' => ['required', 'string', 'max:100'],
+
+            // Reglas para otros campos específicos para ciertos de elementos en la identidad
+
+            'details.electronic_devices_count' => ['nullable', 'integer', 'min:0'],
         ];
     }
 }

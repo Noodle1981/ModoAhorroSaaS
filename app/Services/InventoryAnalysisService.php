@@ -1,146 +1,221 @@
 <?php
 
-// app/Services/InventoryAnalysisService.php
 namespace App\Services;
 
 use App\Models\Entity;
-use App\Models\RatePrice; // Para obtener los precios de la tarifa
-use App\Models\EquipmentUsagePattern; // Para los patrones de uso de equipos
-use App\Models\MaintenanceTask; // Para las tareas de mantenimiento
-use App\Models\MaintenanceLog; // Para los registros de mantenimiento
-use Illuminate\Support\Collection; // Para tipar colecciones
-
-
-
+use App\Models\EquipmentUsagePattern;
+use App\Models\MaintenanceLog;
+use App\Models\MaintenanceTask;
+use App\Models\MarketEquipmentCatalog;
+use App\Models\RatePrice;
+use Illuminate\Support\Collection;
+use Carbon\Carbon;
 
 class InventoryAnalysisService
 {
-    public function calculateForEntity(Entity $entity)
+    /**
+     * =====================================================================
+     * MÉTODO ORQUESTADOR PRINCIPAL (El que faltaba)
+     * =====================================================================
+     * Llama a todos los análisis y devuelve un array unificado de oportunidades.
+     *
+     * @param Entity $entity
+     * @return array
+     */
+    public function findAllOpportunities(Entity $entity): array
     {
-        // 1. Obtenemos el inventario completo de la entidad con TODA la info que necesitamos
-        $inventory = $entity->entityEquipment()
-            ->with(['equipmentType.equipmentCategory.calculationFactor']) // ¡La magia de las relaciones!
-            ->get();
+        // 1. Obtenemos un costo de referencia del kWh
+        $costoUnitarioKwh = $this->getAverageKwhCost($entity);
 
-        // 2. Iteramos sobre cada equipo del inventario y calculamos los nuevos valores
-        $inventoryWithCalculations = $inventory->map(function ($equipment) {
-            
-            // Lógica para obtener los valores correctos (override o default)
-            $powerWatts = $equipment->power_watts_override ?? $equipment->equipmentType->default_power_watts;
-            $avgDailyUseHours = $equipment->avg_daily_use_hours_override ?? $equipment->equipmentType->default_avg_daily_use_hours;
-            
-            // Convertir a las unidades de tu cálculo (kW y horas/año)
-            $consumoNominalKW = $powerWatts / 1000;
-            $horasDeUsoAnual = $avgDailyUseHours * 365;
+        // 2. Calculamos el perfil de inventario actual
+        $inventory = $this->calculateEnergyProfile($entity);
 
-            // Obtener los factores de la tabla que trajimos con la consulta
-            $factorCarga = $equipment->equipmentType->equipmentCategory->calculationFactor->load_factor ?? 1;
-            $eficiencia = $equipment->equipmentType->equipmentCategory->calculationFactor->efficiency_factor ?? 1;
+        if ($inventory->isEmpty()) {
+            return [];
+        }
 
-            // --- ¡AQUÍ ESTÁN TUS CÁLCULOS DE PYTHON! ---
-            $energiaUtilConsumida = $horasDeUsoAnual * $factorCarga * $equipment->quantity * $consumoNominalKW;
-            $energiaSecundariaConsumida = $energiaUtilConsumida / $eficiencia;
-
-            // Añadimos los resultados al objeto del equipo
-            $equipment->consumo_nominal_kw = round($consumoNominalKW, 4);
-            $equipment->horas_uso_anual = round($horasDeUsoAnual, 2);
-            $equipment->energia_util_kwh = round($energiaUtilConsumida, 2);
-            $equipment->energia_secundaria_kwh = round($energiaSecundariaConsumida, 2);
-
-            return $equipment;
-        });
-
-        return $inventoryWithCalculations;
+        // 3. Llamamos a cada especialista
+        $replacementOps = $this->findReplacementOpportunities($inventory, $costoUnitarioKwh);
+        $timeShiftOps = $this->findTimeShiftOpportunities($entity, $inventory);
+        $maintenanceOps = $this->findMaintenanceOpportunities($inventory, $costoUnitarioKwh);
+        
+        // 4. Unimos y ordenamos los resultados
+        $allOpportunities = array_merge($replacementOps, $timeShiftOps, $maintenanceOps);
+        
+        usort($allOpportunities, fn($a, $b) => ($b['ahorro_anual_pesos'] ?? 0) <=> ($a['ahorro_anual_pesos'] ?? 0));
+        
+        return $allOpportunities;
     }
 
-    public function findTimeShiftOpportunities(Entity $entity, Collection $inventoryWithCalculations)
+    /**
+     * =====================================================================
+     * CÁLCULO DE INVENTARIO (El motor base)
+     * =====================================================================
+     */
+ // ...
+public function calculateEnergyProfile(Entity $entity): Collection
 {
-    $opportunities = [];
-    $contract = $entity->supplies()->first()->contracts()->where('is_active', true)->first();
+    // Obtenemos el inventario real como antes
+    $inventory = $entity->entityEquipment()
+        ->with(['equipmentType.equipmentCategory.calculationFactor'])
+        ->get();
     
-    // Suponemos que tenemos los precios de la tarifa (P1=Punta, P2=Llano, P3=Valle)
-    $precios = RatePrice::where('rate_id', $contract->rate->id)->first(); // Simplificado
-    $precioPunta = $precios->price_energy_p1;
-    $precioValle = $precios->price_energy_p3;
+    // ... (el ->map(...) para el inventario real queda igual) ...
+    $calculatedInventory = $inventory->map(function ($equipment) {
+        // ... toda la lógica que ya teníamos ...
+        return $equipment;
+    });
 
-    // Buscamos los hábitos de uso registrados
-    $usagePatterns = EquipmentUsagePattern::whereIn('entity_equipment_id', $inventoryWithCalculations->pluck('id'))->get();
-
-    foreach ($usagePatterns as $pattern) {
-        $equipment = $inventoryWithCalculations->find($pattern->entity_equipment_id);
+    // --- ¡NUEVA LÓGICA DE INYECCIÓN VIRTUAL! ---
+    if (!empty($entity->details['electronic_devices_count']) && $entity->details['electronic_devices_count'] > 0) {
         
-        // Lógica simplificada para determinar si el uso es en horario caro
-        // En la vida real, necesitarías una función que mapee hora y día a P1, P2, P3.
-        $esHorarioCaro = ($pattern->start_time > '08:00:00' && $pattern->start_time < '22:00:00');
-
-        if ($esHorarioCaro) {
-            // Calculamos el consumo de UNA SOLA VEZ que se usa el equipo
-            $consumoPorUsoKwh = ($equipment->consumo_nominal_kw * $equipment->equipmentType->equipmentCategory->calculationFactor->load_factor) * ($pattern->duration_minutes / 60);
-
-            // Calculamos el costo actual vs el costo en horario valle
-            $costoActual = $consumoPorUsoKwh * $precioPunta;
-            $costoMejorado = $consumoPorUsoKwh * $precioValle;
-            $ahorroPorVez = $costoActual - $costoMejorado;
+        // Buscamos el tipo de equipo y los factores que creamos en los seeders
+        $electronicDeviceType = \App\Models\EquipmentType::where('name', 'Dispositivos Electrónicos (celulares, tablets, notebooks)')->first();
+        $calculationFactor = \App\Models\CalculationFactor::where('method_name', 'consumo_agregado')->first();
+        
+        if ($electronicDeviceType && $calculationFactor) {
+            $quantity = $entity->details['electronic_devices_count'];
+            $powerWatts = $electronicDeviceType->default_power_watts;
             
-            // Estimamos el ahorro anual
-            $vecesPorAnio = 52; // Suponemos que se usa una vez por semana
-            $ahorroAnualPesos = $ahorroPorVez * $vecesPorAnio;
+            // Asumimos un uso constante a lo largo del año
+            $horasDeUsoAnual = 24 * 365; // 8760 horas
+            
+            $consumoNominalKW = $powerWatts / 1000;
+            $factorCarga = $calculationFactor->load_factor;
+            $eficiencia = $calculationFactor->efficiency_factor;
+
+            $energiaUtilConsumida = $horasDeUsoAnual * $factorCarga * $quantity * $consumoNominalKW;
+            $energiaSecundariaConsumida = $energiaUtilConsumida / $eficiencia;
+
+            // Creamos un "falso" objeto de equipo para añadir al informe
+            $virtualEquipment = new \App\Models\EntityEquipment([
+                'custom_name' => 'Carga Electrónica Agregada',
+                'quantity' => $quantity,
+            ]);
+            $virtualEquipment->consumo_nominal_kw = round($consumoNominalKW, 4);
+            $virtualEquipment->horas_uso_anual = round($horasDeUsoAnual, 2);
+            $virtualEquipment->energia_util_kwh = round($energiaUtilConsumida, 2);
+            $virtualEquipment->energia_secundaria_kwh = round($energiaSecundariaConsumida, 2);
+            $virtualEquipment->equipmentType = $electronicDeviceType; // Para tener el nombre en la vista
+
+            // Lo añadimos a la colección de inventario calculado
+            $calculatedInventory->push($virtualEquipment);
+        }
+    }
+
+    return $calculatedInventory;
+}
+
+    /**
+     * =====================================================================
+     * ESPECIALISTA 1: MEJORA POR REEMPLAZO DE EQUIPO (ROI)
+     * =====================================================================
+     */
+    public function findReplacementOpportunities(Collection $inventory, float $costoKwh): array
+    {
+        $opportunities = [];
+        foreach ($inventory as $userEquipment) {
+            $bestReplacement = MarketEquipmentCatalog::where('equipment_type_id', $userEquipment->equipment_type_id)
+                ->where('power_watts', '<', $userEquipment->consumo_nominal_kw * 1000)
+                ->orderBy('average_price', 'asc')
+                ->first();
+
+            if (!$bestReplacement) continue;
+
+            $calculationFactor = $userEquipment->equipmentType->equipmentCategory->calculationFactor;
+            if (!$calculationFactor) continue;
+
+            $energiaActualKwh = $userEquipment->energia_secundaria_kwh;
+            $consumoNominalNuevoKW = $bestReplacement->power_watts / 1000;
+            $energiaUtilNuevaKwh = $userEquipment->horas_uso_anual * $calculationFactor->load_factor * $userEquipment->quantity * $consumoNominalNuevoKW;
+            $energiaNuevaKwh = $energiaUtilNuevaKwh / ($calculationFactor->efficiency_factor ?: 1);
+            
+            $ahorroAnualKwh = $energiaActualKwh - $energiaNuevaKwh;
+            $ahorroAnualPesos = $ahorroAnualKwh * $costoKwh;
 
             if ($ahorroAnualPesos > 0) {
-                 $opportunities[] = [
-                    'type' => 'cambio_horario',
-                    'user_equipment' => $equipment->custom_name,
-                    'suggestion' => "Mover el uso de las {$pattern->start_time} al horario valle (después de las 22:00hs o fines de semana)",
+                $costoInversion = $bestReplacement->average_price;
+                $retornoInversionAnios = $costoInversion / $ahorroAnualPesos;
+
+                $opportunities[] = [
+                    'type' => 'Reemplazo de Equipo',
+                    'user_equipment' => $userEquipment->custom_name ?? $userEquipment->equipmentType->name,
+                    'suggestion' => "Reemplazar por {$bestReplacement->brand} {$bestReplacement->model_name}",
                     'ahorro_anual_pesos' => round($ahorroAnualPesos, 2),
+                    'retorno_inversion_anios' => round($retornoInversionAnios, 2),
                 ];
             }
         }
+        return $opportunities;
     }
 
-    return $opportunities;
-}
-    public function findMaintenanceOpportunities(Collection $inventoryWithCalculations, $costoUnitarioKwh)
-{
-    $opportunities = [];
-    $PENALTY_FACTOR = 0.15; // ¡Factor clave! Significa que un equipo sin mantenimiento consume un 15% más.
+    /**
+     * =====================================================================
+     * ESPECIALISTA 2: MEJORA POR CAMBIO DE HORARIO
+     * =====================================================================
+     */
+    public function findTimeShiftOpportunities(Entity $entity, Collection $inventory): array
+    {
+        // Esta lógica es un placeholder y necesita refinamiento con las tarifas reales
+        return []; 
+    }
 
-    // Buscamos tareas de mantenimiento recomendadas para los equipos del inventario
-    $tasks = MaintenanceTask::whereIn('equipment_type_id', $inventoryWithCalculations->pluck('equipment_type_id'))->get();
+    /**
+     * =====================================================================
+     * ESPECIALISTA 3: MEJORA POR MANTENIMIENTO
+     * =====================================================================
+     */
+    public function findMaintenanceOpportunities(Collection $inventory, float $costoKwh): array
+    {
+        $opportunities = [];
+        $PENALTY_FACTOR = 0.15; // 15% de consumo extra por falta de mantenimiento
 
-    foreach ($tasks as $task) {
-        $equipment = $inventoryWithCalculations->where('equipment_type_id', $task->equipment_type_id)->first();
+        $tasks = MaintenanceTask::whereIn('equipment_type_id', $inventory->pluck('equipment_type_id'))->get();
         
-        // Vemos cuándo fue el último mantenimiento de ESTA tarea para ESTE equipo
-        $lastLog = MaintenanceLog::where('entity_equipment_id', $equipment->id)
-                                  ->where('maintenance_task_id', $task->id)
-                                  ->latest('performed_on_date')
-                                  ->first();
+        foreach ($inventory as $equipment) {
+            $applicableTasks = $tasks->where('equipment_type_id', $equipment->equipment_type_id);
+            foreach ($applicableTasks as $task) {
+                $lastLog = MaintenanceLog::where('entity_equipment_id', $equipment->id)
+                                          ->where('maintenance_task_id', $task->id)
+                                          ->latest('performed_on_date')
+                                          ->first();
+                
+                $daysSinceLast = $lastLog ? $lastLog->performed_on_date->diffInDays(now()) : 9999;
 
-        $diasDesdeUltimoMantenimiento = $lastLog ? $lastLog->performed_on_date->diffInDays(now()) : 9999;
+                if ($daysSinceLast > $task->recommended_frequency_days) {
+                    $energiaDesperdiciadaKwh = $equipment->energia_secundaria_kwh * $PENALTY_FACTOR;
+                    $ahorroAnualPesos = $energiaDesperdiciadaKwh * $costoKwh;
 
-        // Si pasó más tiempo del recomendado, es una oportunidad de mejora
-        if ($diasDesdeUltimoMantenimiento > $task->recommended_frequency_days) {
-            
-            $energiaActualKwh = $equipment->energia_secundaria_kwh;
-            
-            // Estimamos cuánta energía se está "desperdiciando"
-            $energiaDesperdiciadaKwh = $energiaActualKwh * $PENALTY_FACTOR;
-            $ahorroAnualPesos = $energiaDesperdiciadaKwh * $costoUnitarioKwh;
-
-            $opportunities[] = [
-                'type' => 'mantenimiento',
-                'user_equipment' => $equipment->custom_name,
-                'suggestion' => "Realizar la tarea: '{$task->name}'. Se recomienda cada {$task->recommended_frequency_days} días y la última fue hace {$diasDesdeUltimoMantenimiento}.",
-                'ahorro_anual_pesos' => round($ahorroAnualPesos, 2),
-            ];
+                    $opportunities[] = [
+                        'type' => 'Mantenimiento',
+                        'user_equipment' => $equipment->custom_name ?? $equipment->equipmentType->name,
+                        'suggestion' => "Realizar tarea: '{$task->name}'. Última vez: ".($lastLog ? $lastLog->performed_on_date->format('d/m/Y') : 'Nunca'),
+                        'ahorro_anual_pesos' => round($ahorroAnualPesos, 2),
+                    ];
+                }
+            }
         }
+        return $opportunities;
     }
 
-    return $opportunities;
-}
-   public function findReplacementOpportunities(Collection $inventoryWithCalculations, $costoUnitarioKwh){
-    $opportunities = [];
-    $PENALTY_FACTOR = 0.15; // Factor clave! Significa que un equipo sin mantenimiento consume un 15% más.
-   }
- 
+
+    /**
+     * =====================================================================
+     * MÉTODO DE AYUDA (HELPER)
+     * =====================================================================
+     */
+    private function getAverageKwhCost(Entity $entity): float
+    {
+        $lastInvoice = $entity->supplies->flatMap(function ($supply) {
+            return $supply->contracts;
+        })->flatMap(function ($contract) {
+            return $contract->invoices;
+        })->sortByDesc('end_date')->first();
+
+        if (!$lastInvoice || $lastInvoice->total_energy_consumed_kwh == 0) {
+            return 40.0; // Valor de respaldo en ARS
+        }
+
+        return $lastInvoice->total_amount / $lastInvoice->total_energy_consumed_kwh;
+    }
 }

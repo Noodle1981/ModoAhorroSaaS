@@ -28,6 +28,7 @@ class AuthServiceProvider extends ServiceProvider
         Supply::class => SupplyPolicy::class,
         Contract::class => ContractPolicy::class,
         Invoice::class => InvoicePolicy::class,
+        EntityEquipment::class => EntityEquipmentPolicy::class,
     ];
 
     /**

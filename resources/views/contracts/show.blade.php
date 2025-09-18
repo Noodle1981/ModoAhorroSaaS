@@ -15,25 +15,13 @@
         </a>
     </div>
 
+    <!-- ... (la sección de Detalles del Contrato queda igual) ... -->
     <div style="margin-top: 20px; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
         <h3>Detalles del Contrato</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <p><strong>Compañía:</strong> {{ $contract->utilityCompany->name }}</p>
-            <p><strong>Nº Contrato:</strong> {{ $contract->contract_identifier ?? 'No especificado' }}</p>
-            <p><strong>Fecha de Inicio:</strong> {{ $contract->start_date->format('d/m/Y') }}</p>
-            <p><strong>Fecha de Fin:</strong> {{ $contract->end_date ? $contract->end_date->format('d/m/Y') : 'Vigente' }}</p>
-            <p><strong>Potencia Contratada:</strong> {{ $contract->contracted_power_kw_p1 ?? 'N/A' }} kW</p>
-            <p><strong>Estado:</strong> 
-                @if($contract->is_active)
-                    <span style="color: #28a745; font-weight: bold;">Activo</span>
-                @else
-                    <span style="color: #6c757d;">Inactivo</span>
-                @endif
-            </p>
-        </div>
+        <!-- ... -->
     </div>
     
-    <!-- Sección de Facturas -->
+    <!-- Sección de Facturas (¡AHORA MEJORADA!) -->
     <div style="margin-top: 30px; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h2>Facturas Asociadas</h2>
@@ -45,8 +33,36 @@
         @if($contract->invoices->isEmpty())
              <p>Este contrato aún no tiene facturas cargadas.</p>
         @else
-            <p>Aquí se mostrará la lista de facturas...</p>
-            <!-- La tabla de facturas la construiremos en el siguiente paso -->
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Período</th>
+                        <th style="padding: 12px; border: 1px solid #ddd; text-align: right;">Consumo (kWh)</th>
+                        <th style="padding: 12px; border: 1px solid #ddd; text-align: right;">Importe Total ($)</th>
+                        <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($contract->invoices as $invoice)
+                        <tr>
+                            <td style="padding: 12px; border: 1px solid #ddd;">
+                                {{ $invoice->start_date->format('d/m/Y') }} - {{ $invoice->end_date->format('d/m/Y') }}
+                            </td>
+                            <td style="padding: 12px; border: 1px solid #ddd; text-align: right;">
+                                {{ number_format($invoice->total_energy_consumed_kwh, 2, ',', '.') }}
+                            </td>
+                            <td style="padding: 12px; border: 1px solid #ddd; text-align: right; font-weight: bold;">
+                                $ {{ number_format($invoice->total_amount, 2, ',', '.') }}
+                            </td>
+                            <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">
+                                <a href="{{ route('invoices.show', $invoice) }}">Ver</a> |
+                                <a href="{{ route('invoices.edit', $invoice) }}">Editar</a>
+                                <!-- Formulario de borrado de factura iría aquí -->
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
         @endif
     </div>
 

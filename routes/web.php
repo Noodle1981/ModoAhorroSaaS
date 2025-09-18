@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 // Controladores de Autenticación
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 
 // Controladores Principales de la Aplicación
@@ -17,6 +17,7 @@ use App\Http\Controllers\EntityEquipmentController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\SolarController;
+use App\Http\Controllers\ReportController;
 
 // Controladores del Panel de Gestor
 use App\Http\Controllers\Gestor\DashboardController as GestorDashboardController;
@@ -67,7 +68,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('entities.equipment', EntityEquipmentController::class)->shallow();
 
     // --- ANÁLISIS E INTELIGENCIA ---
-    Route::get('/recommendations', [RecommendationController::class, 'index'])->name('recommendations.index');
+    Route::get('/entities/{entity}/report/improvements', [ReportController::class, 'improvements'])->name('entities.reports.improvements');
     Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
     Route::post('/maintenance', [MaintenanceController::class, 'store'])->name('maintenance.store');
     Route::get('/solar', [SolarController::class, 'dashboard'])->name('solar.dashboard');

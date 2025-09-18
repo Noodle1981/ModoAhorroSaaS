@@ -2,58 +2,53 @@
 
 namespace App\Http\Controllers;
 
-// app/Http/Controllers/ReportController.php
+use App\Models\Entity;
 use App\Services\InventoryAnalysisService;
-use App\Models\Entity;  // Asegúrate de importar el modelo correcto 
-use Illuminate\Http\Request;    
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Services\ReplacementAnalysisService; // Importa el servicio de reemplazo
-use App\Services\TimeShiftAnalysisService; // Importa el servicio de cambio de tiempo
-use App\Services\MaintenanceAnalysisService; // Importa el servicio de mantenimiento
-use Illuminate\Support\Collection; // Para tipar colecciones
-
-
 
 class ReportController extends Controller
 {
-    public function equipmentByProcess(Entity $entity, InventoryAnalysisService $analysisService)
-    {
-        $inventory = $analysisService->calculateForEntity($entity);
+    protected $analysisService;
 
-        // Usamos la magia de las colecciones de Laravel para agrupar y contar
-        $data = $inventory->groupBy('equipmentType.equipmentCategory.name')
-                           ->map(function ($group) {
-                               return $group->sum('quantity');
-                           });
-        
-        // El resultado será: ['Climatización' => 2, 'Refrigeración' => 1, ...]
-        return response()->json($data);
+    /**
+     * Inyectamos el servicio de análisis en el constructor para
+     * tenerlo disponible en todos los métodos del controlador.
+     */
+    public function __construct(InventoryAnalysisService $analysisService)
+    {
+        $this->analysisService = $analysisService;
     }
 
-    public function improvementReport(Entity $entity, InventoryAnalysisService $analysisService)
-{
-    // 1. Obtenemos el costo promedio del kWh de la última factura
-    $lastInvoice = $entity->supplies()->first()->contracts()->first()->invoices()->latest()->first();
-    $costoUnitarioKwh = $lastInvoice->total_amount / $lastInvoice->total_energy_consumed_kwh;
+    /**
+     * Muestra el informe de oportunidades de mejora para una entidad específica.
+     * Este método es llamado por una RUTA WEB y devuelve una VISTA.
+     */
+    public function improvements(Entity $entity)
+    {
+        // 1. Autorización: Nos aseguramos de que el usuario sea el dueño de la entidad.
+        $this->authorize('view', $entity);
 
-    // 2. Hacemos el análisis de inventario base
-    $inventory = $analysisService->calculateForEntity($entity);
-    
-    // 3. Llamamos a cada especialista
-    $replacementOps = $analysisService->findReplacementOpportunities($inventory, $costoUnitarioKwh);
-    $timeShiftOps = $analysisService->findTimeShiftOpportunities($entity, $inventory);
-    $maintenanceOps = $analysisService->findMaintenanceOpportunities($inventory, $costoUnitarioKwh);
-    
-    // 4. Unimos todos los consejos en una sola lista
-    $allOpportunities = array_merge($replacementOps, $timeShiftOps, $maintenanceOps);
-    
-    // 5. Ordenamos por el mayor ahorro potencial
-    usort($allOpportunities, fn($a, $b) => $b['ahorro_anual_pesos'] <=> $a['ahorro_anual_pesos']);
-    
-    // 6. Pasamos la lista a la vista
-    return view('reports.improvements', [
-        'entity' => $entity,
-        'opportunities' => $allOpportunities,
-    ]);
-}
+        // 2. Llamamos al servicio para que haga todo el trabajo pesado.
+        $opportunities = $this->analysisService->findAllOpportunities($entity);
+
+        // 3. Pasamos los resultados a la vista.
+        return view('reports.improvements', compact('entity', 'opportunities'));
+    }
+
+    /**
+     * Devuelve datos JSON para un gráfico de distribución de equipos por proceso.
+     * Este método debería ser llamado por una RUTA DE API.
+     */
+    public function equipmentByProcess(Entity $entity)
+    {
+        $this->authorize('view', $entity);
+        
+        $inventory = $this->analysisService->calculateEnergyProfile($entity);
+
+        $data = $inventory->groupBy('equipmentType.equipmentCategory.name')
+                           ->map(fn ($group) => $group->sum('quantity'));
+        
+        return response()->json($data);
+    }
 }

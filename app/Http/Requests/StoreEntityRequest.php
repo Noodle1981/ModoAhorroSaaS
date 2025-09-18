@@ -28,6 +28,10 @@ class StoreEntityRequest extends FormRequest
             'address_street' => ['nullable', 'string', 'max:255'],
             // Aquí puedes añadir validación para los campos del JSON 'details'
             // Ej: 'details.bedrooms_count' => ['required_if:type,hogar', 'integer', 'min:0']
+            'details' => ['nullable', 'array'],
+            'details.rooms' => ['nullable', 'array'],
+            // Validamos que cada habitación en el array tenga un nombre
+            'details.rooms.*.name' => ['required', 'string', 'max:100'],
         ];
     }
 }

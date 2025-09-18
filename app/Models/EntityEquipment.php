@@ -15,7 +15,7 @@ class EntityEquipment extends Model
     protected $fillable = [
         'entity_id', 'equipment_type_id', 'quantity', 'custom_name',
         'power_watts_override', 'avg_daily_use_hours_override',
-        'replaced_by_equipment_id', 'is_backup_for_id',
+        'replaced_by_equipment_id', 'is_backup_for_id', 'location'
     ];
 
     public function entity()

@@ -26,7 +26,6 @@
                 <ul>
                     <li><a href="{{ route('dashboard') }}">Dashboard</a></li>
                     <li><a href="{{ route('entities.index') }}">Mis Entidades</a></li>
-                    <li><a href="{{ route('recommendations.index') }}">Recomendaciones</a></li>
                     <li><a href="{{ route('maintenance.index') }}">Mantenimiento</a></li>
                 </ul>
 
