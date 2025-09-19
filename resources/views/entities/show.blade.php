@@ -21,34 +21,36 @@
                         <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- =========== LÓGICA DE AGRUPACIÓN =========== -->
-                    @foreach($entity->entityEquipment->groupBy('location') as $location => $equipments)
-                        <tr style="background-color: #e9ecef;">
-                            <td colspan="3" style="padding: 10px; font-weight: bold; border: 1px solid #ddd;">
-                                Ubicación: {{ $location ?: 'Sin Ubicación Asignada' }}
-                            </td>
-                        </tr>
-                        @foreach($equipments as $equipment)
-                            <tr>
-                                <td style="padding: 12px; border: 1px solid #ddd; padding-left: 25px;">
-                                    <strong style="display: block;">{{ $equipment->custom_name ?? $equipment->equipmentType->name }}</strong>
-                                    <small style="color: #666;">{{ $equipment->equipmentType->name }}</small>
-                                </td>
-                                <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">{{ $equipment->quantity }}</td>
-                                <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">
-                                    <a href="{{ route('equipment.edit', $equipment) }}">Editar</a> |
-                                    <form action="{{ route('equipment.destroy', $equipment) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Estás seguro?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" style="color: red; background: none; border: none; cursor: pointer; padding: 0; font-size: inherit; text-decoration: underline;">Eliminar</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        @endforeach
-                    @endforeach
-                    <!-- ============================================ -->
-                </tbody>
+              <!-- En entities/show.blade.php -->
+<tbody>
+    <!-- Primero, agrupamos por ubicación fija -->
+    @foreach($entity->entityEquipment->where('location', '!=', null)->groupBy('location') as $location => $equipments)
+        <tr style="background-color: #e9ecef;">
+            <td colspan="3" style="padding: 10px; font-weight: bold;">
+                Ubicación: {{ $location }}
+            </td>
+        </tr>
+        @foreach($equipments as $equipment)
+            <!-- ... (código de la fila <tr> del equipo) ... -->
+        @endforeach
+    @endforeach
+
+    <!-- Luego, mostramos una sección para los portátiles -->
+    @php
+        $portableEquipments = $entity->entityEquipment->where('location', null);
+    @endphp
+
+    @if($portableEquipments->isNotEmpty())
+        <tr style="background-color: #e9ecef;">
+            <td colspan="3" style="padding: 10px; font-weight: bold;">
+                Equipos Portátiles (Sin ubicación fija)
+            </td>
+        </tr>
+        @foreach($portableEquipments as $equipment)
+            <!-- ... (código de la fila <tr> del equipo, el mismo de arriba) ... -->
+        @endforeach
+    @endif
+</tbody>
             </table>
 
 <!-- Añade esto en entities/show.blade.php -->

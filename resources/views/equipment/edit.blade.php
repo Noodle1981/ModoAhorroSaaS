@@ -30,7 +30,18 @@
             </select>
         </div>
         
-        <!-- El resto de los campos (location, custom_name, etc.) -->
+        <!-- =========== CAMPO DE UBICACIÓN CONDICIONAL =========== -->
+        <div id="location-wrapper" style="margin-bottom: 15px; display: none;">
+            <label for="location">3. Asigna una Ubicación</label><br>
+            <select id="location" name="location" style="width: 100%; padding: 8px;">
+                <option value="">-- Selecciona una ubicación --</option>
+                @if(isset($locations))
+                    @foreach ($locations as $loc)
+                        <option value="{{ $loc }}" {{ old('location', $equipment->location) == $loc ? 'selected' : '' }}>{{ $loc }}</option>
+                    @endforeach
+                @endif
+            </select>
+        </div>
         
         <!-- ... (código de los otros campos como en el create.blade.php) ... -->
 
@@ -41,6 +52,8 @@
         document.addEventListener('DOMContentLoaded', function () {
             const categorySelect = document.getElementById('category_id');
             const typeSelect = document.getElementById('equipment_type_id');
+            const locationWrapper = document.getElementById('location-wrapper');
+            const locationSelect = document.getElementById('location');
             const initialTypeId = {{ $equipment->equipment_type_id }};
 
             function populateTypes() {
@@ -51,6 +64,7 @@
                     if (types.length > 0) {
                         types.forEach(function (type) {
                             const option = new Option(type.name, type.id);
+                            option.dataset.isPortable = type.is_portable ? '1' : '0';
                             if (type.id === initialTypeId) {
                                 option.selected = true;
                             }
@@ -64,11 +78,35 @@
                 }
             }
 
+            function toggleLocation() {
+                const selectedTypeOption = typeSelect.options[typeSelect.selectedIndex];
+                if (selectedTypeOption && selectedTypeOption.value) {
+                    const isPortable = selectedTypeOption.dataset.isPortable === '1';
+                    if (isPortable) {
+                        locationWrapper.style.display = 'none';
+                        locationSelect.required = false;
+                        locationSelect.value = '';
+                    } else {
+                        locationWrapper.style.display = 'block';
+                        locationSelect.required = true;
+                    }
+                } else {
+                    locationWrapper.style.display = 'none';
+                    locationSelect.required = false;
+                }
+            }
+
             // Popula al cargar la página
             populateTypes();
+            toggleLocation();
 
             // Popula al cambiar la categoría
-            categorySelect.addEventListener('change', populateTypes);
+            categorySelect.addEventListener('change', function() {
+                populateTypes();
+                toggleLocation();
+            });
+
+            typeSelect.addEventListener('change', toggleLocation);
         });
     </script>
 </x-app-layout>

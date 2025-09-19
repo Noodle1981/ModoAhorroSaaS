@@ -18,11 +18,10 @@ class EntityEquipmentController extends Controller
     {
         $this->authorize('create', [EntityEquipment::class, $entity]);
 
-        // --- ¡LA SOLUCIÓN! ---
-        // Le decimos a Eloquent: "cuando traigas las categorías, trae también a sus hijos (los tipos)".
         $categories = EquipmentCategory::with('equipmentTypes')->orderBy('name')->get();
+        $locations = EntityEquipment::getUniqueLocationsForEntity($entity);
 
-        return view('equipment.create', compact('entity', 'categories'));
+        return view('equipment.create', compact('entity', 'categories', 'locations'));
     }
 
     /**
@@ -32,11 +31,10 @@ class EntityEquipmentController extends Controller
     {
         $this->authorize('update', $equipment);
 
-        // --- ¡LA MISMA SOLUCIÓN APLICADA AQUÍ! ---
-        // También necesitamos los datos completos para el formulario de edición.
         $categories = EquipmentCategory::with('equipmentTypes')->orderBy('name')->get();
+        $locations = EntityEquipment::getUniqueLocationsForEntity($equipment->entity);
 
-        return view('equipment.edit', compact('equipment', 'categories'));
+        return view('equipment.edit', compact('equipment', 'categories', 'locations'));
     }
 
     /**

@@ -22,9 +22,14 @@ class StoreEntityEquipmentRequest extends FormRequest
      */
     public function rules(): array
     {
+
+         // Buscamos si el tipo de equipo seleccionado es portátil o no
+    $equipmentType = EquipmentType::find($this->input('equipment_type_id'));
+    $isPortable = $equipmentType ? $equipmentType->is_portable : false;
+
         return [
         'equipment_type_id' => ['required', 'exists:equipment_types,id'],
-        'location' => ['required', 'string', 'max:100'],
+        'location' => [Rule::requiredIf(!$isPortable), 'string', 'max:100'],
         'quantity' => ['required', 'integer', 'min:1'],
         'custom_name' => ['nullable', 'string', 'max:100'],
         'power_watts_override' => ['required', 'integer', 'min:0'], // <-- CAMBIO IMPORTANTE

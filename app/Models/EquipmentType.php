@@ -16,6 +16,10 @@ class EquipmentType extends Model
         'default_avg_daily_use_hours',
     ];
 
+    protected $casts = [
+        'is_portable' => 'boolean',
+    ];
+
     public function equipmentCategory()
     {
         return $this->belongsTo(EquipmentCategory::class, 'category_id');
