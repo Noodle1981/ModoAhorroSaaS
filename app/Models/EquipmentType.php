@@ -14,6 +14,7 @@ class EquipmentType extends Model
         'name',
         'default_power_watts',
         'default_avg_daily_use_hours',
+        'standby_power_watts',
     ];
 
     protected $casts = [

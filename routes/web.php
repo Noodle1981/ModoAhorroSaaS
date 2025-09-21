@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 // Controladores de Autenticación
 use App\Http\Controllers\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\RegisteredUserController;
 
 // Controladores Principales de la Aplicación
 use App\Http\Controllers\DashboardController;

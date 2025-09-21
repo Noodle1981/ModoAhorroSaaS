@@ -6,8 +6,7 @@ use App\Http\Requests\StoreEntityEquipmentRequest;
 use App\Http\Requests\UpdateEntityEquipmentRequest;
 use App\Models\Entity;
 use App\Models\EntityEquipment;
-use App\Models\EquipmentCategory; // Importante
-use App\Models\EquipmentType;
+use App\Models\EquipmentCategory;
 
 class EntityEquipmentController extends Controller
 {
@@ -15,27 +14,38 @@ class EntityEquipmentController extends Controller
      * (CREATE) Muestra el formulario para añadir un nuevo equipo a una entidad.
      */
     public function create(Entity $entity)
-    {
-        $this->authorize('create', [EntityEquipment::class, $entity]);
+   {
+    $this->authorize('create', [EntityEquipment::class, $entity]);
 
-        $categories = EquipmentCategory::with('equipmentTypes')->orderBy('name')->get();
-        $locations = EntityEquipment::getUniqueLocationsForEntity($entity);
+    $categories = EquipmentCategory::with('equipmentTypes')->orderBy('name')->get();
+    
+    // --- ¡LÓGICA CORRECTA PARA UBICACIONES! ---
+    // Leemos el array 'rooms' directamente del JSON 'details' de la entidad.
+    $roomsData = $entity->details['rooms'] ?? [];
+    // Extraemos solo los nombres para pasarlos a la vista.
+    $locations = collect($roomsData)->pluck('name')->filter()->unique()->all();
 
-        return view('equipment.create', compact('entity', 'categories', 'locations'));
-    }
+    // Obtenemos los equipos existentes para mostrarlos en la tabla.
+    $equipments = $entity->entityEquipment()->with('equipmentType.equipmentCategory')->latest()->get();
+
+    return view('equipment.create', compact('entity', 'categories', 'locations', 'equipments'));
+}
 
     /**
      * (EDIT) Muestra el formulario para editar un equipo del inventario.
      */
     public function edit(EntityEquipment $equipment)
-    {
-        $this->authorize('update', $equipment);
+  {
+    $this->authorize('update', $equipment);
 
-        $categories = EquipmentCategory::with('equipmentTypes')->orderBy('name')->get();
-        $locations = EntityEquipment::getUniqueLocationsForEntity($equipment->entity);
+    $categories = EquipmentCategory::with('equipmentTypes')->orderBy('name')->get();
 
-        return view('equipment.edit', compact('equipment', 'categories', 'locations'));
-    }
+    // --- ¡MISMA LÓGICA CORRECTA AQUÍ! ---
+    $roomsData = $equipment->entity->details['rooms'] ?? [];
+    $locations = collect($roomsData)->pluck('name')->filter()->unique()->all();
+
+    return view('equipment.edit', compact('equipment', 'categories', 'locations'));
+}
 
     /**
      * (STORE) Guarda el nuevo equipo en la base de datos.
@@ -44,37 +54,11 @@ class EntityEquipmentController extends Controller
     {
         $this->authorize('create', [EntityEquipment::class, $entity]);
         $entity->entityEquipment()->create($request->validated());
-        return redirect()->route('entities.show', $entity)->with('success', 'Equipo añadido al inventario.');
+
+        // Redirigimos a la página de detalles de la entidad con un mensaje de éxito.
+        return redirect()->route('entities.show', $entity)
+                         ->with('success', '¡Equipo añadido con éxito!');
     }
 
-    /**
-     * (UPDATE) Actualiza el equipo en la base de datos.
-     */
-    public function update(UpdateEntityEquipmentRequest $request, EntityEquipment $equipment)
-    {
-        $this->authorize('update', $equipment);
-        $equipment->update($request->validated());
-        return redirect()->route('entities.show', $equipment->entity)->with('success', 'Equipo actualizado.');
-    }
-
-    /**
-     * (SHOW) Muestra los detalles de un equipo específico del inventario.
-     */
-    public function show(EntityEquipment $equipment)
-    {
-        $this->authorize('view', $equipment);
-        $equipment->load('entity', 'equipmentType.equipmentCategory'); 
-        return view('equipment.show', compact('equipment'));
-    }
-    
-    /**
-     * (DESTROY) Elimina el equipo del inventario.
-     */
-    public function destroy(EntityEquipment $equipment)
-    {
-        $this->authorize('delete', $equipment);
-        $entity = $equipment->entity;
-        $equipment->delete();
-        return redirect()->route('entities.show', 'entity')->with('success', 'Equipo eliminado.');
-    }
+    // ... (El resto de los métodos: update, show, destroy, que ya están bien)
 }

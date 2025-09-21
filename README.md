@@ -10,30 +10,33 @@ La aplicación también cuenta con un panel de administración para "Gestores", 
 
 ## Funcionalidades Implementadas
 
-Actualmente, el proyecto se encuentra en una fase de desarrollo avanzada y cuenta con las siguientes funcionalidades:
-
 *   **Autenticación de Usuarios:** Sistema completo de registro, inicio y cierre de sesión.
 *   **Gestión de Perfil:** Los usuarios pueden editar su información personal.
-*   **Dashboard Principal:** Una vista general del estado energético del usuario.
-*   **Gestión de Entidades:** CRUD completo para que los usuarios registren sus propiedades (casas, apartamentos, etc.).
-*   **Gestión de Suministros:** CRUD para los puntos de suministro energético asociados a una entidad.
-*   **Gestión de Contratos y Facturas:** Permite registrar los contratos con las compañías eléctricas y las facturas correspondientes.
-*   **Inventario de Equipos:** CRUD para que los usuarios añadan los equipos eléctricos de cada una de sus entidades, especificando su consumo.
-*   **Panel de Gestor:** Una sección privada para administradores (`/gestor`) que permite:
-    *   Visualizar y gestionar clientes.
-    *   Administrar los planes de suscripción.
-    *   Gestionar el catálogo de tipos de equipos genéricos.
+*   **Gestión de Entidades y Suministros:** CRUD completo para propiedades y sus puntos de suministro.
+*   **Gestión de Contratos y Facturas:** Permite registrar contratos y facturas de compañías eléctricas.
+*   **Inventario de Equipos Dinámico:**
+    *   Formulario de creación de equipos con lógica condicional avanzada.
+    *   Menús desplegables en cascada (Categoría -> Tipo de Equipo).
+    *   Campos que aparecen o se ocultan según las propiedades del equipo (ej: la ubicación no se pide para equipos portátiles).
+    *   Entrada de tiempo de uso adaptable: el sistema sugiere la unidad (horas o minutos) más apropiada, pero el usuario tiene control total para introducir el valor exacto.
+    *   Cálculo opcional de **consumo en standby** (consumo fantasma) para equipos que apliquen.
+*   **Motor de Análisis y Recomendaciones (v1):**
+    *   Cálculo del perfil de consumo energético anual estimado basado en el inventario.
+    *   Lógica defensiva que maneja con elegancia la ausencia de datos (ej: usuarios sin facturas).
+    *   Generación de un informe de oportunidades de mejora (reemplazo de equipos, mantenimientos pendientes).
+*   **Panel de Gestor:** Sección privada para administradores (`/gestor`) con gestión de clientes y catálogos de la aplicación (planes, tipos de equipos).
 
 ## Etapas Futuras
 
-*   **Lógica de Recomendaciones y Mantenimientos:** Implementar el motor de inteligencia que analizará los datos del usuario para generar recomendaciones de ahorro personalizadas y planes de mantenimiento preventivo para sus equipos.
-*   **Visualización de Datos:** Crear una interfaz de usuario atractiva y moderna, con gráficos y estadísticas que faciliten la comprensión de los datos de consumo energético.
+*   **Refinamiento del Motor de Análisis:** Mejorar y ampliar el tipo de recomendaciones generadas (ej: sugerencias por cambio de hábitos, optimización de tarifas).
+*   **Mejora de la Interfaz de Usuario (UI/UX):** Rediseñar las vistas principales, especialmente los dashboards y reportes, para presentar la información de forma más clara y atractiva mediante gráficos interactivos y una mejor organización visual.
+*   **Notificaciones y Alertas:** Implementar un sistema que notifique a los usuarios sobre mantenimientos próximos o nuevas oportunidades de ahorro detectadas.
 
 ## Tecnologías Utilizadas
 
-*   **Backend:** Laravel 12
-*   **Frontend:** Vite con Tailwind CSS
-*   **Base de Datos:** SQLite (configurado por defecto para desarrollo local)
+*   **Backend:** Laravel 11
+*   **Frontend:** Vite (con una implementación básica de Blade y JavaScript, pendiente de rediseño con un framework como Vue/React o mejora con Tailwind CSS).
+*   **Base de Datos:** SQLite (configurado por defecto para desarrollo local).
 *   **Versión de PHP:** 8.2 o superior
 
 ## Puesta en Marcha (Instalación)
@@ -43,7 +46,7 @@ Para clonar y ejecutar este proyecto en un entorno de desarrollo local, sigue es
 1.  **Clonar el repositorio:**
     ```bash
     git clone <URL_DEL_REPOSITORIO>
-    cd modoahorro
+    cd ModoAhorroSaaS
     ```
 
 2.  **Instalar dependencias de PHP:**
@@ -70,15 +73,15 @@ Para clonar y ejecutar este proyecto en un entorno de desarrollo local, sigue es
     ```
 
 6.  **Ejecutar las migraciones y los seeders:**
-    Esto creará la estructura de la base de datos y la llenará con los datos de prueba iniciales.
+    Esto creará la estructura de la base de datos y la llenará con los datos de catálogo iniciales.
     ```bash
-    php artisan migrate --seed
+    php artisan migrate:fresh --seed
     ```
 
-7.  **Iniciar los servicios de desarrollo:**
-    Este comando iniciará el servidor de PHP, el compilador de Vite, la cola de trabajos y el visor de logs, todo al mismo tiempo.
+7.  **Compilar los assets y arrancar el servidor:**
     ```bash
-    composer run dev
+    npm run dev
+    php artisan serve
     ```
 
     Una vez ejecutado, la aplicación estará disponible en `http://127.0.0.1:8000`.

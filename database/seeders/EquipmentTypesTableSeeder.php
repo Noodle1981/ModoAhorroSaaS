@@ -15,93 +15,53 @@ class EquipmentTypesTableSeeder extends Seeder
 
         // 1. Definimos nuestros datos en un array más estructurado
         $types = [
-            // category_id => [ [name, is_portable, power], [name, is_portable, power], ... ]
+            // category_id => [ [name, is_portable, power, hours, standby], ... ]
             
             // Climatización (category_id 1)
             1 => [
-                ['name' => 'Aire Acondicionado Split', 'is_portable' => false, 'power' => 1500],
-                ['name' => 'Aire Acondicionado de Ventana', 'is_portable' => false, 'power' => 1800],
-                ['name' => 'Ventilador de Techo', 'is_portable' => false, 'power' => 60],
-                ['name' => 'Calefactor Eléctrico', 'is_portable' => true, 'power' => 2000],
-                ['name' => 'Deshumidificador', 'is_portable' => true, 'power' => 300],
+                ['name' => 'Aire Acondicionado Split', 'is_portable' => false, 'power' => 1500, 'minutes' => 480, 'standby' => 1.5],
+                ['name' => 'Ventilador de Techo', 'is_portable' => false, 'power' => 60, 'minutes' => 600, 'standby' => 0.5],
+                ['name' => 'Calefactor Eléctrico', 'is_portable' => true, 'power' => 2000, 'minutes' => 300, 'standby' => 0],
             ],
             // Refrigeración (category_id 2)
             2 => [
-                ['name' => 'Refrigerador', 'is_portable' => false, 'power' => 150],
-                ['name' => 'Congelador', 'is_portable' => false, 'power' => 200],
-                ['name' => 'Mini Bar', 'is_portable' => false, 'power' => 100],
-                ['name' => 'Dispensador de Agua', 'is_portable' => false, 'power' => 80],
+                ['name' => 'Refrigerador', 'is_portable' => false, 'power' => 150, 'minutes' => 1440, 'standby' => 0],
+                ['name' => 'Congelador', 'is_portable' => false, 'power' => 200, 'minutes' => 1440, 'standby' => 0],
             ],
             // Lavado (category_id 3)
             3 => [
-                ['name' => 'Lavadora de Ropa', 'is_portable' => false, 'power' => 500],
-                ['name' => 'Secadora de Ropa', 'is_portable' => false, 'power' => 3000],
-                ['name' => 'Lavavajillas', 'is_portable' => false, 'power' => 1800],
-                ['name' => 'Lavadora de Alta Eficiencia (carga frontal)', 'is_portable' => false, 'power' => 250],
+                ['name' => 'Lavadora de Ropa', 'is_portable' => false, 'power' => 500, 'minutes' => 60, 'standby' => 1],
+                ['name' => 'Secadora de Ropa', 'is_portable' => false, 'power' => 3000, 'minutes' => 60, 'standby' => 1],
+                ['name' => 'Lavavajillas', 'is_portable' => false, 'power' => 1800, 'minutes' => 90, 'standby' => 1.2],
             ],
             // Cocina (category_id 4)
             4 => [
-                ['name' => 'Horno Eléctrico', 'is_portable' => false, 'power' => 2400],
-                ['name' => 'Microondas', 'is_portable' => false, 'power' => 1200],
-                ['name' => 'Cafetera Eléctrica', 'is_portable' => true, 'power' => 800],
-                ['name' => 'Anafe Eléctrico (una hornalla)', 'is_portable' => false, 'power' => 1500],
-                ['name' => 'Tostadora', 'is_portable' => true, 'power' => 900],
-                ['name' => 'Pava Eléctrica', 'is_portable' => true, 'power' => 2200],
-                ['name' => 'Licuadora', 'is_portable' => true, 'power' => 500],
+                ['name' => 'Horno Eléctrico', 'is_portable' => false, 'power' => 2400, 'minutes' => 60, 'standby' => 1.1],
+                ['name' => 'Microondas', 'is_portable' => false, 'power' => 1200, 'minutes' => 12, 'standby' => 2.5],
+                ['name' => 'Cafetera Eléctrica', 'is_portable' => true, 'power' => 800, 'minutes' => 9, 'standby' => 0.8],
+                ['name' => 'Pava Eléctrica', 'is_portable' => true, 'power' => 2200, 'minutes' => 6, 'standby' => 0],
             ],
             // Entretenimiento (category_id 5)
             5 => [
-                ['name' => 'Televisor LED', 'is_portable' => false, 'power' => 100],
-                ['name' => 'Sistema de Sonido', 'is_portable' => false, 'power' => 200],
-                ['name' => 'Consola de Videojuegos', 'is_portable' => true, 'power' => 150],
-                ['name' => 'Teatro en Casa (Home Theater)', 'is_portable' => false, 'power' => 300],
+                ['name' => 'Televisor LED', 'is_portable' => false, 'power' => 100, 'minutes' => 240, 'standby' => 3],
+                ['name' => 'Sistema de Sonido', 'is_portable' => false, 'power' => 200, 'minutes' => 180, 'standby' => 5],
+                ['name' => 'Consola de Videojuegos', 'is_portable' => true, 'power' => 150, 'minutes' => 120, 'standby' => 4],
             ],
             // Iluminación (category_id 6)
             6 => [
-                ['name' => 'Luz Incandescente', 'is_portable' => false, 'power' => 100],
-                ['name' => 'Luz LED', 'is_portable' => false, 'power' => 10],
-                ['name' => 'Luz Fluorescente', 'is_portable' => false, 'power' => 40],
-                ['name' => 'Foco Halógeno', 'is_portable' => false, 'power' => 50],
-            ],
-            // Agua Caliente Sanitaria (ACS) (category_id 7)
-            7 => [
-                ['name' => 'Calentador de Agua Eléctrico', 'is_portable' => false, 'power' => 4500],
-                ['name' => 'Calentador de Agua a Gas', 'is_portable' => false, 'power' => 0],
-                ['name' => 'Bomba de Calor para ACS', 'is_portable' => false, 'power' => 3000],
+                ['name' => 'Luz LED', 'is_portable' => false, 'power' => 10, 'minutes' => 360, 'standby' => 0],
             ],
             // Otros (category_id 8)
             8 => [
-                ['name' => 'Computadora de Escritorio', 'is_portable' => false, 'power' => 200],
-                ['name' => 'Laptop', 'is_portable' => true, 'power' => 50],
-                ['name' => 'Impresora', 'is_portable' => false, 'power' => 30],
-                ['name' => 'Cargador de Teléfono', 'is_portable' => true, 'power' => 50],
-                ['name' => 'Aspiradora', 'is_portable' => true, 'power' => 1400],
-                ['name' => 'Plancha de Ropa', 'is_portable' => true, 'power' => 1000],
-            ],
-            // Herramientas (category_id 9)
-            9 => [
-                ['name' => 'Taladro Eléctrico', 'is_portable' => true, 'power' => 600],
-                ['name' => 'Sierra Eléctrica', 'is_portable' => true, 'power' => 1200],
-                ['name' => 'Lijadora Eléctrica', 'is_portable' => true, 'power' => 300],
-                ['name' => 'Soldadora Inverter', 'is_portable' => true, 'power' => 4000],
-            ],
-            // Cuidado Personal (category_id 10)
-            10 => [
-                ['name' => 'Secador de Pelo', 'is_portable' => true, 'power' => 1800],
-                ['name' => 'Planchita de Pelo', 'is_portable' => true, 'power' => 300],
-                ['name' => 'Afeitadora Eléctrica', 'is_portable' => true, 'power' => 15],
-            ],
-            // Limpieza de Cocina (category_id 11)
-            11 => [
-                ['name' => 'Extractor de Aire (Campana)', 'is_portable' => false, 'power' => 200],
-                ['name' => 'Triturador de Desechos', 'is_portable' => false, 'power' => 400],
+                ['name' => 'Computadora de Escritorio', 'is_portable' => false, 'power' => 200, 'minutes' => 480, 'standby' => 3.5],
+                ['name' => 'Laptop', 'is_portable' => true, 'power' => 50, 'minutes' => 300, 'standby' => 1],
+                ['name' => 'Impresora', 'is_portable' => false, 'power' => 30, 'minutes' => 6, 'standby' => 2],
             ],
             // Seguridad y Hogar Inteligente (category_id 12)
             12 => [
-                ['name' => 'Cámara de Seguridad', 'is_portable' => false, 'power' => 5],
-                ['name' => 'Asistente de Voz (Google Home, Alexa)', 'is_portable' => true, 'power' => 10],
-                ['name' => 'Enchufe Inteligente', 'is_portable' => true, 'power' => 2],
-                ['name' => 'Router de Internet', 'is_portable' => false, 'power' => 2],
+                ['name' => 'Cámara de Seguridad', 'is_portable' => false, 'power' => 5, 'minutes' => 1440, 'standby' => 0],
+                ['name' => 'Asistente de Voz (Google Home, Alexa)', 'is_portable' => true, 'power' => 10, 'minutes' => 1440, 'standby' => 1.5],
+                ['name' => 'Router de Internet', 'is_portable' => false, 'power' => 8, 'minutes' => 1440, 'standby' => 0],
             ],
         ];
 
@@ -114,6 +74,8 @@ class EquipmentTypesTableSeeder extends Seeder
                     'name' => $equipment['name'],
                     'is_portable' => $equipment['is_portable'],
                     'default_power_watts' => $equipment['power'],
+                    'default_avg_daily_use_minutes' => $equipment['minutes'],
+                    'standby_power_watts' => $equipment['standby'],
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];

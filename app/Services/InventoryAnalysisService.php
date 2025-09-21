@@ -24,8 +24,14 @@ class InventoryAnalysisService
      */
     public function findAllOpportunities(Entity $entity): array
     {
-        // 1. Obtenemos un costo de referencia del kWh
+        // 1. Obtenemos un costo de referencia del kWh de forma segura.
         $costoUnitarioKwh = $this->getAverageKwhCost($entity);
+
+        // Si el costo es 0 (porque no hay facturas), no podemos calcular ahorros en pesos.
+        // Por simplicidad, si no hay costo, no hay recomendaciones de ahorro.
+        if ($costoUnitarioKwh === 0.0) {
+            return [];
+        }
 
         // 2. Calculamos el perfil de inventario actual
         $inventory = $this->calculateEnergyProfile($entity);
@@ -34,7 +40,7 @@ class InventoryAnalysisService
             return [];
         }
 
-        // 3. Llamamos a cada especialista
+        // 3. Llamamos a cada especialista (estos métodos ahora recibirán un costo válido)
         $replacementOps = $this->findReplacementOpportunities($inventory, $costoUnitarioKwh);
         $timeShiftOps = $this->findTimeShiftOpportunities($entity, $inventory);
         $maintenanceOps = $this->findMaintenanceOpportunities($inventory, $costoUnitarioKwh);
@@ -55,56 +61,99 @@ class InventoryAnalysisService
  // ...
 public function calculateEnergyProfile(Entity $entity): Collection
 {
-    // Obtenemos el inventario real como antes
-    $inventory = $entity->entityEquipment()
-        ->with(['equipmentType.equipmentCategory.calculationFactor'])
-        ->get();
-    
-    // ... (el ->map(...) para el inventario real queda igual) ...
-    $calculatedInventory = $inventory->map(function ($equipment) {
-        // ... toda la lógica que ya teníamos ...
-        return $equipment;
-    });
-
-    // --- ¡NUEVA LÓGICA DE INYECCIÓN VIRTUAL! ---
-    if (!empty($entity->details['electronic_devices_count']) && $entity->details['electronic_devices_count'] > 0) {
+        // 1. Obtenemos el inventario real de la base de datos
+        $inventory = $entity->entityEquipment()
+            ->with(['equipmentType.equipmentCategory.calculationFactor'])
+            ->get();
         
-        // Buscamos el tipo de equipo y los factores que creamos en los seeders
-        $electronicDeviceType = \App\Models\EquipmentType::where('name', 'Dispositivos Electrónicos (celulares, tablets, notebooks)')->first();
-        $calculationFactor = \App\Models\CalculationFactor::where('method_name', 'consumo_agregado')->first();
-        
-        if ($electronicDeviceType && $calculationFactor) {
-            $quantity = $entity->details['electronic_devices_count'];
-            $powerWatts = $electronicDeviceType->default_power_watts;
+        // 2. Mapeamos el inventario real para calcular sus consumos
+        $calculatedInventory = $inventory->map(function ($equipment) {
             
-            // Asumimos un uso constante a lo largo del año
-            $horasDeUsoAnual = 24 * 365; // 8760 horas
+            // --- CÁLCULO DE CONSUMO ACTIVO ---
+            $powerWatts = $equipment->power_watts_override ?? $equipment->equipmentType->default_power_watts ?? 0;
+            $avgDailyUseMinutes = $equipment->avg_daily_use_minutes_override ?? $equipment->equipmentType->default_avg_daily_use_minutes ?? 0;
             
             $consumoNominalKW = $powerWatts / 1000;
-            $factorCarga = $calculationFactor->load_factor;
-            $eficiencia = $calculationFactor->efficiency_factor;
+            $horasDeUsoAnual = ($avgDailyUseMinutes / 60) * 365;
 
-            $energiaUtilConsumida = $horasDeUsoAnual * $factorCarga * $quantity * $consumoNominalKW;
+            $calculationFactor = $equipment->equipmentType->equipmentCategory->calculationFactor;
+            $factorCarga = $calculationFactor->load_factor ?? 1;
+            $eficiencia = $calculationFactor->efficiency_factor ?? 1;
+
+            if ($eficiencia == 0) $eficiencia = 1;
+
+            $energiaUtilConsumida = $horasDeUsoAnual * $factorCarga * $equipment->quantity * $consumoNominalKW;
             $energiaSecundariaConsumida = $energiaUtilConsumida / $eficiencia;
 
-            // Creamos un "falso" objeto de equipo para añadir al informe
-            $virtualEquipment = new \App\Models\EntityEquipment([
-                'custom_name' => 'Carga Electrónica Agregada',
-                'quantity' => $quantity,
-            ]);
-            $virtualEquipment->consumo_nominal_kw = round($consumoNominalKW, 4);
-            $virtualEquipment->horas_uso_anual = round($horasDeUsoAnual, 2);
-            $virtualEquipment->energia_util_kwh = round($energiaUtilConsumida, 2);
-            $virtualEquipment->energia_secundaria_kwh = round($energiaSecundariaConsumida, 2);
-            $virtualEquipment->equipmentType = $electronicDeviceType; // Para tener el nombre en la vista
+            $equipment->consumo_nominal_kw = round($consumoNominalKW, 4);
+            $equipment->horas_uso_anual = round($horasDeUsoAnual, 2);
+            $equipment->energia_util_kwh = round($energiaUtilConsumida, 2);
+            $equipment->energia_secundaria_kwh = round($energiaSecundariaConsumida, 2);
+            
+            // --- CÁLCULO DE CONSUMO EN STAND BY ---
+            $consumoStandByAnualKwh = 0; // Por defecto es 0
+            // Solo calculamos si el usuario lo marcó explícitamente
+            if ($equipment->has_standby_mode) {
+                $standbyPowerWatts = $equipment->equipmentType->standby_power_watts ?? 0;
+                if ($standbyPowerWatts > 0) {
+                    $horasStandByAnual = (24 * 365) - $horasDeUsoAnual;
+                    if ($horasStandByAnual < 0) $horasStandByAnual = 0;
 
-            // Lo añadimos a la colección de inventario calculado
-            $calculatedInventory->push($virtualEquipment);
+                    $consumoStandByAnualKwh = ($standbyPowerWatts / 1000) * $horasStandByAnual * $equipment->quantity;
+                }
+            }
+            
+            // Añadimos el nuevo resultado al objeto
+            $equipment->standby_kwh = round($consumoStandByAnualKwh, 2);
+            
+            // Creamos un total para este equipo
+            $equipment->energia_total_anual_kwh = $equipment->energia_secundaria_kwh + $equipment->standby_kwh;
+
+            return $equipment;
+        });
+
+        // --- 3. INYECCIÓN VIRTUAL DE CARGA ELECTRÓNICA ---
+        $electronicDevicesCount = $entity->details['electronic_devices_count'] ?? 0;
+        
+        if ($electronicDevicesCount > 0) {
+            // Buscamos los datos de catálogo para esta categoría especial
+            $electronicDeviceType = EquipmentType::where('name', 'Dispositivos Electrónicos (celulares, tablets, notebooks)')->first();
+            $calculationFactor = CalculationFactor::where('method_name', 'consumo_agregado')->first();
+            
+            if ($electronicDeviceType && $calculationFactor) {
+                $quantity = $electronicDevicesCount;
+                $powerWatts = $electronicDeviceType->default_power_watts;
+                
+                $horasDeUsoAnual = 24 * 365;
+                
+                $consumoNominalKW = $powerWatts / 1000;
+                $factorCarga = $calculationFactor->load_factor;
+                $eficiencia = $calculationFactor->efficiency_factor;
+
+                $energiaUtilConsumida = $horasDeUsoAnual * $factorCarga * $quantity * $consumoNominalKW;
+                $energiaSecundariaConsumida = $energiaUtilConsumida / ($eficiencia ?: 1);
+
+                // Creamos un "falso" objeto de equipo para añadir al informe
+                $virtualEquipment = new EntityEquipment([
+                    'custom_name' => 'Carga Electrónica Agregada',
+                    'quantity' => $quantity,
+                ]);
+                $virtualEquipment->consumo_nominal_kw = round($consumoNominalKW, 4);
+                $virtualEquipment->horas_uso_anual = round($horasDeUsoAnual, 2);
+                $virtualEquipment->energia_util_kwh = round($energiaUtilConsumida, 2);
+                $virtualEquipment->energia_secundaria_kwh = round($energiaSecundariaConsumida, 2);
+                $virtualEquipment->standby_kwh = 0; // No aplica stand by a esta categoría agregada
+                $virtualEquipment->energia_total_anual_kwh = round($energiaSecundariaConsumida, 2);
+                $virtualEquipment->equipmentType = $electronicDeviceType;
+
+                // Lo añadimos a la colección final
+                $calculatedInventory->push($virtualEquipment);
+            }
         }
-    }
 
-    return $calculatedInventory;
-}
+        // 4. Devolvemos la colección completa
+        return $calculatedInventory;
+    }
 
     /**
      * =====================================================================
@@ -212,10 +261,21 @@ public function calculateEnergyProfile(Entity $entity): Collection
             return $contract->invoices;
         })->sortByDesc('end_date')->first();
 
+        // Si no hay factura O el consumo es cero, devolvemos 0.0 para indicar que no hay costo.
         if (!$lastInvoice || $lastInvoice->total_energy_consumed_kwh == 0) {
-            return 40.0; // Valor de respaldo en ARS
+            // En lugar de un valor por defecto, devolvemos 0 para que el método que llama sepa que no hay datos.
+            return 0.0; 
         }
 
         return $lastInvoice->total_amount / $lastInvoice->total_energy_consumed_kwh;
     }
+
+    /**
+     * =====================================================================
+     * CÁLCULO DE STANDBY 
+     * =====================================================================
+     */
+
+
+
 }

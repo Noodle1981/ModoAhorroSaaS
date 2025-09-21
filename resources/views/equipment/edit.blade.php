@@ -31,21 +31,29 @@
         </div>
         
         <!-- =========== CAMPO DE UBICACIÓN CONDICIONAL =========== -->
-        <div id="location-wrapper" style="margin-bottom: 15px; display: none;">
-            <label for="location">3. Asigna una Ubicación</label><br>
-            <select id="location" name="location" style="width: 100%; padding: 8px;">
-                <option value="">-- Selecciona una ubicación --</option>
-                @if(isset($locations))
-                    @foreach ($locations as $loc)
-                        <option value="{{ $loc }}" {{ old('location', $equipment->location) == $loc ? 'selected' : '' }}>{{ $loc }}</option>
-                    @endforeach
-                @endif
-            </select>
-        </div>
+        <div id="location-wrapper" style="margin-bottom: 15px;">
+    <label for="location">3. Asigna una Ubicación</label><br>
+    <select id="location" name="location" required style="width: 100%; padding: 8px;">
+        <option value="">-- Selecciona una ubicación --</option>
+        
+        <!-- Usamos la nueva variable $locations que nos pasa el controlador -->
+        @forelse ($locations as $locationName)
+            <option value="{{ $locationName }}" {{ old('location') == $locationName ? 'selected' : '' }}>
+                {{ $locationName }}
+            </option>
+        @empty
+            <option value="" disabled>Primero debes definir las habitaciones en la entidad.</option>
+        @endforelse
+    </select>
+</div>
         
         <!-- ... (código de los otros campos como en el create.blade.php) ... -->
 
-        <button type="submit">Actualizar Equipo</button>
+        <div style="margin-top: 20px;">
+            <button type="submit" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                Actualizar Equipo
+            </button>
+        </div>
     </form>
 
     <script>

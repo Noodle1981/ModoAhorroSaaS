@@ -1,0 +1,20 @@
+✅ Checklist para trabajar con Git en dos dispositivos
+🔄 Antes de empezar en cualquier máquina:
+- [ ] Abrí la terminal y navegá al proyecto.
+- [ ] Ejecutá git checkout main para estar en la rama correcta.
+- [ ] Ejecutá git pull origin main para traer los últimos cambios.
+🛠 Mientras trabajás:
+- [ ] Hacé cambios en tu código.
+- [ ] Guardá tus archivos.
+- [ ] Ejecutá git add . para preparar los cambios.
+- [ ] Ejecutá git commit -m "Descripción clara del cambio".
+📤 Al terminar tu sesión:
+- [ ] Ejecutá git pull origin main por si hubo cambios remotos mientras trabajabas.
+- [ ] Ejecutá git push origin main para subir tus cambios.
+💻 Al cambiar de dispositivo:
+- [ ] Abrí la terminal en la nueva máquina.
+- [ ] Navegá al proyecto y asegurate de estar en main.
+- [ ] Ejecutá git pull origin main para tener la última versión.
+- [ ] Si hay cambios locales sin guardar, usá git stash antes de hacer el pull.
+
+

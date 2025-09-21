@@ -14,13 +14,19 @@ class EntityEquipment extends Model
 
     protected $fillable = [
         'entity_id', 'equipment_type_id', 'quantity', 'custom_name',
-        'power_watts_override', 'avg_daily_use_hours_override',
-        'replaced_by_equipment_id', 'is_backup_for_id', 'location'
+        'power_watts_override', 'avg_daily_use_minutes_override',
+        'replaced_by_equipment_id', 'is_backup_for_id', 'location',
+        'has_standby_mode'
     ];
 
     public function entity()
     {
         return $this->belongsTo(Entity::class);
+    }
+
+    public function equipmentType()
+    {
+        return $this->belongsTo(EquipmentType::class);
     }
 
     public static function getUniqueLocationsForEntity(Entity $entity): \Illuminate\Support\Collection

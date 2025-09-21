@@ -9,6 +9,8 @@ use App\Models\Company;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Models\Province; // Asegúrate de tener el modelo Province
+use App\Models\Locality; // Asegúrate de tener el modelo Locality si
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,7 +27,9 @@ class RegisteredUserController extends Controller
      */
     public function create()
     {
-        return view('auth.register');
+        $provinces = Province::all();
+        $localities = Locality::all();
+        return view('auth.register', compact('provinces', 'localities'));
     }
 
     /**
