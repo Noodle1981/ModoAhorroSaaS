@@ -1,114 +1,44 @@
 <x-app-layout>
+    <!-- ... (cabecera de la página: nombre de la entidad, botones, etc.) ... -->
+    
     <!-- ======================================================= -->
-    <!-- CABECERA DE LA PÁGINA (Nombre de la entidad y botones)  -->
-    <!-- ======================================================= -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <div>
-            <h1>{{ $entity->name }}</h1>
-            <p><a href="{{ route('entities.index') }}">&larr; Volver a Mis Entidades</a></p>
-        </div>
-        <a href="{{ route('entities.edit', $entity) }}" style="background-color: #ffc107; color: black; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
-            Editar Entidad y Habitaciones
-        </a>
-    </div>
-
-    <!-- ======================================================= -->
-    <!-- SECCIÓN DE CARACTERÍSTICAS DE LA VIVIENDA             -->
+    <!-- NUEVO DASHBOARD DE RESUMEN: PERÍODO ACTIVO              -->
     <!-- ======================================================= -->
     <div style="margin-top: 20px; padding: 20px; border: 1px solid #eee; border-radius: 8px; background-color: #f9f9f9;">
-        <h3>Características de la Entidad</h3>
-        @if(empty($entity->details) || empty($entity->details['rooms']))
-            <p>Aún no has completado las características de esta entidad. <a href="{{ route('entities.edit', $entity) }}">Complétalas ahora</a> para un análisis más preciso.</p>
+        <h3>Análisis del Período Activo</h3>
+        
+        @if($periodSummary->real_consumption === null)
+            <p>Aún no has cargado ninguna factura. <a href="#">Carga tu primera factura</a> para activar el análisis.</p>
         @else
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                <p><strong>Ocupantes:</strong> {{ $entity->details['occupants_count'] ?? 'N/A' }}</p>
-                <p><strong>Habitaciones definidas:</strong> {{ count($entity->details['rooms']) }}</p>
+            <p style="text-align: center; font-weight: bold; margin-bottom: 20px;">
+                Período analizado: {{ $periodSummary->period_label }} ({{ $periodSummary->period_days }} días)
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div style="text-align: center; padding: 15px; background-color: white; border-radius: 4px;">
+                    <span style="font-size: 0.9em; color: #666;">Consumo Real (Según Factura)</span>
+                    <p style="font-size: 2em; font-weight: bold; margin: 5px 0; color: #007bff;">
+                        {{ number_format($periodSummary->real_consumption, 0, ',', '.') }} kWh
+                    </p>
+                </div>
+                <div style="text-align: center; padding: 15px; background-color: white; border-radius: 4px;">
+                    <span style="font-size: 0.9em; color: #666;">Consumo Explicado (Según Inventario)</span>
+                    <p style="font-size: 2em; font-weight: bold; margin: 5px 0; color: #17a2b8;">
+                        {{ number_format($periodSummary->estimated_consumption, 0, ',', '.') }} kWh
+                    </p>
+                </div>
             </div>
+            @php
+                $difference = $periodSummary->real_consumption - $periodSummary->estimated_consumption;
+            @endphp
+            <p style="margin-top: 15px; text-align: center; color: #333;">
+                Tu inventario actual explica el <strong>{{ number_format($periodSummary->estimated_consumption / $periodSummary->real_consumption * 100, 0) }}%</strong> de tu consumo real.
+                <br>
+                <small>Hay una diferencia de <strong>{{ number_format($difference, 0, ',', '.') }} kWh</strong>. Esto puede deberse a equipos no inventariados, imprecisiones en el uso, o la "Carga Electrónica Agregada".</small>
+            </p>
         @endif
     </div>
 
-    <!-- ======================================================= -->
-    <!-- SECCIÓN DE SUMINISTROS ENERGÉTICOS                       -->
-    <!-- ======================================================= -->
-    <div style="margin-top: 30px; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-        <!-- ... (código de la tabla de Suministros, que ya tenías bien) ... -->
-    </div>
-
-    <!-- ======================================================= -->
-    <!-- SECCIÓN DE INVENTARIO DE EQUIPOS Y ANÁLISIS              -->
-    <!-- ======================================================= -->
-    <div style="margin-top: 30px; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2>Inventario y Análisis de Consumo</h2>
-            <a href="{{ route('entities.equipment.create', $entity) }}" style="background-color: #fd7e14; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
-                + Añadir Equipo
-            </a>
-        </div>
-
-        @if($inventoryReport->isEmpty())
-            <p>Aún no has añadido ningún equipo a esta entidad. ¡Añade tus electrodomésticos para empezar el análisis!</p>
-        @else
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                <thead>
-                    <tr style="background-color: #f2f2f2;">
-                        <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Equipo / Ubicación</th>
-                        <th style="padding: 12px; border: 1px solid #ddd; text-align: right;">Consumo Activo (kWh/año)</th>
-                        <th style="padding: 12px; border: 1px solid #ddd; text-align: right;">Consumo Stand By (kWh/año)</th>
-                        <th style="padding: 12px; border: 1px solid #ddd; text-align: right;">TOTAL (kWh/año)</th>
-                        <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Lógica de Agrupación por Ubicación -->
-                    @foreach($inventoryReport->where('location', '!=', null)->groupBy('location') as $location => $equipments)
-                        <tr style="background-color: #e9ecef;">
-                            <td colspan="5" style="padding: 10px; font-weight: bold; border: 1px solid #ddd;">
-                                Ubicación: {{ $location }}
-                            </td>
-                        </tr>
-                        @foreach($equipments as $equipment)
-                            @include('entities.partials.equipment-row', ['equipment' => $equipment])
-                        @endforeach
-                    @endforeach
-
-                    <!-- Sección para Equipos Portátiles -->
-                    @php
-                        $portableEquipments = $inventoryReport->filter(fn($eq) => optional($eq->equipmentType)->is_portable);
-                    @endphp
-                    @if($portableEquipments->isNotEmpty())
-                        <tr style="background-color: #e9ecef;">
-                            <td colspan="5" style="padding: 10px; font-weight: bold; border: 1px solid #ddd;">
-                                Equipos Portátiles
-                            </td>
-                        </tr>
-                        @foreach($portableEquipments as $equipment)
-                            @include('entities.partials.equipment-row', ['equipment' => $equipment])
-                        @endforeach
-                    @endif
-                    
-                    <!-- Fila del Total General -->
-                    <tr style="background-color: #343a40; color: white; font-weight: bold;">
-                        <td colspan="3" style="padding: 12px; border: 1px solid #ddd; text-align: right;">
-                            Consumo Total Estimado del Inventario:
-                        </td>
-                        <td style="padding: 12px; border: 1px solid #ddd; text-align: right; font-size: 1.2em;">
-                            {{ number_format($inventoryReport->sum('energia_total_anual_kwh'), 2, ',', '.') }} kWh/año
-                        </td>
-                        <td style="border: 1px solid #ddd;"></td>
-                    </tr>
-                </tbody>
-            </table>
-        @endif
-    </div>
-
-    <!-- ======================================================= -->
-    <!-- SECCIÓN DE ANÁLISIS Y MEJORAS (Botón de Acción)        -->
-    <!-- ======================================================= -->
-    <div style="margin-top: 30px; padding: 20px; background-color: #e3f2fd; border: 1px solid #b3e5fc; border-radius: 8px; text-align: center;">
-        <h2>Análisis y Oportunidades</h2>
-        <p style="margin-top: 10px; margin-bottom: 20px;">Analiza el consumo de esta entidad y descubre cómo puedes empezar a ahorrar.</p>
-        <a href="{{ route('entities.reports.improvements', $entity) }}" style="background-color: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 1.1em;">
-            Ver Informe de Mejoras
-        </a>
-    </div>
+    
+    
+    <!-- ... (Botón para ver informe de mejoras, etc.) ... -->
 </x-app-layout>

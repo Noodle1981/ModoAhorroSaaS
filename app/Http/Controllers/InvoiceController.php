@@ -16,6 +16,7 @@ class InvoiceController extends Controller
     {
         // Autorizamos: ¿puede este usuario crear una factura PARA ESTE contrato?
         $this->authorize('create', [Invoice::class, $contract]);
+        
 
         return view('invoices.create', compact('contract'));
     }
@@ -33,10 +34,15 @@ class InvoiceController extends Controller
         // Aquí podrías añadir lógica de cálculo de huella de carbono antes de guardar
         // $data['co2_footprint_kg'] = $carbonCalculatorService->calculate(...);
 
-        $contract->invoices()->create($data);
+         // Creamos la factura como antes
+    $invoice = $contract->invoices()->create($data);
 
-        return redirect()->route('contracts.show', $contract)
-                         ->with('success', 'Factura añadida exitosamente.');
+    // --- ¡EL CAMBIO IMPORTANTE! ---
+    // En lugar de redirigir al detalle del contrato, redirigimos
+    // al nuevo formulario para crear el snapshot de uso, pasándole
+    // la factura que acabamos de crear.
+    return redirect()->route('snapshots.create', $invoice)
+                     ->with('success', 'Factura cargada. Ahora, por favor, confirma el uso de tus equipos para este período.');
     }
 
     /**

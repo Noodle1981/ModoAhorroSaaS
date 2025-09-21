@@ -18,18 +18,22 @@ La aplicación también cuenta con un panel de administración para "Gestores", 
     *   Formulario de creación de equipos con lógica condicional avanzada.
     *   Menús desplegables en cascada (Categoría -> Tipo de Equipo).
     *   Campos que aparecen o se ocultan según las propiedades del equipo (ej: la ubicación no se pide para equipos portátiles).
-    *   Entrada de tiempo de uso adaptable: el sistema sugiere la unidad (horas o minutos) más apropiada, pero el usuario tiene control total para introducir el valor exacto.
-    *   Cálculo opcional de **consumo en standby** (consumo fantasma) para equipos que apliquen.
-*   **Motor de Análisis y Recomendaciones (v1):**
+    *   Entrada de tiempo de uso adaptable y cálculo opcional de **consumo en standby**.
+*   **Sistema de Historial y Snapshots de Uso:**
+    *   La aplicación ya no es "amnésica". Se ha implementado una arquitectura que guarda un "snapshot" (una foto) del uso del inventario para cada período de facturación.
+    *   **Nuevo Flujo:** Tras cargar una factura, el usuario es redirigido a una pantalla para confirmar los patrones de uso de sus equipos para ese período específico.
+    *   **Nuevos Componentes:** Este sistema se apoya en una nueva tabla `equipment_usage_snapshots`, el controlador `UsageSnapshotController` y rutas dedicadas.
+    *   **Análisis de Período Activo:** La página de detalle de la entidad ahora muestra un dashboard que compara con precisión el consumo real de la última factura contra el consumo estimado del inventario para ese mismo período.
+*   **Motor de Análisis y Recomendaciones (v1.5):**
     *   Cálculo del perfil de consumo energético anual estimado basado en el inventario.
-    *   Lógica defensiva que maneja con elegancia la ausencia de datos (ej: usuarios sin facturas).
-    *   Generación de un informe de oportunidades de mejora (reemplazo de equipos, mantenimientos pendientes).
-*   **Panel de Gestor:** Sección privada para administradores (`/gestor`) con gestión de clientes y catálogos de la aplicación (planes, tipos de equipos).
+    *   Generación de un informe de oportunidades de mejora con 3 estados por equipo: "Equipo Deficiente" (con recomendación), "Equipo Eficiente" y "Equipo sin Comparativa".
+    *   **Log de Faltantes:** Creación de un log (`mejoras_faltantes.log`) que registra automáticamente los equipos que no se pudieron comparar por falta de alternativas en el catálogo, facilitando la mejora continua del motor.
+*   **Panel de Gestor:** Sección privada para administradores (`/gestor`) con gestión de clientes y catálogos de la aplicación.
 
 ## Etapas Futuras
 
-*   **Refinamiento del Motor de Análisis:** Mejorar y ampliar el tipo de recomendaciones generadas (ej: sugerencias por cambio de hábitos, optimización de tarifas).
-*   **Mejora de la Interfaz de Usuario (UI/UX):** Rediseñar las vistas principales, especialmente los dashboards y reportes, para presentar la información de forma más clara y atractiva mediante gráficos interactivos y una mejor organización visual.
+*   **Dashboard Histórico:** Aprovechar el nuevo sistema de snapshots para construir un dashboard con gráficos que muestren la evolución del consumo real vs. el estimado a lo largo del tiempo.
+*   **Refinamiento del Motor de Análisis:** Ampliar el tipo de recomendaciones (ej: sugerencias por cambio de hábitos, optimización de tarifas).
 *   **Notificaciones y Alertas:** Implementar un sistema que notifique a los usuarios sobre mantenimientos próximos o nuevas oportunidades de ahorro detectadas.
 
 ## Tecnologías Utilizadas

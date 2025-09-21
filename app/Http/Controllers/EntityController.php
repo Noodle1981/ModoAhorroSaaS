@@ -44,38 +44,53 @@ class EntityController extends Controller
     /**
      * (SHOW) Muestra los detalles de una entidad específica y su análisis.
      */
-    public function show(Entity $entity, InventoryAnalysisService $analysisService)
-    {
-        $this->authorize('view', $entity);
+ // En app/Http/Controllers/EntityController.php
 
-        $inventoryReport = $analysisService->calculateEnergyProfile($entity);
-        $totalInventoryKwhYear = $inventoryReport->sum('energia_total_anual_kwh');
+public function show(Entity $entity, InventoryAnalysisService $analysisService)
+{
+    $this->authorize('view', $entity);
+
+    // --- LÓGICA DE PERÍODO ACTIVO ---
+    
+    // 1. Buscamos la última factura.
+    $lastInvoice = $entity->supplies
+        ->flatMap->contracts
+        ->flatMap->invoices
+        ->sortByDesc('end_date')
+        ->first();
+    
+    $inventoryReportForPeriod = collect(); // Creamos una colección vacía por defecto
+    $periodSummary = [
+        'period_days' => 0,
+        'period_label' => 'N/A',
+        'real_consumption' => null,
+        'estimated_consumption' => 0,
+    ];
+
+    // 2. Si la factura EXISTE, hacemos el análisis para su período.
+    if ($lastInvoice) {
+        // Calculamos cuántos días tiene el período de la factura
+        $periodDays = Carbon\Carbon::parse($lastInvoice->start_date)->diffInDays($lastInvoice->end_date) + 1;
+
+        // Llamamos a nuestro nuevo método del servicio para este período
+        $inventoryReportForPeriod = $analysisService->calculateEnergyProfileForPeriod($entity, $periodDays);
         
-        // --- LÓGICA DEFENSIVA ---
-        // 1. Buscamos la última factura.
-        $lastInvoice = $entity->supplies
-            ->flatMap->contracts
-            ->flatMap->invoices
-            ->sortByDesc('end_date')
-            ->first();
-        
-        // 2. Preparamos el resumen con valores por defecto (null o 0).
-        $summary = [
-            'inventory_kwh_year' => $totalInventoryKwhYear,
-            'inventory_kwh_month_avg' => $totalInventoryKwhYear > 0 ? $totalInventoryKwhYear / 12 : 0,
-            'last_invoice_kwh' => null,
-            'last_invoice_period' => null,
+        // Preparamos el resumen para la vista
+        $periodSummary = [
+            'period_days' => $periodDays,
+            'period_label' => $lastInvoice->start_date->format('d/m') . ' - ' . $lastInvoice->end_date->format('d/m/Y'),
+            'real_consumption' => $lastInvoice->total_energy_consumed_kwh,
+            'estimated_consumption' => $inventoryReportForPeriod->sum('consumo_kwh_total_periodo'),
         ];
-
-        // 3. Si la factura EXISTE, rellenamos los datos.
-        if ($lastInvoice) {
-            $summary['last_invoice_kwh'] = $lastInvoice->total_energy_consumed_kwh;
-            $summary['last_invoice_period'] = $lastInvoice->start_date->format('d/m') . ' - ' . $lastInvoice->end_date->format('d/m/Y');
-        }
-        // --- FIN DE LA LÓGICA DEFENSIVA ---
-
-        return view('entities.show', compact('entity', 'inventoryReport', 'summary'));
     }
+    
+    // --- FIN DE LA LÓGICA DE PERÍODO ---
+
+    return view('entities.show', [
+        'entity' => $entity,
+        'periodSummary' => (object) $periodSummary, // Lo convertimos a objeto para un acceso más fácil
+    ]);
+}
 
     public function edit(Entity $entity)
     {

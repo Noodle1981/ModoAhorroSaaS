@@ -127,6 +127,13 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'mejoras_faltantes' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/mejoras_faltantes.log'),
+            'level' => 'info',
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

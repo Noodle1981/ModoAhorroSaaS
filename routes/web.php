@@ -3,8 +3,9 @@
 use Illuminate\Support\Facades\Route;
 
 // Controladores de Autenticación
-use App\Http\Controllers\AuthenticatedSessionController;
-use App\Http\Controllers\RegisteredUserController;
+// (He quitado los imports duplicados para mayor claridad)
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 
 // Controladores Principales de la Aplicación
 use App\Http\Controllers\DashboardController;
@@ -14,17 +15,16 @@ use App\Http\Controllers\SupplyController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\EntityEquipmentController;
-use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\SolarController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\UsageSnapshotController; // <-- IMPORT NUEVO AÑADIDO
 
 // Controladores del Panel de Gestor
 use App\Http\Controllers\Gestor\DashboardController as GestorDashboardController;
 use App\Http\Controllers\Gestor\ClientController;
 use App\Http\Controllers\Gestor\PlanController;
 use App\Http\Controllers\Gestor\EquipmentTypeController;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -67,6 +67,13 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('contracts.invoices', InvoiceController::class)->shallow();
     Route::resource('entities.equipment', EntityEquipmentController::class)->shallow();
 
+    // ======================================================================
+    // === NUEVAS RUTAS PARA LA CONFIRMACIÓN DE USO (SNAPSHOTS) ===
+    // ======================================================================
+    Route::get('/invoices/{invoice}/snapshots/create', [UsageSnapshotController::class, 'create'])->name('snapshots.create');
+    Route::post('/invoices/{invoice}/snapshots', [UsageSnapshotController::class, 'store'])->name('snapshots.store');
+    // ======================================================================
+
     // --- ANÁLISIS E INTELIGENCIA ---
     Route::get('/entities/{entity}/report/improvements', [ReportController::class, 'improvements'])->name('entities.reports.improvements');
     Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
@@ -88,5 +95,4 @@ Route::middleware(['auth', 'role:gestor'])->prefix('gestor')->name('gestor.')->g
     // Gestión de Catálogos
     Route::resource('plans', PlanController::class)->except(['show']);
     Route::resource('equipment-types', EquipmentTypeController::class)->except(['show']);
-    // Podríamos añadir más gestores de catálogos aquí en el futuro (ej: utility-companies, maintenance-tasks)
 });

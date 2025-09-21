@@ -26,14 +26,23 @@ class ReportController extends Controller
      */
     public function improvements(Entity $entity)
     {
-        // 1. Autorización: Nos aseguramos de que el usuario sea el dueño de la entidad.
+        // 1. Autorización
         $this->authorize('view', $entity);
 
-        // 2. Llamamos al servicio para que haga todo el trabajo pesado.
+        // 2. Verificación de datos de facturación
+        $lastInvoice = $entity->supplies
+            ->flatMap->contracts
+            ->flatMap->invoices
+            ->sortByDesc('end_date')
+            ->first();
+
+        $hasBillingData = $lastInvoice && $lastInvoice->total_energy_consumed_kwh > 0;
+
+        // 3. Llamada al servicio para obtener oportunidades
         $opportunities = $this->analysisService->findAllOpportunities($entity);
 
-        // 3. Pasamos los resultados a la vista.
-        return view('reports.improvements', compact('entity', 'opportunities'));
+        // 4. Pasamos todos los datos a la vista
+        return view('reports.improvements', compact('entity', 'opportunities', 'hasBillingData'));
     }
 
     /**
