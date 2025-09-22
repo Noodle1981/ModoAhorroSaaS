@@ -31,7 +31,7 @@ class SupplyController extends Controller
     public function show(Supply $supply)
     {
         $this->authorize('view', $supply);
-        $supply->load('entity', 'contracts.utilityCompany');
+        $supply->load('entity', 'contracts.utilityCompany', 'contracts.invoices');
         return view('supplies.show', compact('supply'));
     }
 

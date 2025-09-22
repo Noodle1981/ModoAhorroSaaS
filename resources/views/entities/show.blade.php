@@ -8,7 +8,20 @@
         <h3>Análisis del Período Activo</h3>
         
         @if($periodSummary->real_consumption === null)
-            <p>Aún no has cargado ninguna factura. <a href="#">Carga tu primera factura</a> para activar el análisis.</p>
+            @php
+                $firstSupply = $entity->supplies->first();
+                $firstContract = $firstSupply?->contracts->where('is_active', true)->first() ?? $firstSupply?->contracts->first();
+            @endphp
+            <p>Aún no has cargado ninguna factura.
+                @if ($firstContract)
+                    <a href="{{ route('contracts.invoices.create', $firstContract) }}" class="text-blue-600 hover:underline">Carga tu primera factura</a>
+                @elseif ($firstSupply)
+                    <a href="{{ route('supplies.contracts.create', $firstSupply) }}" class="text-blue-600 hover:underline">Primero, crea un contrato para tu suministro</a>
+                @else
+                    <a href="{{ route('entities.supplies.create', $entity) }}" class="text-blue-600 hover:underline">Primero, añade un punto de suministro</a>
+                @endif
+                para activar el análisis.
+            </p>
         @else
             <p style="text-align: center; font-weight: bold; margin-bottom: 20px;">
                 Período analizado: {{ $periodSummary->period_label }} ({{ $periodSummary->period_days }} días)
