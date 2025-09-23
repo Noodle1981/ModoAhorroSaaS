@@ -55,9 +55,13 @@
                                 $ {{ number_format($invoice->total_amount, 2, ',', '.') }}
                             </td>
                             <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">
-                                <a href="{{ route('invoices.show', $invoice) }}">Ver</a> |
-                                <a href="{{ route('invoices.edit', $invoice) }}">Editar</a>
-                                <!-- Formulario de borrado de factura iría aquí -->
+                                <a href="{{ route('invoices.show', $invoice) }}" style="text-decoration: none; color: #007bff; margin-right: 10px;">Ver</a>
+                                <a href="{{ route('invoices.edit', $invoice) }}" style="text-decoration: none; color: #ffc107; margin-right: 10px;">Editar</a>
+                                <form action="{{ route('invoices.destroy', $invoice) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta factura? Esta acción no se puede deshacer.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" style="background: none; border: none; color: #dc3545; cursor: pointer; text-decoration: underline;">Eliminar</button>
+                                </form>
                             </td>
                         </tr>
                     @endforeach

@@ -13,11 +13,16 @@ La aplicación también cuenta con un panel de administración para "Gestores", 
 *   **Autenticación de Usuarios:** Sistema completo de registro, inicio y cierre de sesión.
 *   **Gestión de Perfil:** Los usuarios pueden editar su información personal.
 *   **Gestión de Entidades y Suministros:** CRUD completo para propiedades y sus puntos de suministro.
+    *   **Visualización Mejorada de Entidades:** La página de detalles de la entidad (`/entities/{id}`) ha sido significativamente mejorada visualmente y ahora muestra claramente las propiedades de la entidad y permite la gestión completa (CRUD) de sus equipos asociados.
+    *   **Manejo de Detalles de Entidad:** Se ha mejorado la presentación de los detalles adicionales de la entidad, especialmente para estructuras de datos complejas como las habitaciones, mostrándolas de forma legible.
 *   **Gestión de Contratos y Facturas:** Permite registrar contratos y facturas de compañías eléctricas.
+    *   **Edición de Facturas:** La opción para editar facturas ya está disponible en la página de detalles del contrato, permitiendo corregir errores en los datos cargados.
 *   **Inventario de Equipos Dinámico:**
     *   Formulario de creación de equipos con lógica condicional avanzada.
     *   Menús desplegables en cascada (Categoría -> Tipo de Equipo).
     *   Campos que aparecen o se ocultan según las propiedades del equipo (ej: la ubicación no se pide para equipos portátiles).
+    *   **Entrada de Uso Flexible:** Ahora permite introducir el tiempo de uso en **horas** (con decimales) o en **minutos** (para usos menores a una hora) mediante un selector interactivo.
+    *   **Opción "No se usó":** Se ha añadido una casilla para indicar si un equipo no fue utilizado durante el período, simplificando la entrada de datos.
     *   Entrada de tiempo de uso adaptable y cálculo opcional de **consumo en standby**.
 *   **Sistema de Historial y Snapshots de Uso:**
     *   La aplicación ya no es "amnésica". Se ha implementado una arquitectura que guarda un "snapshot" (una foto) del uso del inventario para cada período de facturación.
@@ -33,6 +38,13 @@ La aplicación también cuenta con un panel de administración para "Gestores", 
     *   **Guía al Usuario:** La interfaz ahora guía activamente al usuario para que complete los datos necesarios. Si una entidad no tiene un punto de suministro o un contrato, los enlaces para "añadir factura" se transforman inteligentemente para llevar al usuario al formulario de creación de suministros o contratos, evitando así callejones sin salida.
     *   **Centro de Gestión de Suministros:** La página de detalles de un suministro se ha rediseñado para ser un centro de operaciones de facturación. Ahora incluye un botón para añadir facturas directamente al contrato activo y un historial completo de todas las facturas cargadas para ese suministro.
 
+## Correcciones y Mejoras Recientes
+
+*   **Resolución de Errores de Carga de Facturas:** Se corrigió un error que impedía la carga de facturas debido a un método `create` faltante en `UsageSnapshotController`.
+*   **Uso Correcto de Carbon:** Se solucionó el error `Class "App\Http\Controllers\Carbon\Carbon" not found` en `EntityController` mediante la importación adecuada de la clase `Carbon`.
+*   **Relación de Equipos de Entidad:** Se corrigió el error `BadMethodCallException: Call to undefined method App\Models\Entity::entityEquipment()` en `InventoryAnalysisService` ajustando el nombre de la relación a `entityEquipments`.
+*   **Mejoras Visuales Generales:** Se aplicaron estilos de Tailwind CSS más detallados y consistentes en varias secciones, especialmente en la página de detalles de la entidad, para una apariencia más atractiva y alineada con el diseño del proyecto.
+
 ## Etapas Futuras
 
 *   **Dashboard Histórico:** Aprovechar el nuevo sistema de snapshots para construir un dashboard con gráficos que muestren la evolución del consumo real vs. el estimado a lo largo del tiempo.
@@ -42,7 +54,7 @@ La aplicación también cuenta con un panel de administración para "Gestores", 
 ## Tecnologías Utilizadas
 
 *   **Backend:** Laravel 11
-*   **Frontend:** Vite (con una implementación básica de Blade y JavaScript, pendiente de rediseño con un framework como Vue/React o mejora con Tailwind CSS).
+*   **Frontend:** Vite (con una implementación robusta de Blade, JavaScript y **Tailwind CSS** para el estilizado).
 *   **Base de Datos:** SQLite (configurado por defecto para desarrollo local).
 *   **Versión de PHP:** 8.2 o superior
 

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Carbon;
+
 use App\Http\Requests\StoreEntityRequest;
 use App\Http\Requests\UpdateEntityRequest;
 use App\Models\Entity;
@@ -70,7 +72,7 @@ public function show(Entity $entity, InventoryAnalysisService $analysisService)
     // 2. Si la factura EXISTE, hacemos el análisis para su período.
     if ($lastInvoice) {
         // Calculamos cuántos días tiene el período de la factura
-        $periodDays = Carbon\Carbon::parse($lastInvoice->start_date)->diffInDays($lastInvoice->end_date) + 1;
+        $periodDays = Carbon::parse($lastInvoice->start_date)->diffInDays($lastInvoice->end_date) + 1;
 
         // Llamamos a nuestro nuevo método del servicio para este período
         $inventoryReportForPeriod = $analysisService->calculateEnergyProfileForPeriod($entity, $periodDays);
