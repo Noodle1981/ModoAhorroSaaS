@@ -4,13 +4,12 @@ Modo Ahorro es una aplicación web diseñada para ayudar a los usuarios a compre
 
 ## Contexto del Proyecto
 
-El objetivo principal de este proyecto es ofrecer una herramienta intuitiva que centralice toda la información energética de un usuario. Desde el detalle de sus contratos de suministro hasta el consumo de cada electrodoméstico, Modo Ahorro busca empoderar al usuario con datos claros y accionables para tomar decisiones informadas sobre su uso de la energía.
-
-La aplicación también cuenta con un panel de administración para "Gestores", diseñado para que personal de la empresa pueda supervisar a los clientes y gestionar los catálogos de la aplicación.
+El objetivo principal de este proyecto es ofrecer una herramienta intuitiva que centralice toda la información energética de una empresa o usuario individual. Desde el detalle de sus contratos de suministro hasta el consumo de cada electrodoméstico, Modo Ahorro busca empoderar a las empresas y usuarios con datos claros y accionables para tomar decisiones informadas sobre su uso de la energía. Cada usuario gestiona su propia empresa y sus datos energéticos asociados.
 
 ## Funcionalidades Implementadas
 
 *   **Autenticación de Usuarios:** Sistema completo de registro, inicio y cierre de sesión.
+    *   **Registro Mejorado:** Durante el registro, cada nuevo usuario crea automáticamente una empresa asociada y selecciona su provincia y localidad, sentando las bases para una gestión energética personalizada.
 *   **Gestión de Perfil:** Los usuarios pueden editar su información personal.
 *   **Gestión de Entidades y Suministros:** CRUD completo para propiedades y sus puntos de suministro.
     *   **Visualización Mejorada de Entidades:** La página de detalles de la entidad (`/entities/{id}`) ha sido significativamente mejorada visualmente y ahora muestra claramente las propiedades de la entidad y permite la gestión completa (CRUD) de sus equipos asociados.
@@ -33,7 +32,7 @@ La aplicación también cuenta con un panel de administración para "Gestores", 
     *   Cálculo del perfil de consumo energético anual estimado basado en el inventario.
     *   Generación de un informe de oportunidades de mejora con 3 estados por equipo: "Equipo Deficiente" (con recomendación), "Equipo Eficiente" y "Equipo sin Comparativa".
     *   **Log de Faltantes:** Creación de un log (`mejoras_faltantes.log`) que registra automáticamente los equipos que no se pudieron comparar por falta de alternativas en el catálogo, facilitando la mejora continua del motor.
-*   **Panel de Gestor:** Sección privada para administradores (`/gestor`) con gestión de clientes y catálogos de la aplicación.
+
 *   **Flujo de Gestión de Facturas Mejorado:**
     *   **Guía al Usuario:** La interfaz ahora guía activamente al usuario para que complete los datos necesarios. Si una entidad no tiene un punto de suministro o un contrato, los enlaces para "añadir factura" se transforman inteligentemente para llevar al usuario al formulario de creación de suministros o contratos, evitando así callejones sin salida.
     *   **Centro de Gestión de Suministros:** La página de detalles de un suministro se ha rediseñado para ser un centro de operaciones de facturación. Ahora incluye un botón para añadir facturas directamente al contrato activo y un historial completo de todas las facturas cargadas para ese suministro.

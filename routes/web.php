@@ -20,11 +20,7 @@ use App\Http\Controllers\SolarController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UsageSnapshotController; // <-- IMPORT NUEVO AÑADIDO
 
-// Controladores del Panel de Gestor
-use App\Http\Controllers\Gestor\DashboardController as GestorDashboardController;
-use App\Http\Controllers\Gestor\ClientController;
-use App\Http\Controllers\Gestor\PlanController;
-use App\Http\Controllers\Gestor\EquipmentTypeController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -83,16 +79,3 @@ Route::middleware(['auth'])->group(function () {
 });
 
 
-// --- RUTAS DE GESTOR (Requieren rol específico) ---
-Route::middleware(['auth', 'role:gestor'])->prefix('gestor')->name('gestor.')->group(function () {
-    
-    Route::get('/dashboard', [GestorDashboardController::class, 'index'])->name('dashboard');
-    
-    // Gestión de Clientes
-    Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
-    Route::get('/clients/{user}', [ClientController::class, 'show'])->name('clients.show');
-    
-    // Gestión de Catálogos
-    Route::resource('plans', PlanController::class)->except(['show']);
-    Route::resource('equipment-types', EquipmentTypeController::class)->except(['show']);
-});

@@ -14,6 +14,8 @@ class Company extends Model
         'tax_id',
         'address',
         'phone',
+        'province_id',
+        'locality_id',
     ];
 
     /**
