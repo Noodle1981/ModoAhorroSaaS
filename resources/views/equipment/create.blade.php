@@ -200,15 +200,29 @@
                         }
                     }
 
-                    if (selectedType.is_portable) {
-                        locationWrapper.style.display = 'none';
-                        locationSelect.required = false;
-                        locationSelect.value = '';
-    
-                    } else {
-                        locationWrapper.style.display = 'block';
-                        locationSelect.required = true;
-                    }
+                    <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                Añadir Equipo {{ $type === 'portable' ? 'Portátil' : 'Fijo' }} a: {{ $entity->name }}
+            </h2>
+...                        <!-- 3. Ubicación -->
+                        <div id="location-wrapper">
+                            <label for="location">3. Asigna una Ubicación</label>
+                            @if ($type === 'portable')
+                                <input type="text" id="location_display" value="Portátil (por defecto)" style="width: 100%; margin-top: 0.25rem; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.5rem; background-color: #e9ecef;" disabled>
+                                <input type="hidden" name="location" value="Portátil">
+                            @else
+                                <select id="location" name="location" required style="width: 100%; margin-top: 0.25rem; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.5rem;">
+                                    <option value="">-- Selecciona una ubicación --</option>
+                                    @forelse ($locations as $locationName)
+                                        <option value="{{ $locationName }}" {{ old('location') == $locationName ? 'selected' : '' }}>
+                                            {{ $locationName }}
+                                        </option>
+                                    @empty
+                                        <option value="" disabled>Primero debes definir las habitaciones en la entidad.</option>
+                                    @endforelse
+                                </select>
+                            @endif
+                        </div>
+...
 
                     if (selectedType.standby_power_watts && parseFloat(selectedType.standby_power_watts) > 0 && defaultMinutes < 1440) {
                         standbyWrapper.style.display = 'block';

@@ -21,61 +21,69 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('snapshots.store', $invoice) }}" method="POST">
-                        @csrf
+                    @if($equipments->isNotEmpty())
+                        <form action="{{ route('snapshots.store', $invoice) }}" method="POST">
+                            @csrf
 
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Equipo</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ubicación</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width: 250px;">Uso Diario Promedio</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    @forelse ($equipments as $index => $equipment)
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
                                         <tr>
-                                            <td class="px-6 py-4">
-                                                <div class="text-sm font-medium text-gray-900">{{ $equipment->custom_name ?? $equipment->equipmentType->name }}</div>
-                                                <input type="hidden" name="snapshots[{{ $index }}][entity_equipment_id]" value="{{ $equipment->id }}">
-                                            </td>
-                                            <td class="px-6 py-4 text-sm text-gray-500">{{ $equipment->location ?? 'Portátil' }}</td>
-                                            <td class="px-6 py-4">
-                                                @php
-                                                    $defaultMinutes = $equipment->previous_usage_minutes;
-                                                    $showHours = $defaultMinutes >= 60;
-                                                @endphp
-
-                                                <div class="flex items-center space-x-2">
-                                                    <input type="number" 
-                                                           name="{{ $showHours ? 'snapshots['.$index.'][avg_daily_use_hours]' : 'snapshots['.$index.'][avg_daily_use_minutes]' }}"
-                                                           value="{{ $showHours ? round($defaultMinutes / 60, 2) : $defaultMinutes }}"
-                                                           min="0"
-                                                           step="{{ $showHours ? '0.01' : '1' }}"
-                                                           class="block w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-300"
-                                                           required>
-                                                    <span>{{ $showHours ? 'horas' : 'minutos' }}</span>
-                                                </div>
-                                            </td>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Equipo</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ubicación</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width: 250px;">Uso Diario Promedio</th>
                                         </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">
-                                                No tienes equipos registrados para esta entidad.
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        @foreach ($equipments as $index => $equipment)
+                                            <tr>
+                                                <td class="px-6 py-4">
+                                                    <div class="text-sm font-medium text-gray-900">{{ $equipment->custom_name ?? $equipment->equipmentType->name }}</div>
+                                                    <input type="hidden" name="snapshots[{{ $index }}][entity_equipment_id]" value="{{ $equipment->id }}">
+                                                </td>
+                                                <td class="px-6 py-4 text-sm text-gray-500">{{ $equipment->location ?? 'Portátil' }}</td>
+                                                <td class="px-6 py-4">
+                                                    @php
+                                                        $defaultMinutes = $equipment->previous_usage_minutes;
+                                                        $showHours = $defaultMinutes >= 60;
+                                                    @endphp
 
-                        <div class="flex items-center justify-end mt-6">
-                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border rounded-md font-semibold text-xs text-white uppercase hover:bg-gray-700">
-                                Guardar Uso y Finalizar
-                            </button>
+                                                    <div class="flex items-center space-x-2">
+                                                        <input type="number" 
+                                                               name="{{ $showHours ? 'snapshots['.$index.'][avg_daily_use_hours]' : 'snapshots['.$index.'][avg_daily_use_minutes]' }}"
+                                                               value="{{ $showHours ? round($defaultMinutes / 60, 2) : $defaultMinutes }}"
+                                                               min="0"
+                                                               step="{{ $showHours ? '0.01' : '1' }}"
+                                                               class="block w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-300"
+                                                               required>
+                                                        <span>{{ $showHours ? 'horas' : 'minutos' }}</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="flex items-center justify-end mt-6">
+                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border rounded-md font-semibold text-xs text-white uppercase hover:bg-gray-700">
+                                    Guardar Uso y Finalizar
+                                </button>
+                            </div>
+                        </form>
+                    @else
+                        <div class="text-center py-10 px-6 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h3 class="text-lg font-medium text-gray-900">¡Casi listo! El siguiente paso es crear tu inventario.</h3>
+                            <p class="mt-2 text-sm text-gray-600">
+                                Para poder analizar tu consumo, primero necesitas registrar los equipos eléctricos de esta propiedad ({{ $invoice->contract->supply->entity->name }}).
+                            </p>
+                            <div class="mt-6">
+                                <a href="{{ route('entities.show', $invoice->contract->supply->entity) }}" class="inline-flex items-center px-6 py-3 bg-indigo-600 border border-transparent rounded-md font-semibold text-white uppercase tracking-widest hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:ring focus:ring-indigo-200 active:bg-indigo-600 transition">
+                                    Ir a la Entidad para Añadir Equipos
+                                </a>
+                            </div>
                         </div>
-                    </form>
+                    @endif
                 </div>
             </div>
         </div>

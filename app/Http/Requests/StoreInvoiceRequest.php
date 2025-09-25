@@ -26,19 +26,19 @@ class StoreInvoiceRequest extends FormRequest
             'invoice_date' => ['nullable', 'date'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
-            'total_energy_consumed_kwh' => ['required', 'numeric', 'min:0'],
-            'total_amount' => ['required', 'numeric', 'min:0'],
+            'total_energy_consumed_kwh' => ['required', 'decimal:0,4', 'min:0'],
+            'total_amount' => ['required', 'decimal:0,4', 'min:0'],
             
             // Campos opcionales
-            'energy_consumed_p1_kwh' => ['nullable', 'numeric', 'min:0'],
-            'energy_consumed_p2_kwh' => ['nullable', 'numeric', 'min:0'],
-            'energy_consumed_p3_kwh' => ['nullable', 'numeric', 'min:0'],
-            'cost_for_energy' => ['nullable', 'numeric', 'min:0'],
-            'cost_for_power' => ['nullable', 'numeric', 'min:0'],
-            'taxes' => ['nullable', 'numeric', 'min:0'],
-            'other_charges' => ['nullable', 'numeric', 'min:0'],
-            'total_energy_injected_kwh' => ['nullable', 'numeric', 'min:0'],
-            'surplus_compensation_amount' => ['nullable', 'numeric', 'min:0'],
+            'energy_consumed_p1_kwh' => ['nullable', 'decimal:0,4', 'min:0'],
+            'energy_consumed_p2_kwh' => ['nullable', 'decimal:0,4', 'min:0'],
+            'energy_consumed_p3_kwh' => ['nullable', 'decimal:0,4', 'min:0'],
+            'cost_for_energy' => ['nullable', 'decimal:0,4', 'min:0'],
+            'cost_for_power' => ['nullable', 'decimal:0,4', 'min:0'],
+            'taxes' => ['nullable', 'decimal:0,4', 'min:0'],
+            'other_charges' => ['nullable', 'decimal:0,4', 'min:0'],
+            'total_energy_injected_kwh' => ['nullable', 'decimal:0,4', 'min:0'],
+            'surplus_compensation_amount' => ['nullable', 'decimal:0,4', 'min:0'],
         ];
     }
 }

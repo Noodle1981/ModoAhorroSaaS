@@ -88,6 +88,8 @@ public function show(Entity $entity, InventoryAnalysisService $analysisService)
     
     // --- FIN DE LA LÓGICA DE PERÍODO ---
 
+    $entity->load('entityEquipments.equipmentType'); // Eager load equipments and their types
+
     return view('entities.show', [
         'entity' => $entity,
         'periodSummary' => (object) $periodSummary, // Lo convertimos a objeto para un acceso más fácil

@@ -6,6 +6,25 @@ Modo Ahorro es una aplicación web diseñada para ayudar a los usuarios a compre
 
 El objetivo principal de este proyecto es ofrecer una herramienta intuitiva que centralice toda la información energética de una empresa o usuario individual. Desde el detalle de sus contratos de suministro hasta el consumo de cada electrodoméstico, Modo Ahorro busca empoderar a las empresas y usuarios con datos claros y accionables para tomar decisiones informadas sobre su uso de la energía. Cada usuario gestiona su propia empresa y sus datos energéticos asociados.
 
+## Flujo de Valor para el Usuario
+
+La aplicación está diseñada para transformar datos brutos (facturas de luz) en inteligencia accionable. El ciclo de valor para el usuario sigue un modelo claro y potente:
+
+1.  **Dato Crudo (La Factura):** El proceso comienza cuando el usuario carga una factura. Esta es la "semilla" que proporciona dos datos fundamentales e irrefutables: el **consumo total (kWh)** y el **costo total ($)**.
+
+2.  **Modelo (El "Gemelo Digital"):** Al combinar los datos de la factura con el inventario de equipos y sus patrones de uso, la aplicación crea un **perfil energético** o un "gemelo digital" del hogar o negocio del usuario. El consumo deja de ser un número abstracto y se convierte en una entidad tangible y detallada.
+
+3.  **Análisis (La IA como "Entrenador de Eficiencia"):** Con un perfil energético establecido, el SaaS deja de ser un simple repositorio de datos y se convierte en un **entrenador personal de eficiencia energética**. Analiza constantemente este perfil para encontrar oportunidades de optimización.
+
+4.  **Valor (Recomendaciones Accionables):** El sistema materializa su análisis en forma de recomendaciones claras y específicas que aportan valor directo al usuario:
+    *   **Cambio de Actitudes:** Sugerencias sobre cómo y cuándo usar los equipos.
+    *   **Cambio de Equipos:** Análisis de costo-beneficio para reemplazar aparatos ineficientes.
+    *   **Mantenimientos Preventivos:** Alertas para mantener los equipos en su punto óptimo de eficiencia.
+
+5.  **Resultado (Ahorro y Optimización):** El resultado final de este ciclo es el empoderamiento del usuario, que ahora tiene el conocimiento y las herramientas para reducir su consumo, bajar sus costos y operar de manera más sostenible.
+
+Este ciclo se vuelve más inteligente con cada factura cargada, aprendiendo de los patrones estacionales y mejorando la precisión de sus recomendaciones a lo largo del tiempo.
+
 ## Funcionalidades Implementadas
 
 *   **Autenticación de Usuarios:** Sistema completo de registro, inicio y cierre de sesión.
@@ -36,6 +55,13 @@ El objetivo principal de este proyecto es ofrecer una herramienta intuitiva que 
 *   **Flujo de Gestión de Facturas Mejorado:**
     *   **Guía al Usuario:** La interfaz ahora guía activamente al usuario para que complete los datos necesarios. Si una entidad no tiene un punto de suministro o un contrato, los enlaces para "añadir factura" se transforman inteligentemente para llevar al usuario al formulario de creación de suministros o contratos, evitando así callejones sin salida.
     *   **Centro de Gestión de Suministros:** La página de detalles de un suministro se ha rediseñado para ser un centro de operaciones de facturación. Ahora incluye un botón para añadir facturas directamente al contrato activo y un historial completo de todas las facturas cargadas para ese suministro.
+*   **Formulario de Contrato Mejorado:** Se añadió una sección para la potencia contratada (P1, P2, P3) con un checkbox para indicar si la factura no especifica la potencia, rellenando 0 kW por defecto y deshabilitando los campos. Incluye una alerta informativa sobre la optimización de la potencia.
+*   **Validación de Facturas:** Se corrigió la validación de campos numéricos (consumo, costo, impuestos) en los formularios de creación y edición de facturas para aceptar correctamente valores decimales (hasta 4 cifras).
+*   **Gestión de Ubicaciones de Equipos:** El formulario de creación de equipos ahora permite asignar una ubicación (habitación) de la entidad.
+*   **Flujo de Equipos Fijos vs. Portátiles:**
+    *   En la página de detalles de la entidad, el botón "Agregar Nuevo Equipo" ahora es un desplegable que permite elegir entre "Equipo Fijo" y "Equipo Portátil".
+    *   El formulario de creación de equipos se adapta: para equipos fijos, la ubicación es requerida y seleccionable; para equipos portátiles, la ubicación se establece automáticamente como "Portátil" y el campo se deshabilita.
+    *   La tabla de equipos en la vista de la entidad ahora incluye una columna "Portátil" que indica si el equipo es de tipo portátil.
 
 ## Correcciones y Mejoras Recientes
 
@@ -43,6 +69,8 @@ El objetivo principal de este proyecto es ofrecer una herramienta intuitiva que 
 *   **Uso Correcto de Carbon:** Se solucionó el error `Class "App\Http\Controllers\Carbon\Carbon" not found` en `EntityController` mediante la importación adecuada de la clase `Carbon`.
 *   **Relación de Equipos de Entidad:** Se corrigió el error `BadMethodCallException: Call to undefined method App\Models\Entity::entityEquipment()` en `InventoryAnalysisService` ajustando el nombre de la relación a `entityEquipments`.
 *   **Mejoras Visuales Generales:** Se aplicaron estilos de Tailwind CSS más detallados y consistentes en varias secciones, especialmente en la página de detalles de la entidad, para una apariencia más atractiva y alineada con el diseño del proyecto.
+*   **Resolución de `BadMethodCallException`:** Se corrigieron múltiples errores `BadMethodCallException` relacionados con llamadas a relaciones en singular (`entityEquipment()`) en lugar de plural (`entityEquipments()`) en `UsageSnapshotController` y `EntityEquipmentController`.
+*   **UX de Snapshots de Uso:** La página de confirmación de uso (`snapshots/create`) ahora muestra un mensaje claro y un enlace para añadir equipos si la entidad no tiene ninguno registrado, evitando un formulario vacío.
 
 ## Etapas Futuras
 

@@ -32,18 +32,7 @@
                         </ul>
                     @endif
 
-                    <div class="mt-6 flex space-x-4">
-                        <a href="{{ route('entities.edit', $entity) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150">
-                            Editar Entidad
-                        </a>
-                        <form action="{{ route('entities.destroy', $entity) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta entidad? Todos los suministros y equipos asociados también serán eliminados.');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 disabled:opacity-25 transition ease-in-out duration-150">
-                                Eliminar Entidad
-                            </button>
-                        </form>
-                    </div>
+                    
                 </div>
             </div>
 
@@ -100,9 +89,40 @@
             <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Equipos de la Entidad</h3>
-                    <a href="{{ route('entities.equipment.create', $entity) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
-                        Agregar Nuevo Equipo
-                    </a>
+                    <div class="relative inline-block text-left">
+                        <button type="button" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-green-600 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-green-500" id="menu-button" aria-expanded="true" aria-haspopup="true">
+                            Agregar Nuevo Equipo
+                            <!-- Heroicon name: solid/chevron-down -->
+                            <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+
+                        <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="menu-button" tabindex="-1" id="equipment-add-dropdown">
+                            <div class="py-1" role="none">
+                                <a href="{{ route('entities.equipment.create', ['entity' => $entity, 'type' => 'fixed']) }}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" tabindex="-1" id="menu-item-0">Equipo Fijo</a>
+                                <a href="{{ route('entities.equipment.create', ['entity' => $entity, 'type' => 'portable']) }}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" tabindex="-1" id="menu-item-1">Equipo Portátil</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const menuButton = document.getElementById('menu-button');
+                            const dropdown = document.getElementById('equipment-add-dropdown');
+
+                            menuButton.addEventListener('click', function() {
+                                dropdown.classList.toggle('hidden');
+                            });
+
+                            // Close the dropdown if the user clicks outside of it
+                            window.addEventListener('click', function(event) {
+                                if (!menuButton.contains(event.target) && !dropdown.contains(event.target)) {
+                                    dropdown.classList.add('hidden');
+                                }
+                            });
+                        });
+                    </script>
                 </div>
 
                 @if($entity->entityEquipments->isEmpty())
@@ -116,6 +136,7 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tipo</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ubicación</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Potencia (W)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Portátil</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
                                 </tr>
                             </thead>
@@ -126,6 +147,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $equipment->equipmentType->name }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $equipment->location ?? 'N/A' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $equipment->power_watts_override ?? $equipment->equipmentType->default_power_watts }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $equipment->equipmentType->is_portable ? 'Sí' : 'No' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <a href="{{ route('equipment.edit', $equipment) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-600 mr-3">Editar</a>
                                             <form action="{{ route('equipment.destroy', $equipment) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este equipo?');" class="inline">

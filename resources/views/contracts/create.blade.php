@@ -42,14 +42,32 @@
             </div>
 
             <div>
-                <label for="contracted_power_kw_p1">Potencia Contratada (kW)</label><br>
-                <input type="number" step="0.01" id="contracted_power_kw_p1" name="contracted_power_kw_p1" value="{{ old('contracted_power_kw_p1') }}" style="width: 100%; padding: 8px;">
+                <label for="contracted_power_kw_p1">Potencia Contratada P1 (kW)</label><br>
+                <input type="number" step="0.01" id="contracted_power_kw_p1" name="contracted_power_kw_p1" value="{{ old('contracted_power_kw_p1') }}" style="width: 100%; padding: 8px;" class="power-input">
+            </div>
+            <div>
+                <label for="contracted_power_kw_p2">Potencia Contratada P2 (kW)</label><br>
+                <input type="number" step="0.01" id="contracted_power_kw_p2" name="contracted_power_kw_p2" value="{{ old('contracted_power_kw_p2') }}" style="width: 100%; padding: 8px;" class="power-input">
+            </div>
+            <div>
+                <label for="contracted_power_kw_p3">Potencia Contratada P3 (kW)</label><br>
+                <input type="number" step="0.01" id="contracted_power_kw_p3" name="contracted_power_kw_p3" value="{{ old('contracted_power_kw_p3') }}" style="width: 100%; padding: 8px;" class="power-input">
+            </div>
+        </div>
+
+        <div style="margin-top: 15px; padding: 15px; border: 1px solid #bee5eb; border-radius: 5px; background-color: #d1ecf1; color: #0c5460;">
+            <p style="margin: 0;"><strong>Sugerencia:</strong> Conocer y optimizar tu potencia contratada puede generar ahorros significativos. Si no la conoces, te recomendamos consultarla con tu compañía eléctrica.</p>
+            <div style="margin-top: 10px;">
+                <input type="checkbox" id="noPowerInfoCheck" style="vertical-align: middle;">
+                <label for="noPowerInfoCheck" style="vertical-align: middle;">
+                    Mi factura no especifica la potencia contratada (se establecerá en 0 kW).
+                </label>
             </div>
         </div>
 
         <div style="margin-top: 15px;">
             <input type="hidden" name="is_active" value="0">
-            <input type="checkbox" id="is_active" name="is_active" value="1" checked>
+            <input type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}>
             <label for="is_active">Marcar como contrato activo</label>
         </div>
         
@@ -60,4 +78,37 @@
             <a href="{{ route('supplies.show', $supply) }}" style="margin-left: 10px;">Cancelar</a>
         </div>
     </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const checkbox = document.getElementById('noPowerInfoCheck');
+            const powerInputs = document.querySelectorAll('.power-input');
+
+            // Función para actualizar el estado de los inputs
+            function updatePowerInputs() {
+                powerInputs.forEach(function (input) {
+                    if (checkbox.checked) {
+                        if (input.dataset.originalValue === undefined) {
+                            input.dataset.originalValue = input.value;
+                        }
+                        input.value = '0';
+                        input.readOnly = true;
+                        input.style.backgroundColor = '#e9ecef';
+                    } else {
+                        // Restaurar valor si existe, si no, dejar vacío
+                        input.value = input.dataset.originalValue || '';
+                        input.readOnly = false;
+                        input.style.backgroundColor = '#fff';
+                    }
+                });
+            }
+
+            checkbox.addEventListener('change', updatePowerInputs);
+
+            // Para manejar casos de recarga de página con errores de validación
+            if (document.getElementById('noPowerInfoCheck').checked) {
+                 updatePowerInputs();
+            }
+        });
+    </script>
 </x-app-layout>

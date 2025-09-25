@@ -21,7 +21,7 @@ class UsageSnapshotController extends Controller
         $entity = $invoice->contract->supply->entity;
 
         // 3. Obtenemos el inventario de equipos de esa entidad.
-        $equipments = $entity->entityEquipment()->with('equipmentType')->get()->map(function ($equipment) use ($invoice) {
+        $equipments = $entity->entityEquipments()->with('equipmentType')->get()->map(function ($equipment) use ($invoice) {
             
             // 4. Buscamos el último uso registrado para este equipo para pre-rellenar el campo.
             $lastSnapshot = EquipmentUsageSnapshot::where('entity_equipment_id', $equipment->id)

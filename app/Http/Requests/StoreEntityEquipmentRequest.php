@@ -35,11 +35,17 @@ class StoreEntityEquipmentRequest extends FormRequest
     public function rules(): array
     {
         $equipmentType = EquipmentType::find($this->input('equipment_type_id'));
-        $isPortable = $equipmentType ? $equipmentType->is_portable : false;
+        // $isPortable = $equipmentType ? $equipmentType->is_portable : false; // No longer directly used for location requiredIf
+
+        $equipmentTypeFromUrl = $this->query('type'); // 'fixed' or 'portable'
 
         return [
             'equipment_type_id' => ['required', 'exists:equipment_types,id'],
-            'location' => [Rule::requiredIf(!$isPortable), 'string', 'max:100'],
+            'location' => [
+                Rule::requiredIf($equipmentTypeFromUrl === 'fixed'), // Required only for fixed equipment
+                'string',
+                'max:100'
+            ],
             'quantity' => ['required', 'integer', 'min:1'],
             'custom_name' => ['nullable', 'string', 'max:100'],
             'power_watts_override' => ['required', 'integer', 'min:0'],
