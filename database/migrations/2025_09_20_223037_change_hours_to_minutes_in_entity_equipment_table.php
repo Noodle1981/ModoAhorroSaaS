@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('entity_equipment', function (Blueprint $table) {
+        Schema::table('entity_equipments', function (Blueprint $table) {
             $table->renameColumn('avg_daily_use_hours_override', 'avg_daily_use_minutes_override');
         });
 
-        Schema::table('entity_equipment', function (Blueprint $table) {
+        Schema::table('entity_equipments', function (Blueprint $table) {
             $table->integer('avg_daily_use_minutes_override')->nullable()->change();
         });
     }
@@ -25,11 +25,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('entity_equipment', function (Blueprint $table) {
+        Schema::table('entity_equipments', function (Blueprint $table) {
             $table->decimal('avg_daily_use_minutes_override', 4, 2)->nullable()->change();
         });
 
-        Schema::table('entity_equipment', function (Blueprint $table) {
+        Schema::table('entity_equipments', function (Blueprint $table) {
             $table->renameColumn('avg_daily_use_minutes_override', 'avg_daily_use_hours_override');
         });
     }

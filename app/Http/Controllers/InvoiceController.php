@@ -84,10 +84,10 @@ class InvoiceController extends Controller
     {
         $this->authorize('delete', $invoice);
         
-        $contract = $invoice->contract; // Guardamos el contrato para la redirección
+        $entity = $invoice->contract->supply->entity; // Guardamos la entidad para la redirección
         $invoice->delete();
 
-        return redirect()->route('contracts.show', $contract)
+        return redirect()->route('entities.show', $entity)
                          ->with('success', 'Factura eliminada exitosamente.');
     }
 }

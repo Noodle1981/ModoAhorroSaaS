@@ -36,6 +36,16 @@
                     </select>
                 </div>
                 <div>
+                    <label for="province_id">Provincia</label><br>
+                    <select id="province_id" name="province_id" required style="width: 100%; padding: 8px;">
+                        @foreach ($provinces as $province)
+                            <option value="{{ $province->id }}" {{ old('province_id', $entity->province_id) == $province->id ? 'selected' : '' }}>
+                                {{ $province->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
                     <label for="locality_id">Localidad</label><br>
                     <select id="locality_id" name="locality_id" required style="width: 100%; padding: 8px;">
                         @foreach ($localities as $locality)
@@ -52,6 +62,10 @@
                 <div>
                     <label for="details_occupants_count">Cantidad de Personas</label><br>
                     <input type="number" name="details[occupants_count]" id="details_occupants_count" value="{{ old('details.occupants_count', $entity->details['occupants_count'] ?? 1) }}" min="1" style="width: 100%; padding: 8px;">
+                </div>
+                <div>
+                    <label for="details_surface_area">Superficie en m² (Opcional)</label><br>
+                    <input type="number" name="details[surface_area]" id="details_surface_area" value="{{ old('details.surface_area', $entity->details['surface_area'] ?? null) }}" min="0" style="width: 100%; padding: 8px;">
                 </div>
             </div>
         </div>

@@ -1,101 +1,109 @@
-<?php
+Modelos Actualizados:
 
-use Illuminate\Support\Facades\Route;
+Añadí la relación faltante entre Company y Subscription para que el sistema pueda consultar cuál es el plan activo de una empresa.
+Ajusté el modelo User para facilitar el acceso a esta información.
+Registro de Usuarios Mejorado:
 
-/*
-|--------------------------------------------------------------------------
-| Rutas Web
-|--------------------------------------------------------------------------
-|
-| Aquí es donde registramos todas las rutas para la aplicación.
-| Están agrupadas por funcionalidad y protegidas por middleware cuando es necesario.
-|
-*/
+El controlador de registro ahora asigna automáticamente el plan "Gratis" a la empresa de cada nuevo usuario.
+Política de Autorización Implementada:
 
-// --- Rutas Públicas ---
-// Cualquiera puede acceder a estas rutas, incluso sin iniciar sesión.
-Route::get('/', function () {
-    return view('welcome'); // O tu página de landing/marketing
-})->name('home');
+La lógica de EntityPolicy ya no es un simple return true;. Ahora contiene las reglas del modelo Freemium:
+Verifica el plan activo de la empresa del usuario.
+Impide la creación de nuevas entidades si se ha alcanzado el límite del plan (ej. 1 para el plan gratuito).
+Valida que el tipo de entidad a crear (ej. "Hogar") esté permitido en el plan del usuario.
+Con estos cambios, la lógica de negocio está implementada. Para que funcione correctamente, solo hay que asegurar que en tu tabla plans de la base de datos exista un plan con el nombre "Gratis" que tenga max_entities = 1 y allowed_entity_types = ["hogar"].
+
+Hemos "refundado" esta parte del sistema de una manera robusta y escalable sin desechar el trabajo previo.
 
 
-// --- Rutas de Autenticación ---
-// Laravel Breeze o Jetstream manejan esto automáticamente,
-// pero conceptualmente, estas son las rutas para login, registro, etc.
-// require __DIR__.'/auth.php'; // Así es como lo incluye Laravel Breeze
 
 
-// --- RUTAS PROTEGIDAS (Requieren que el usuario haya iniciado sesión) ---
-Route::middleware(['auth', 'verified'])->group(function () {
-
-    // 1. Dashboard Principal
-    // El punto de entrada a la aplicación después del login.
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
-
-    // 2. Gestión del Perfil de Usuario
-    // Rutas para que el usuario edite su nombre, email, contraseña, etc.
-    // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    // ---------------------------------------------------------------------
-    // GESTIÓN ENERGÉTICA DEL NÚCLEO
-    // ---------------------------------------------------------------------
-
-    // 3. Gestión de Entidades (Hogares, Oficinas, etc.)
-    // Usamos un controlador de recurso para las 7 acciones RESTful (index, create, store, show, edit, update, destroy).
-    Route::resource('entities', \App\Http\Controllers\EntityController::class);
-
-    // 4. Gestión de Suministros, Contratos y Facturas (Rutas Anidadas)
-    // La lógica es: un Suministro pertenece a una Entidad, un Contrato a un Suministro, etc.
-    // La URL refleja esta jerarquía para mayor claridad.
-    Route::resource('entities.supplies', \App\Http\Controllers\SupplyController::class)->shallow();
-    // ->shallow() es un truco útil: las rutas para 'index' y 'create' serán anidadas (ej: /entities/1/supplies/create)
-    // pero las rutas para 'edit', 'show', 'update', 'destroy' no necesitan el prefijo largo (ej: /supplies/5/edit)
-
-    Route::resource('supplies.contracts', \App\Http\Controllers\ContractController::class)->shallow();
-    Route::resource('contracts.invoices', \App\Http\Controllers\InvoiceController::class)->shallow();
-
-    // 5. Gestión de Equipamiento de una Entidad
-    // Los equipos también pertenecen a una entidad.
-    Route::resource('entities.equipment', \App\Http\Controllers\EntityEquipmentController::class)->shallow();
-
-    // ---------------------------------------------------------------------
-    // INTELIGENCIA Y ANÁLISIS
-    // ---------------------------------------------------------------------
-
-    // 6. Recomendaciones y Consejos
-    // Por ahora, una simple vista que muestra todas las recomendaciones aplicables al usuario.
-    Route::get('/recommendations', [\App\Http\Controllers\RecommendationController::class, 'index'])->name('recommendations.index');
-
-    // 7. Gestión de Mantenimiento
-    // Rutas para ver el historial y registrar un nuevo mantenimiento.
-    Route::get('/maintenance', [\App\Http\Controllers\MaintenanceController::class, 'index'])->name('maintenance.index');
-    Route::post('/maintenance', [\App\Http\Controllers\MaintenanceController::class, 'store'])->name('maintenance.store');
-    
-    // 8. Gestión de Paneles Solares
-    // Rutas para ver los detalles de la instalación solar y sus datos de producción.
-    Route::get('/solar', [\App\Http\Controllers\SolarController::class, 'dashboard'])->name('solar.dashboard');
-
-});
-
-
-// --- RUTAS DE GESTOR/ADMINISTRADOR (Requieren rol específico) ---
-// Estas rutas solo serán accesibles para usuarios con el rol 'gestor' o 'admin'.
-// Usamos un prefijo para que todas las URLs empiecen con /gestor/...
-Route::middleware(['auth', 'role:gestor'])->prefix('gestor')->name('gestor.')->group(function () {
-    
-    // Dashboard del Gestor
-    Route::get('/dashboard', [\App\Http\Controllers\Gestor\DashboardController::class, 'index'])->name('dashboard');
-    
-    // Gestión de Clientes
-    Route::get('/clients', [\App\Http\Controllers\Gestor\ClientController::class, 'index'])->name('clients.index');
-    Route::get('/clients/{user}', [\App\Http\Controllers\Gestor\ClientController::class, 'show'])->name('clients.show');
-    
-    // Gestión de Catálogos (Planes, Tipos de Equipos, etc.)
-    Route::resource('plans', \App\Http\Controllers\Gestor\PlanController::class)->except(['show']);
-    Route::resource('equipment-types', \App\Http\Controllers\Gestor\EquipmentTypeController::class)->except(['show']);
-
-});
+--------------------------------------------------------------------------------
+ROADMAP DE RESTRUCTURACIÓN DEL PROYECTO "MODO AHORRO SAAS"
+FASE 1: Cimientos del Sistema (Usuario, Empresa y Ubicación)
+Esta fase establece la arquitectura de la organización y la base geográfica necesaria para las tarifas y el análisis climático.
+Flujo de Trabajo
+Órdenes Específicas para la IA
+Pautas Clave a Tener en Cuenta
+1.1. Creación de Usuarios y Empresas  COMPLETADO
+Implementar la lógica de Registro Mejorado que asegure que cada nuevo usuario cree automáticamente una empresa asociada (company_id).
+Modelo Freemium: El sistema debe restringir a los usuarios gratuitos a una única entidad de tipo "hogar", mientras que los usuarios Premium pueden gestionar múltiples entidades ("casa", "hogar", "comercio").
+1.2. Gestión de Entidades (Propiedades) COMPLETADO
+Implementar el CRUD (Crear, Leer, Actualizar, Borrar) para la tabla entities. Asegurar que la creación de entidades requiera la asignación de una ubicación geográfica precisa (locality_id y province_id).
+Estructura de la Propiedad: Desarrollar la funcionalidad de Configuración de Estructura (definición de habitaciones o áreas) y Información de Ocupación (cantidad de personas u horarios de funcionamiento) para permitir una representación fiel del espacio a auditar.
+1.3. Gestión de Datos Geográficos COMPLETADO
+Asegurar la población y el acceso a la tabla de provinces para que el registro de entidades sea coherente y prepare la futura integración de datos climáticos.
+La selección de provincia y localidad sienta las bases para una gestión energética personalizada.
+FASE 2: Estructura de la Propiedad (Inventario y Uso)
+Esta fase se centra en la creación detallada del inventario de dispositivos, un punto crítico para la precisión del "Gemelo Digital".
+Flujo de Trabajo
+Órdenes Específicas para la IA
+Pautas Clave a Tener en Cuenta
+2.1. Formulario de Equipos COMPLETADO
+Revisar si el el Formulario de creación de equipos con lógica condicional avanzada. Debe utilizar menús desplegables en cascada (Categoría → Tipo de Equipo).
+Tipificación Crítica: El formulario debe distinguir explícitamente entre "Equipo Fijo" y "Equipo Portátil" (is_portable en equipment_types). Para equipos fijos, la asignación de location (habitación) es requerida.
+2.2. Entrada de Uso y Standby COMPLETADO
+Implementar la Entrada de Uso Flexible que permita al usuario ingresar el tiempo en horas (con decimales) o minutos. Permitir la selección de la opción "No se usó".
+Cálculo de Consumo Fantasma: Implementar la entrada de datos para el consumo en standby. La fórmula de cálculo posterior debe sumar el consumo activo y en standby.
+2.3. Eliminación y Reemplazo de Equipos COMPLETADO
+Desarrollar el flujo de eliminación de equipos utilizando softDeletes. Si el equipo es reemplazado, debe enlazar el antiguo con el nuevo mediante replaced_by_equipment_id.
+El uso de softDeletes es esencial, ya que el motor de cálculo debe considerar equipos eliminados para los análisis de períodos pasados.
+FASE 3: Conexión con el Servicio (Contratos y Facturas)
+Se configura el contexto tarifario y se inicia el flujo de datos crudos.
+Flujo de Trabajo
+Órdenes Específicas para la IA
+Pautas Clave a Tener en Cuenta
+3.1. Gestión de Contratos y Suministros COMPLETADO
+revisar la implementación del CRUD para contracts y supplies. Incluir la tabla utility_companies para registrar la empresa proveedora de energía.
+Guía Activa del Usuario: Si una entidad no tiene contrato o suministro, los enlaces para "añadir factura" deben transformarse inteligentemente para guiar al usuario a crear el suministro o contrato primero, evitando callejones sin salida.
+3.2. Carga de Facturas (Dato Crudo) COMPLETADO
+revisar la implementación de el registro de facturas (invoices). La carga debe capturar el consumo total (kWh) y el costo total ($) irrefutables.
+Desafío de la Desincronización: El sistema debe permitir al usuario ajustar las fechas o datos para lograr la coincidencia entre la carga auditada (inventario) y el consumo facturado real, lo cual es fundamental para la precisión.
+3.3. Creación de Snapshots (La "Foto" de Uso) COMPLETADO
+Tras cargar una factura, el usuario debe ser redirigido a una pantalla para confirmar los patrones de uso de sus equipos para ese período específico. Esto alimenta la tabla equipment_usage_snapshots.
+Propósito: El snapshot es la "foto" de uso (avg_daily_use_minutes, power_watts, has_standby_mode) que se vinculará a la invoice_id y es la base para la calibración y el cálculo del perfil de consumo.
+FASE 4: El Motor de Inteligencia (Cálculo y Calibración)
+Esta es la fase central donde la plataforma se convierte en un "entrenador personal de eficiencia energética".
+Flujo de Trabajo
+Órdenes Específicas para la IA
+Pautas Clave a Tener en Cuenta
+4.1. Módulo de Cálculo (Servicios) COMPLETADO
+Implementar los servicios de cálculo (HistoricalAnalysisService o InventoryAnalysisService) con la lógica principal separada y reutilizable (calculateProfileFromInventory).
+Doble Propósito de Cálculo: 1. Cálculo del Perfil para Período (Factura): Usar calculateEnergyProfileForPeriod(Entity $entity, Invoice $invoice) que depende de los snapshots asociados. 2. Cálculo del Perfil Anual (ROI/Oportunidades): Usar getAnnualEnergyProfile(Entity $entity) que utiliza los valores por defecto del inventario.
+4.2. Precisión Histórica COMPLETADO
+Asegurar que todas las consultas al inventario para periodos pasados (tanto en el perfil anual como en el perfil por factura) utilicen el método withTrashed() en entityEquipments() para contabilizar correctamente equipos dados de baja.
+Integración de Componentes: El cálculo de consumo total de un equipo debe ser la suma de consumo_kwh_activo_periodo + consumo_kwh_standby_periodo.
+4.3. Calibración Continua COMPLETADO
+Implementar el flujo completo de "Ajustar Consumo" que permita al usuario modificar los datos de uso para facturas pasadas.
+Feedback Instantáneo: La pantalla de calibración debe tener un dashboard interactivo que recalcule el consumo explicado en tiempo real para proveer feedback instantáneo sobre el "% de Aproximación".
+4.4. Visualización de la Auditoría COMPLETADO
+Mostrar el dashboard de análisis de período activo que compara el consumo real (factura) contra el consumo estimado (inventario + snapshot). Desarrollar la Bitácora de Análisis Energético que muestre el "% de Aproximación".
+Este porcentaje es la clave para la calibración continua y debe ser visible para rápida identificación de desviaciones.
+FASE 5: Generación de Valor (ROI y Optimización)
+Esta fase convierte el análisis preciso en recomendaciones accionables.
+Flujo de Trabajo
+Órdenes Específicas para la IA
+Pautas Clave a Tener en Cuenta
+5.1. Análisis de ROI y Reemplazo COMPLETADO
+Implementar la funcionalidad de Análisis de Retorno de la Inversión (ROI). Esto requiere acceder a la tabla market_equipment_catalog para obtener alternativas eficientes.
+Base de Comparación: El ROI y la sugerencia de reemplazo deben basarse en el perfil energético anualizado del inventario, obtenido a través de getAnnualEnergyProfile.
+5.2. Historial de Reemplazos COMPLETADO
+Asegurar que los equipos reemplazados se mantengan en un historial para que el usuario pueda visualizar el ahorro generado por el cambio.
+El reporte de ROI debe mostrar la comparativa de consumo anual y una calculadora interactiva para determinar el período de amortización.
+5.3. Generación de Recomendaciones COMPLETADO
+Desarrollar el motor de análisis que genere recomendaciones claras en tres categorías: Cambio de Actitudes, Cambio de Equipos y Mantenimientos Preventivos.
+Optimización Tarifaria: Las recomendaciones de Cambio de Actitudes deben considerar las bandas horarias de la tarifa (Pico, Valle, Resto) para sugerir el uso de equipos de alto consumo en horarios económicos.
+FASE 6: Expansión y Cierre del Proyecto
+Se implementan las funcionalidades secundarias clave para la visión de sustentabilidad y el mantenimiento del sistema.
+Flujo de Trabajo
+Órdenes Específicas para la IA
+Pautas Clave a Tener en Cuenta
+6.1. Viabilidad de Energía Solar EN PROCESO
+Desarrollar el módulo de Cálculo de Viabilidad de Energías Renovables.
+Lógica Condicional: Este módulo debe excluir lógicamente la opción para entidades donde no es factible (ej., departamentos) y calcular el potencial de generación basándose en el área disponible para casas o comercios.
+6.2. Mantenimiento Preventivo
+Implementar la vinculación entre entity_equipment y los planes de mantenimiento, utilizando las tablas maintenance_tasks y maintenance_logs.
+Recomendaciones Proactivas: Las recomendaciones deben incluir tareas de mantenimiento (ej., aires acondicionados) para asegurar la eficiencia.
+6.3. Mejora Continua de Catálogo
+Asegurar que el sistema mantenga un registro (Log de Faltantes) de los equipos que no se pudieron comparar (por falta de alternativas en market_equipment_catalog) para facilitar la alimentación de la base de datos.
+Este registro soporta la mejora continua del motor de recomendaciones.

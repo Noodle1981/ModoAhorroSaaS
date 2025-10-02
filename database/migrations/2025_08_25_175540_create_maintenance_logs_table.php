@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('maintenance_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('entity_equipment_id')->constrained('entity_equipment')->onDelete('cascade');
+            $table->foreignId('entity_equipment_id')->constrained('entity_equipments')->onDelete('cascade');
             $table->foreignId('maintenance_task_id')->constrained('maintenance_tasks')->onDelete('cascade');
             $table->date('performed_on_date');
             $table->string('verification_status')->default('user_reported');

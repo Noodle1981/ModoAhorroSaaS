@@ -6,6 +6,8 @@ use App\Http\Requests\StoreUsageSnapshotRequest; // ¡Usaremos un Form Request!
 use App\Models\Invoice;
 use App\Models\EquipmentUsageSnapshot;
 use App\Services\InventoryAnalysisService; // Necesitamos el servicio para los cálculos
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request; // Importar Request
 
 class UsageSnapshotController extends Controller
 {
@@ -56,27 +58,133 @@ class UsageSnapshotController extends Controller
 
                 if (!$equipment) continue;
 
+                // --- LÓGICA PARA CONVERTIR HORAS A MINUTOS ---
+                $minutes = 0;
+                if (isset($snapshotData['avg_daily_use_hours'])) {
+                    $minutes = (int)($snapshotData['avg_daily_use_hours'] * 60);
+                } elseif (isset($snapshotData['avg_daily_use_minutes'])) {
+                    $minutes = (int)$snapshotData['avg_daily_use_minutes'];
+                }
+
                 // Preparamos los datos para guardar, incluyendo los datos "congelados" en el tiempo.
                 $dataToStore = [
                     'entity_equipment_id' => $equipment->id,
                     'invoice_id' => $invoice->id,
                     'start_date' => $invoice->start_date,
                     'end_date' => $invoice->end_date,
-                    'avg_daily_use_minutes' => $snapshotData['avg_daily_use_minutes'],
+                    'avg_daily_use_minutes' => $minutes,
                     'power_watts' => $equipment->power_watts_override ?? $equipment->equipmentType->default_power_watts ?? 0,
                     'has_standby_mode' => $equipment->has_standby_mode, // Asumimos que este valor viene del equipo principal
                 ];
 
                 // Calculamos el consumo para este período y lo guardamos.
                 $periodDays = $invoice->start_date->diffInDays($invoice->end_date) + 1;
-                $calculatedProfile = $analysisService->calculateEnergyProfileForPeriod($equipment, $periodDays);
-                $dataToStore['calculated_kwh_period'] = $calculatedProfile->consumo_kwh_total_periodo;
+                $calculatedConsumption = $analysisService->calculateConsumptionForEquipment($equipment, $periodDays, $minutes);
+                $dataToStore['calculated_kwh_period'] = $calculatedConsumption['consumo_kwh_total_periodo'];
                 
                 EquipmentUsageSnapshot::create($dataToStore);
             }
         });
 
-        return redirect()->route('contracts.show', $invoice->contract)
+        return redirect()->route('entities.show', $invoice->contract->supply->entity_id)
                          ->with('success', 'El uso de los equipos ha sido registrado correctamente para este período.');
+    }
+
+    /**
+     * (EDIT) Muestra el formulario para editar/calibrar el uso de una factura existente.
+     */
+    public function edit(Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+
+        $invoice->load('snapshots.entityEquipment.equipmentType');
+        
+        $entity = $invoice->contract->supply->entity;
+        $allEquipments = $entity->entityEquipments()->withTrashed()->with('equipmentType')->get();
+
+        // Mapeamos los snapshots existentes para un acceso fácil en la vista
+        $snapshotsByEquipmentId = $invoice->snapshots->keyBy('entity_equipment_id');
+
+        return view('snapshots.edit', compact('invoice', 'allEquipments', 'snapshotsByEquipmentId'));
+    }
+
+    /**
+     * (UPDATE) Actualiza los snapshots de uso para una factura.
+     */
+    public function update(StoreUsageSnapshotRequest $request, Invoice $invoice, InventoryAnalysisService $analysisService)
+    {
+        $this->authorize('update', $invoice);
+
+        $validatedSnapshots = $request->validated()['snapshots'];
+
+        DB::transaction(function () use ($validatedSnapshots, $invoice, $analysisService) {
+            foreach ($validatedSnapshots as $snapshotData) {
+                $equipment = \App\Models\EntityEquipment::with('equipmentType.equipmentCategory.calculationFactor')->find($snapshotData['entity_equipment_id']);
+                if (!$equipment) continue;
+
+                $minutes = 0;
+                if (isset($snapshotData['avg_daily_use_hours'])) {
+                    $minutes = (int)($snapshotData['avg_daily_use_hours'] * 60);
+                } elseif (isset($snapshotData['avg_daily_use_minutes'])) {
+                    $minutes = (int)$snapshotData['avg_daily_use_minutes'];
+                }
+
+                $periodDays = $invoice->start_date->diffInDays($invoice->end_date) + 1;
+                $calculatedConsumption = $analysisService->calculateConsumptionForEquipment($equipment, $periodDays, $minutes);
+
+                EquipmentUsageSnapshot::updateOrCreate(
+                    [
+                        'invoice_id' => $invoice->id,
+                        'entity_equipment_id' => $equipment->id,
+                    ],
+                    [
+                        'start_date' => $invoice->start_date,
+                        'end_date' => $invoice->end_date,
+                        'avg_daily_use_minutes' => $minutes,
+                        'power_watts' => $equipment->power_watts_override ?? $equipment->equipmentType->default_power_watts ?? 0,
+                        'has_standby_mode' => $equipment->has_standby_mode,
+                        'calculated_kwh_period' => $calculatedConsumption['consumo_kwh_total_periodo'],
+                    ]
+                );
+            }
+        });
+
+        return redirect()->route('entities.show', $invoice->contract->supply->entity_id)
+                         ->with('success', 'Calibración de consumo guardada exitosamente.');
+    }
+
+    /**
+     * (API) Recalcula el consumo total estimado para la calibración en vivo.
+     */
+    public function recalculate(Request $request, InventoryAnalysisService $analysisService)
+    {
+        $validated = $request->validate([
+            'snapshots' => ['required', 'array'],
+            'snapshots.*.entity_equipment_id' => ['required', 'exists:entity_equipment,id'],
+            'snapshots.*.avg_daily_use_hours' => ['nullable', 'numeric', 'min:0'],
+            'snapshots.*.avg_daily_use_minutes' => ['nullable', 'integer', 'min:0'],
+            'period_days' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $totalEstimatedConsumption = 0;
+
+        foreach ($validated['snapshots'] as $snapshotData) {
+            $equipment = \App\Models\EntityEquipment::with('equipmentType.equipmentCategory.calculationFactor')->find($snapshotData['entity_equipment_id']);
+            if (!$equipment) continue;
+
+            $minutes = 0;
+            if (isset($snapshotData['avg_daily_use_hours'])) {
+                $minutes = (int)($snapshotData['avg_daily_use_hours'] * 60);
+            } elseif (isset($snapshotData['avg_daily_use_minutes'])) {
+                $minutes = (int)$snapshotData['avg_daily_use_minutes'];
+            }
+
+            $consumption = $analysisService->calculateConsumptionForEquipment($equipment, $validated['period_days'], $minutes);
+            $totalEstimatedConsumption += $consumption['consumo_kwh_total_periodo'];
+        }
+
+        return response()->json([
+            'estimated_consumption' => round($totalEstimatedConsumption, 2),
+        ]);
     }
 }

@@ -21,7 +21,8 @@ class SolarController extends Controller
         })->with('entity')->get();
 
         if ($installations->isEmpty()) {
-            return view('solar.dashboard_empty');
+            $entities = $user->company->entities;
+            return view('solar.dashboard_empty', compact('entities'));
         }
 
         $solarData = $installations->map(function ($installation) {

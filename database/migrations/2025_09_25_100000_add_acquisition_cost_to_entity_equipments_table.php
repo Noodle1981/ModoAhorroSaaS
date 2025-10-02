@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('entity_equipments', function (Blueprint $table) {
-            $table->string('location')->nullable()->after('custom_name');
+            $table->decimal('acquisition_cost', 10, 2)->nullable()->after('quantity');
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('entity_equipments', function (Blueprint $table) {
-            $table->dropColumn('location');
+            $table->dropColumn('acquisition_cost');
         });
     }
 };

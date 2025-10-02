@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\EquipmentUsageSnapshot;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EntityEquipment extends Model
 {
@@ -13,7 +15,7 @@ class EntityEquipment extends Model
     protected $table = 'entity_equipment'; // Buena práctica especificar el nombre
 
     protected $fillable = [
-        'entity_id', 'equipment_type_id', 'quantity', 'custom_name',
+        'entity_id', 'equipment_type_id', 'quantity', 'acquisition_cost', 'custom_name',
         'power_watts_override', 'avg_daily_use_minutes_override',
         'replaced_by_equipment_id', 'is_backup_for_id', 'location',
         'has_standby_mode'
@@ -27,6 +29,22 @@ class EntityEquipment extends Model
     public function equipmentType()
     {
         return $this->belongsTo(EquipmentType::class);
+    }
+
+    /**
+     * El equipo que reemplazó a este.
+     */
+    public function replacement(): BelongsTo
+    {
+        return $this->belongsTo(EntityEquipment::class, 'replaced_by_equipment_id');
+    }
+
+    /**
+     * Obtiene todos los snapshots de uso histórico para este equipo.
+     */
+    public function usageSnapshots()
+    {
+        return $this->hasMany(EquipmentUsageSnapshot::class);
     }
 
     public static function getUniqueLocationsForEntity(Entity $entity): \Illuminate\Support\Collection

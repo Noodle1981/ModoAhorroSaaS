@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('equipment_usage_patterns', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('entity_equipment_id')->constrained('entity_equipment')->onDelete('cascade');
+            $table->foreignId('entity_equipment_id')->constrained('entity_equipments')->onDelete('cascade');
             $table->integer('day_of_week')->nullable()->comment('1 para Lunes, 7 para Domingo. Null si es un hábito diario.');
             $table->time('start_time');
             $table->integer('duration_minutes');

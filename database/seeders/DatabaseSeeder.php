@@ -33,6 +33,10 @@ class DatabaseSeeder extends Seeder
             RecommendationsTableSeeder::class,      // Catálogo de textos de recomendaciones.
             CarbonIntensityFactorsTableSeeder::class, // Para el cálculo de huella de carbono.
             AppSettingsSeeder::class,               // Configuraciones globales.
+
+            // --- Seeder de Datos de Demostración ---
+            // ¡NO USAR EN PRODUCCIÓN! Solo para desarrollo y pruebas.
+            DemoDataSeeder::class,
         ]);
 
         // ===================================================================

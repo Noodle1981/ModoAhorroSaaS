@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Models\Company;
 use App\Models\Province;
 use App\Models\Locality; // Import the Locality model
+use App\Models\Plan;
+use App\Models\Subscription;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,6 +60,17 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
             'company_id' => $company->id, // Associate user with the new company
         ]);
+
+        // Assign the free plan by default to the company
+        $freePlan = Plan::where('name', 'Gratis')->first();
+        if ($freePlan) {
+            Subscription::create([
+                'company_id' => $company->id,
+                'plan_id' => $freePlan->id,
+                'starts_at' => now(),
+                'status' => 'active',
+            ]);
+        }
 
         event(new Registered($user));
 

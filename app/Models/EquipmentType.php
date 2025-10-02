@@ -13,7 +13,7 @@ class EquipmentType extends Model
         'category_id',
         'name',
         'default_power_watts',
-        'default_avg_daily_use_hours',
+        'default_avg_daily_use_minutes',
         'standby_power_watts',
     ];
 

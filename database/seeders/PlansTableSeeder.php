@@ -9,6 +9,9 @@ class PlansTableSeeder extends Seeder
 {
     public function run(): void
     {
+        // Vaciar la tabla antes de volver a llenarla para evitar errores de duplicados.
+        DB::table('plans')->delete();
+
         DB::table('plans')->insert([
             [
                 'name' => 'Gratuito',

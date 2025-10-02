@@ -24,6 +24,7 @@ class StoreEntityRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'in:hogar,oficina,comercio'], // Asegura que solo se usen los tipos permitidos
+            'province_id' => ['required', 'exists:provinces,id'],
             'locality_id' => ['required', 'exists:localities,id'], // Asegura que la localidad exista en nuestra BD
             'address_street' => ['nullable', 'string', 'max:255'],
             // Aquí puedes añadir validación para los campos del JSON 'details'
@@ -32,6 +33,7 @@ class StoreEntityRequest extends FormRequest
             'details.rooms' => ['nullable', 'array'],
             // Validamos que cada habitación en el array tenga un nombre
             'details.rooms.*.name' => ['required', 'string', 'max:100'],
+            'details.surface_area' => ['nullable', 'integer', 'min:0'],
         ];
     }
 }

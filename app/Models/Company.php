@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Subscription;
 
 class Company extends Model
 {
@@ -32,5 +33,21 @@ class Company extends Model
     public function entities()
     {
         return $this->hasMany(Entity::class);
+    }
+
+    /**
+     * Una Compañía puede tener muchas Suscripciones.
+     */
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    /**
+     * Obtiene la suscripción activa de la compañía.
+     */
+    public function activeSubscription()
+    {
+        return $this->hasOne(Subscription::class)->where('status', 'active');
     }
 }

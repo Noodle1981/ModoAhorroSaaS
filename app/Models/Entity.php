@@ -11,21 +11,30 @@ class Entity extends Model
 
     protected $fillable = [
         'company_id',
+        'province_id',
         'locality_id',
         'name',
-        'type',
-        'address_street',
-        'address_postal_code',
-        'details',
+        'address',
+        'city',
+        'postal_code',
+        'country',
+        'entity_type',
+        'area',
+        'occupants',
     ];
 
     protected $casts = [
-        'details' => 'array',
+        'area' => 'float',
     ];
 
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function province()
+    {
+        return $this->belongsTo(Province::class);
     }
 
     public function locality()

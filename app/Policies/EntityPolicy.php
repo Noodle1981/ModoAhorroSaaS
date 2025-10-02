@@ -32,8 +32,42 @@ class EntityPolicy
      */
     public function create(User $user): bool
     {
-        // La lógica de si puede o no según su plan la manejamos en el FormRequest.
-        // Aquí, simplemente decimos que cualquier usuario logueado puede INTENTAR crearla.
+        $company = $user->company;
+
+        // If user has no company, deny.
+        if (!$company) {
+            return false;
+        }
+
+        // Use the relationship to get the active subscription and its plan.
+        $activeSubscription = $company->activeSubscription;
+
+        // If there's no active subscription or it has no plan, deny.
+        if (!$activeSubscription || !$activeSubscription->plan) {
+            return false;
+        }
+
+        $plan = $activeSubscription->plan;
+        $entityCount = $company->entities()->count();
+
+        // 1. Check if the user has reached the maximum number of entities for their plan.
+        // A null value for max_entities means unlimited.
+        if (!is_null($plan->max_entities) && $entityCount >= $plan->max_entities) {
+            return false; // Deny: limit reached
+        }
+
+        // 2. Check if the entity type they are trying to create is allowed by their plan.
+        $requestedType = request()->input('type');
+
+        // If a type is requested and the plan has a specific list of allowed types...
+        if ($requestedType && !empty($plan->allowed_entity_types)) {
+            // ...check if the requested type is in the allowed list.
+            if (!in_array($requestedType, $plan->allowed_entity_types)) {
+                return false; // Deny: type not allowed
+            }
+        }
+
+        // If all checks pass, allow creation.
         return true;
     }
 

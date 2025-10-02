@@ -28,7 +28,8 @@ class EntityController extends Controller
     public function create()
     {
         $localities = Locality::orderBy('name')->get();
-        return view('entities.create', compact('localities'));
+        $provinces = Province::orderBy('name')->get();
+        return view('entities.create', compact('localities', 'provinces'));
     }
 
     public function store(StoreEntityRequest $request)
@@ -52,16 +53,20 @@ public function show(Entity $entity, InventoryAnalysisService $analysisService)
 {
     $this->authorize('view', $entity);
 
+    // Cargar relaciones necesarias de una vez para optimizar
+    $entity->load([
+        'supplies.contracts.invoices' => function ($query) {
+            $query->withSum('snapshots as adjusted_consumption', 'calculated_kwh_period')
+                  ->orderBy('end_date', 'desc');
+        },
+        'entityEquipments.equipmentType'
+    ]);
+
     // --- LÓGICA DE PERÍODO ACTIVO ---
+    $allInvoices = $entity->supplies->flatMap->contracts->flatMap->invoices->unique('id');
+    $lastInvoice = $allInvoices->first();
     
-    // 1. Buscamos la última factura.
-    $lastInvoice = $entity->supplies
-        ->flatMap->contracts
-        ->flatMap->invoices
-        ->sortByDesc('end_date')
-        ->first();
-    
-    $inventoryReportForPeriod = collect(); // Creamos una colección vacía por defecto
+    $inventoryReportForPeriod = collect();
     $periodSummary = [
         'period_days' => 0,
         'period_label' => 'N/A',
@@ -69,37 +74,43 @@ public function show(Entity $entity, InventoryAnalysisService $analysisService)
         'estimated_consumption' => 0,
     ];
 
-    // 2. Si la factura EXISTE, hacemos el análisis para su período.
     if ($lastInvoice) {
-        // Calculamos cuántos días tiene el período de la factura
-        $periodDays = Carbon::parse($lastInvoice->start_date)->diffInDays($lastInvoice->end_date) + 1;
-
-        // Llamamos a nuestro nuevo método del servicio para este período
-        $inventoryReportForPeriod = $analysisService->calculateEnergyProfileForPeriod($entity, $periodDays);
-        
-        // Preparamos el resumen para la vista
+        $inventoryReportForPeriod = $analysisService->calculateEnergyProfileForPeriod($entity, $lastInvoice);
         $periodSummary = [
-            'period_days' => $periodDays,
-            'period_label' => $lastInvoice->start_date->format('d/m') . ' - ' . $lastInvoice->end_date->format('d/m/Y'),
+            'period_days' => $lastInvoice->start_date->diffInDays($lastInvoice->end_date) + 1,
+            'period_label' => Carbon::parse($lastInvoice->start_date)->format('d/m/Y') . ' - ' . Carbon::parse($lastInvoice->end_date)->format('d/m/Y'),
             'real_consumption' => $lastInvoice->total_energy_consumed_kwh,
             'estimated_consumption' => $inventoryReportForPeriod->sum('consumo_kwh_total_periodo'),
         ];
     }
     
-    // --- FIN DE LA LÓGICA DE PERÍODO ---
+    // --- LÓGICA PARA OBTENER CONTRATO ACTIVO ---
+    $activeContract = $entity->supplies->flatMap->contracts->where('is_active', true)->first() 
+                    ?? $entity->supplies->flatMap->contracts->first();
 
-    $entity->load('entityEquipments.equipmentType'); // Eager load equipments and their types
+    // Obtenemos TODOS los equipos, incluyendo los eliminados, para el historial.
+    // Calculamos también el promedio de uso real desde los snapshots.
+    $allEntityEquipments = $entity->entityEquipments()
+        ->withTrashed()
+        ->with('equipmentType.equipmentCategory')
+        ->withAvg('usageSnapshots', 'avg_daily_use_minutes')
+        ->latest()
+        ->get();
 
     return view('entities.show', [
         'entity' => $entity,
-        'periodSummary' => (object) $periodSummary, // Lo convertimos a objeto para un acceso más fácil
+        'allEntityEquipments' => $allEntityEquipments,
+        'periodSummary' => (object) $periodSummary,
+        'allInvoices' => $allInvoices,
+        'activeContract' => $activeContract,
     ]);
 }
 
     public function edit(Entity $entity)
     {
         $localities = Locality::with('province')->orderBy('name')->get();
-        return view('entities.edit', compact('entity', 'localities'));
+        $provinces = Province::orderBy('name')->get();
+        return view('entities.edit', compact('entity', 'localities', 'provinces'));
     }
 
     public function update(UpdateEntityRequest $request, Entity $entity)

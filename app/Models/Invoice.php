@@ -27,4 +27,12 @@ class Invoice extends Model
     {
         return $this->belongsTo(Contract::class);
     }
+
+    /**
+     * Define la relación: Una factura TIENE MUCHOS snapshots de uso.
+     */
+    public function snapshots()
+    {
+        return $this->hasMany(EquipmentUsageSnapshot::class);
+    }
 }

@@ -18,7 +18,8 @@ use App\Http\Controllers\EntityEquipmentController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\SolarController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\UsageSnapshotController; // <-- IMPORT NUEVO AÑADIDO
+use App\Http\Controllers\UsageSnapshotController;
+use App\Http\Controllers\HistoryController;
 
 
 
@@ -60,7 +61,18 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('entities', EntityController::class);
     Route::resource('entities.supplies', SupplyController::class)->shallow();
     Route::resource('supplies.contracts', ContractController::class)->shallow();
+
+    // Grupo de rutas para Facturas y sus Snapshots de uso asociados
     Route::resource('contracts.invoices', InvoiceController::class)->shallow();
+    Route::controller(UsageSnapshotController::class)->group(function () {
+        Route::get('/invoices/{invoice}/snapshots/create', 'create')->name('snapshots.create');
+        Route::post('/invoices/{invoice}/snapshots', 'store')->name('snapshots.store');
+        Route::get('/invoices/{invoice}/snapshots/edit', 'edit')->name('snapshots.edit');
+        Route::patch('/invoices/{invoice}/snapshots', 'update')->name('snapshots.update');
+    });
+
+    // Grupo de rutas para Equipos, incluyendo acciones personalizadas
+    Route::get('/equipment/{equipment}/pre-destroy', [EntityEquipmentController::class, 'preDestroy'])->name('equipment.pre-destroy');
     Route::resource('entities.equipment', EntityEquipmentController::class)->shallow();
 
     // ======================================================================
@@ -68,13 +80,23 @@ Route::middleware(['auth'])->group(function () {
     // ======================================================================
     Route::get('/invoices/{invoice}/snapshots/create', [UsageSnapshotController::class, 'create'])->name('snapshots.create');
     Route::post('/invoices/{invoice}/snapshots', [UsageSnapshotController::class, 'store'])->name('snapshots.store');
+    Route::get('/invoices/{invoice}/snapshots/edit', [UsageSnapshotController::class, 'edit'])->name('snapshots.edit');
+    Route::patch('/invoices/{invoice}/snapshots', [UsageSnapshotController::class, 'update'])->name('snapshots.update');
     // ======================================================================
 
+    // ======================================================================
+    // === API INTERNA PARA CÁLCULOS EN VIVO ===
+    // ======================================================================
+    Route::post('/api/snapshots/recalculate', [UsageSnapshotController::class, 'recalculate'])->name('api.snapshots.recalculate');
+
     // --- ANÁLISIS E INTELIGENCIA ---
-    Route::get('/entities/{entity}/report/improvements', [ReportController::class, 'improvements'])->name('entities.reports.improvements');
+    Route::get('/reports/replacement/{equipment}', [ReportController::class, 'replacementReport'])->name('reports.replacement');
+    Route::get('/entities/{entity}/reports/full-replacement', [ReportController::class, 'fullReplacementReport'])->name('entities.reports.full-replacement');
     Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
     Route::post('/maintenance', [MaintenanceController::class, 'store'])->name('maintenance.store');
     Route::get('/solar', [SolarController::class, 'dashboard'])->name('solar.dashboard');
+    Route::get('/history', [HistoryController::class, 'index'])->name('history.index'); // <-- NUEVA RUTA
+    Route::get('/entities/{entity}/report/improvements', [ReportController::class, 'improvements'])->name('entities.reports.improvements');
 
 });
 

@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('entity_equipment', function (Blueprint $table) {
+        Schema::create('entity_equipments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('entity_id')->constrained('entities')->onDelete('cascade');
             $table->foreignId('equipment_type_id')->constrained('equipment_types');
@@ -21,8 +21,8 @@ return new class extends Migration
             $table->decimal('avg_daily_use_hours_override', 4, 2)->nullable();
 
             // Campos para historial y relaciones especiales
-            $table->foreignId('replaced_by_equipment_id')->nullable()->constrained('entity_equipment')->nullOnDelete();
-            $table->foreignId('is_backup_for_id')->nullable()->constrained('entity_equipment')->nullOnDelete();
+            $table->foreignId('replaced_by_equipment_id')->nullable()->constrained('entity_equipments')->nullOnDelete();
+            $table->foreignId('is_backup_for_id')->nullable()->constrained('entity_equipments')->nullOnDelete();
             
             $table->timestamps();
             $table->softDeletes(); // Para el borrado suave (archivado)
@@ -31,6 +31,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('entity_equipment');
+        Schema::dropIfExists('entity_equipments');
     }
 };

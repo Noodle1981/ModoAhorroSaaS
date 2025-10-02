@@ -47,6 +47,13 @@ Este ciclo se vuelve más inteligente con cada factura cargada, aprendiendo de l
     *   **Nuevo Flujo:** Tras cargar una factura, el usuario es redirigido a una pantalla para confirmar los patrones de uso de sus equipos para ese período específico.
     *   **Nuevos Componentes:** Este sistema se apoya en una nueva tabla `equipment_usage_snapshots`, el controlador `UsageSnapshotController` y rutas dedicadas.
     *   **Análisis de Período Activo:** La página de detalle de la entidad ahora muestra un dashboard que compara con precisión el consumo real de la última factura contra el consumo estimado del inventario para ese mismo período.
+
+*   **Análisis Avanzado y Ciclo de Vida del Inventario:**
+    *   **Bitácora de Análisis Energético:** La tabla "Historial de Facturas" se ha transformado en una herramienta de análisis, mostrando no solo el consumo real, sino también el **"Consumo Ajustado"** (calculado a partir de los snapshots de uso) y el **"% de Aproximación"**, que indica la precisión del ajuste. La aproximación se colorea para una rápida identificación de desviaciones.
+    *   **Calibración de Consumo Histórico:** Se ha implementado un flujo completo para "Ajustar Consumo" en cualquier factura pasada. Esta pantalla de calibración cuenta con un **dashboard interactivo** que recalcula el consumo explicado en tiempo real a medida que el usuario modifica los datos de uso, proveyendo feedback instantáneo.
+    *   **Cálculo Históricamente Preciso:** El motor de cálculo ahora considera equipos eliminados (`soft-deleted`) en los análisis de períodos pasados, asegurando que el consumo de un equipo que funcionó parte de un mes y luego fue quitado se contabilice correctamente.
+    *   **Gestión de Reemplazo y Análisis de ROI:** Se ha introducido un nuevo flujo para la eliminación de equipos, permitiendo al usuario especificar si un equipo es reemplazado. El sistema enlaza el equipo antiguo con el nuevo y habilita un **reporte de Análisis de Retorno de la Inversión (ROI)**. Este reporte muestra una comparativa de consumo anual y una calculadora interactiva para determinar el período de amortización de la nueva compra en meses o años.
+
 *   **Motor de Análisis y Recomendaciones (v1.5):**
     *   Cálculo del perfil de consumo energético anual estimado basado en el inventario.
     *   Generación de un informe de oportunidades de mejora con 3 estados por equipo: "Equipo Deficiente" (con recomendación), "Equipo Eficiente" y "Equipo sin Comparativa".

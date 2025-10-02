@@ -28,6 +28,48 @@ class MarketEquipmentCatalogTableSeeder extends Seeder
             ]
         );
 
+        MarketEquipmentCatalog::updateOrCreate(
+            [
+                'equipment_type_id' => 1, // Aire Acondicionado
+                'model_name' => 'EcoCool Inverter 3200W',
+            ],
+            [
+                'brand' => 'Samsung',
+                'power_watts' => 1200,
+                'efficiency_rating' => 'A+',
+                'average_price' => 650000.00,
+                'is_active' => true,
+            ]
+        );
+
+        MarketEquipmentCatalog::updateOrCreate(
+            [
+                'equipment_type_id' => 4, // Refrigerador
+                'model_name' => 'No-Frost Master 400L',
+            ],
+            [
+                'brand' => 'Whirlpool',
+                'power_watts' => 120,
+                'efficiency_rating' => 'A++',
+                'average_price' => 500000.00,
+                'is_active' => true,
+            ]
+        );
+
+        MarketEquipmentCatalog::updateOrCreate(
+            [
+                'equipment_type_id' => 16, // Luz LED
+                'model_name' => 'Bright Bulb 7W',
+            ],
+            [
+                'brand' => 'Philips',
+                'power_watts' => 7,
+                'efficiency_rating' => 'A++',
+                'average_price' => 1500.00,
+                'is_active' => true,
+            ]
+        );
+
         // --- PLANTILLA PARA AÑADIR NUEVOS EQUIPOS ---
         // Imagina que el log te pide una "Pava Eléctrica" (ID de tipo: 25)
         /*

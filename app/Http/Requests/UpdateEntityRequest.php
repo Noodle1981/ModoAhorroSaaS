@@ -26,6 +26,7 @@ class UpdateEntityRequest extends FormRequest
             // ===============================================
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'in:hogar,oficina,comercio'],
+            'province_id' => ['required', 'exists:provinces,id'],
             'locality_id' => ['required', 'exists:localities,id'],
             'address_street' => ['nullable', 'string', 'max:255'],
             
@@ -37,6 +38,7 @@ class UpdateEntityRequest extends FormRequest
             // Campos generales dentro de 'details' que aún podríamos querer
             'details.property_type' => ['nullable', 'string', 'max:50'],
             'details.occupants_count' => ['nullable', 'integer', 'min:1'],
+            'details.surface_area' => ['nullable', 'integer', 'min:0'],
             
             // Reglas para nuestro nuevo sistema de habitaciones dinámicas
             'details.rooms' => ['nullable', 'array'], // Debe ser un array de habitaciones
