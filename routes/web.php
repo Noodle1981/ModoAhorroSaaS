@@ -98,6 +98,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/history', [HistoryController::class, 'index'])->name('history.index'); // <-- NUEVA RUTA
     Route::get('/entities/{entity}/report/improvements', [ReportController::class, 'improvements'])->name('entities.reports.improvements');
 
+
+    // DATOS FICICACIÓN EN TIEMPO REAL
+    Route::get('/supplies/{supply}/realtime', [SupplyController::class, 'realtimeDashboard'])->name('supplies.realtime');
+
 });
 
 

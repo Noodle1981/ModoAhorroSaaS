@@ -36,13 +36,15 @@ class DatabaseSeeder extends Seeder
 
             // --- Seeder de Datos de Demostración ---
             // ¡NO USAR EN PRODUCCIÓN! Solo para desarrollo y pruebas.
-            DemoDataSeeder::class,
+            /*
+            CompaniesTableSeeder::class,
+            UsersTableSeeder::class,
+            EntitiesTableSeeder::class,
+            SuppliesTableSeeder::class,
+            SmartMeterSeeder::class,
+            */
         ]);
 
-        // ===================================================================
-        // HEMOS ELIMINADO TODAS LAS LLAMADAS A SEEDERS DE DATOS DE PRUEBA
-        // COMO Companies, Users, Entities, Supplies, Contracts, Invoices, etc.
-        // AHORA LA BASE DE DATOS EMPEZARÁ LIMPIA DE DATOS DE USUARIO.
-        // ===================================================================
+
     }
 }

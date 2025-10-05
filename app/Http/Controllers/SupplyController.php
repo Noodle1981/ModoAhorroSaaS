@@ -56,4 +56,23 @@ class SupplyController extends Controller
         $supply->delete();
         return redirect()->route('entities.show', $entity)->with('success', 'Suministro eliminado.');
     }
+
+    public function realtimeDashboard(Supply $supply)
+{
+    $this->authorize('view', $supply);
+
+    // Obtenemos las últimas 72 horas de lecturas
+    $readings = $supply->consumptionReadings()
+        ->where('reading_timestamp', '>=', Carbon::now()->subHours(72))
+        ->orderBy('reading_timestamp', 'asc')
+        ->get();
+
+    // Preparamos los datos para el gráfico
+    $chartData = [
+        'labels' => $readings->pluck('reading_timestamp')->map(fn($date) => $date->format('d/m H:i')),
+        'data' => $readings->pluck('consumed_kwh'),
+    ];
+
+    return view('supplies.realtime', compact('supply', 'chartData'));
+}
 }

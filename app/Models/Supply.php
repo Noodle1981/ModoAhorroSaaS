@@ -24,4 +24,6 @@ class Supply extends Model
     {
         return $this->hasMany(Contract::class);
     }
+
+    public function consumptionReadings() { return $this->hasMany(ConsumptionReading::class); }
 }

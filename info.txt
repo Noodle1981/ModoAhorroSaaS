@@ -107,3 +107,6 @@ Recomendaciones Proactivas: Las recomendaciones deben incluir tareas de mantenim
 6.3. Mejora Continua de Catálogo
 Asegurar que el sistema mantenga un registro (Log de Faltantes) de los equipos que no se pudieron comparar (por falta de alternativas en market_equipment_catalog) para facilitar la alimentación de la base de datos.
 Este registro soporta la mejora continua del motor de recomendaciones.
+
+
+
