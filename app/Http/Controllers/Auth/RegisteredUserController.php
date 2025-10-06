@@ -40,19 +40,27 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'province_id' => ['required', 'exists:provinces,id'],
-            'locality_id' => ['required', 'exists:localities,id'],
-            'tax_id' => ['required', 'string', 'max:255', 'unique:companies,tax_id'],
+            'province_id' => ['nullable', 'exists:provinces,id'],
+            'locality_id' => ['nullable', 'exists:localities,id'],
+            'tax_id' => ['nullable', 'string', 'max:255', 'unique:companies,tax_id'],
         ]);
 
-        // Create a new company for the user
-        $company = Company::create([
-            'name' => $request->name . '\'s Company', // Default company name
-            'province_id' => $request->province_id,
-            'locality_id' => $request->locality_id,
-            'tax_id' => $request->tax_id,
-            // You might want to add default values for tax_id, address, phone here
-        ]);
+        // Conditional company creation based on user input
+        if ($request->filled('tax_id')) {
+            // User is registering a formal company
+            $company = Company::create([
+                'name' => $request->company_name ?? $request->name . '\'s Company', // Use a dedicated company name field if available
+                'province_id' => $request->province_id,
+                'locality_id' => $request->locality_id,
+                'tax_id' => $request->tax_id,
+            ]);
+        } else {
+            // User is registering as an individual, create a personal company
+            $company = Company::create([
+                'name' => $request->name . '\'s Personal Account',
+                // tax_id, province_id, and locality_id will be null
+            ]);
+        }
 
         $user = User::create([
             'name' => $request->name,
@@ -61,7 +69,7 @@ class RegisteredUserController extends Controller
             'company_id' => $company->id, // Associate user with the new company
         ]);
 
-        // Assign the free plan by default to the company
+        // Assign the free plan by default to the newly created company
         $freePlan = Plan::where('name', 'Gratis')->first();
         if ($freePlan) {
             Subscription::create([
