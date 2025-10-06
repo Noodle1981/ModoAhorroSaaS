@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\Locality;
 use App\Models\Plan;
-use App\Models\Province; // Importa el modelo Province
+use App\Models\Province;
 use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
@@ -19,15 +20,16 @@ use Illuminate\View\View;
 class RegisteredUserController extends Controller
 {
     /**
-     * Muestra la vista de registro.
+     * Muestra la vista de registro, pasando los datos necesarios para los dropdowns.
      */
     public function create(): View
     {
-        // 1. Obtenemos todas las provincias de la base de datos.
+        // Obtenemos los datos para los menús desplegables.
         $provinces = Province::orderBy('name')->get();
+        $localities = Locality::orderBy('name')->get();
 
-        // 2. Pasamos la colección de provincias a la vista.
-        return view('auth.register', compact('provinces'));
+        // Pasamos ambas colecciones a la vista.
+        return view('auth.register', compact('provinces', 'localities'));
     }
 
     /**
@@ -37,34 +39,43 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validación (incluyendo los nuevos campos si los quieres guardar aquí)
+        // 1. Validación de todos los campos del formulario.
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'tax_id' => ['required', 'string', 'max:20', 'unique:'.Company::class],
+            'company_name' => ['nullable', 'string', 'max:255'],
+            'is_particular' => ['nullable', 'boolean'],
             'province_id' => ['required', 'exists:provinces,id'],
-            // 'locality_id' => ['required', 'exists:localities,id'], // Si añades localidades
+            'locality_id' => ['required', 'exists:localities,id'],
+            'terms' => ['required', 'accepted'],
         ]);
 
-        // 2. Transacción de Base de Datos
+        // 2. Transacción de Base de Datos para asegurar la integridad.
         $user = DB::transaction(function () use ($request) {
             
-            // 2a. Crear la Compañía
+            // Determinamos el nombre de la compañía.
+            $companyName = $request->input('is_particular') ? $request->name . ' (Empresa)' : $request->company_name;
+
+            // 2a. Crear la Compañía con todos sus datos.
             $company = Company::create([
-                'name' => $request->name . ' (Empresa)',
-                'tax_id' => '00-00000000-0', // Genérico, se puede actualizar después
+                'name' => $companyName,
+                'tax_id' => $request->tax_id,
+                'province_id' => $request->province_id,
+                'locality_id' => $request->locality_id,
             ]);
 
-            // 2b. Crear el Usuario y Asociarlo a la Compañía
+            // 2b. Crear el Usuario y asociarlo a la Compañía.
             $newUser = User::create([
                 'company_id' => $company->id,
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'role' => 'admin',
+                // Ya no necesitamos 'role' en nuestro modelo simplificado.
             ]);
 
-            // 2c. Asignar el Plan Gratuito
+            // 2c. Asignar el Plan Gratuito.
             $freePlan = Plan::where('name', 'Gratuito')->firstOrFail();
 
             Subscription::create([
@@ -74,21 +85,16 @@ class RegisteredUserController extends Controller
                 'starts_at' => now(),
             ]);
             
-            // Aquí podrías guardar la provincia/localidad en el perfil del usuario
-            // o en la compañía si has añadido esas columnas a las tablas.
-            // Ejemplo:
-            // $company->update(['province_id' => $request->province_id]);
-            
             return $newUser;
         });
 
-        // 3. Autenticar al Usuario
+        // 3. Autenticar al Usuario.
         Auth::login($user);
 
-        // 4. Evento de Registro
+        // 4. Disparar el evento de registro (para emails de bienvenida, etc.).
         event(new Registered($user));
 
-        // 5. Redirección
+        // 5. Redirección al Dashboard.
         return redirect(route('dashboard'));
     }
 }

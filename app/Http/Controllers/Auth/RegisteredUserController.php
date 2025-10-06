@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Company;
 use App\Models\Province;
-use App\Models\Locality; // Import the Locality model
+use App\Models\Locality;
 use App\Models\Plan;
 use App\Models\Subscription;
 use Illuminate\Auth\Events\Registered;
@@ -24,8 +24,9 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        $provinces = Province::all();
-        $localities = Locality::all();
+        $provinces = Province::orderBy('name')->get();
+        // Eager load provinces to avoid N+1 issues in the view if we were to display province name
+        $localities = Locality::with('province')->orderBy('name')->get();
         return view('auth.register', compact('provinces', 'localities'));
     }
 
@@ -40,45 +41,49 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'province_id' => ['nullable', 'exists:provinces,id'],
-            'locality_id' => ['nullable', 'exists:localities,id'],
-            'tax_id' => ['nullable', 'string', 'max:255', 'unique:companies,tax_id'],
+            'tax_id' => ['required', 'string', 'max:255', 'unique:companies,tax_id'],
+            'province_id' => ['required', 'exists:provinces,id'],
+            'locality_id' => ['required', 'exists:localities,id'],
+            'is_particular' => ['nullable', 'boolean'],
+            'company_name' => ['required_if:is_particular,null', 'nullable', 'string', 'max:255'],
+            'terms' => ['required', 'accepted'],
         ]);
 
-        // Conditional company creation based on user input
-        if ($request->filled('tax_id')) {
-            // User is registering a formal company
-            $company = Company::create([
-                'name' => $request->company_name ?? $request->name . '\'s Company', // Use a dedicated company name field if available
-                'province_id' => $request->province_id,
-                'locality_id' => $request->locality_id,
-                'tax_id' => $request->tax_id,
-            ]);
-        } else {
-            // User is registering as an individual, create a personal company
-            $company = Company::create([
-                'name' => $request->name . '\'s Personal Account',
-                // tax_id, province_id, and locality_id will be null
-            ]);
-        }
+        $isParticular = $request->boolean('is_particular');
+        $companyName = $isParticular ? $request->tax_id : $request->company_name;
+
+        $company = Company::create([
+            'name' => $companyName,
+            'tax_id' => $request->tax_id,
+            'province_id' => $request->province_id,
+            'locality_id' => $request->locality_id,
+        ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'company_id' => $company->id, // Associate user with the new company
+            'company_id' => $company->id,
         ]);
 
-        // Assign the free plan by default to the newly created company
-        $freePlan = Plan::where('name', 'Gratis')->first();
-        if ($freePlan) {
-            Subscription::create([
-                'company_id' => $company->id,
-                'plan_id' => $freePlan->id,
-                'starts_at' => now(),
-                'status' => 'active',
-            ]);
-        }
+        // Find or create the free plan
+        $freePlan = Plan::firstOrCreate(
+            ['name' => 'Gratis'],
+            [
+                'price' => 0,
+                'max_entities' => 5,
+                'max_users_per_entity' => 1,
+                'features' => ['basic_reports', 'limited_support'],
+            ]
+        );
+
+        // Create the subscription for the company
+        Subscription::create([
+            'company_id' => $company->id,
+            'plan_id' => $freePlan->id,
+            'starts_at' => now(),
+            'status' => 'active',
+        ]);
 
         event(new Registered($user));
 

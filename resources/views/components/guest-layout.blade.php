@@ -8,6 +8,7 @@
         body { font-family: sans-serif; background-color: #f9f9f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .auth-card { background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
     </style>
+    <script src="https://unpkg.com/alpinejs" defer></script>
 </head>
 <body>
     <div class="auth-card">
