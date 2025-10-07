@@ -1,115 +1,156 @@
 <?php
 
-namespace App\Http\Controllers;
 
+namespace App\Http\Controllers;
 use App\Http\Requests\StoreEntityEquipmentRequest;
 use App\Http\Requests\UpdateEntityEquipmentRequest;
 use App\Models\Entity;
 use App\Models\EntityEquipment;
 use App\Models\EquipmentCategory;
 use Illuminate\Http\Request;
-
 class EntityEquipmentController extends Controller
 {
-    /**
-     * (CREATE) Muestra el formulario para añadir un nuevo equipo a una entidad.
-     */
     public function create(Request $request, Entity $entity)
     {
         $this->authorize('create', [EntityEquipment::class, $entity]);
 
-        $type = $request->query('type'); // 'fixed' or 'portable'
+        $type = $request->query('type', 'fixed'); // 'fixed' o 'portable'. Default a 'fixed'.
 
+        // Filtra las categorías y tipos según si es fijo o portátil
         $categories = EquipmentCategory::with(['equipmentTypes' => function ($query) use ($type) {
-            if ($type === 'fixed') {
-                $query->where('is_portable', false);
-            } elseif ($type === 'portable') {
-                $query->where('is_portable', true);
-            }
-        }])->orderBy('name')->get();
-
-        // Remove categories that ended up with no equipment types after filtering
-        $categories = $categories->filter(fn ($category) => $category->equipmentTypes->isNotEmpty());
-
-        // --- LÓGICA PARA UBICACIONES SEGÚN EL TIPO ---
-        if ($type === 'portable') {
-            $locations = ['Portátil']; // Ubicación fija para equipos portátiles
-        } else {
+            $query->where('is_portable', $type === 'portable');
+        }])->orderBy('name')->get()->filter(fn ($category) => $category->equipmentTypes->isNotEmpty());
+        
+        $locations = [];
+        if ($type === 'fixed') {
             $roomsData = $entity->details['rooms'] ?? [];
             $locations = collect($roomsData)->pluck('name')->filter()->unique()->all();
         }
 
-        // Obtenemos los equipos existentes para mostrarlos en la tabla.
-        $equipments = $entity->entityEquipments()->with('equipmentType.equipmentCategory')->latest()->get();
-
-        return view('equipment.create', compact('entity', 'categories', 'locations', 'equipments', 'type'));
+        return view('equipment.create', compact('entity', 'categories', 'locations', 'type'));
     }
 
-    /**
-     * (EDIT) Muestra el formulario para editar un equipo del inventario.
-     */
+    public function store(StoreEntityEquipmentRequest $request, Entity $entity)
+    {
+        $this->authorize('create', [EntityEquipment::class, $entity]);
+        
+        $validatedData = $request->validated();
+        
+        // Si es portátil, forzamos la ubicación a NULL (o a "Portátil" si lo prefieres)
+        $equipmentType = \App\Models\EquipmentType::find($validatedData['equipment_type_id']);
+        if ($equipmentType && $equipmentType->is_portable) {
+            $validatedData['location'] = null; // O 'Portátil'
+        }
+
+        $entity->entityEquipments()->create($validatedData);
+
+        return redirect()->route('entities.show', $entity)->with('success', 'Equipo añadido con éxito.');
+    }
+    
     public function edit(EntityEquipment $equipment)
     {
         $this->authorize('update', $equipment);
 
         $categories = EquipmentCategory::with('equipmentTypes')->orderBy('name')->get();
-
-        // --- ¡MISMA LÓGICA CORRECTA AQUÍ! ---
+        
         $roomsData = $equipment->entity->details['rooms'] ?? [];
         $locations = collect($roomsData)->pluck('name')->filter()->unique()->all();
 
-        return view('equipment.edit', compact('equipment', 'categories', 'locations'));
+        // Determinamos el tipo para la vista
+        $type = $equipment->equipmentType->is_portable ? 'portable' : 'fixed';
+
+        return view('equipment.edit', compact('equipment', 'categories', 'locations', 'type'));
     }
 
-    /**
-     * (STORE) Guarda el nuevo equipo en la base de datos.
-     */
-    public function store(StoreEntityEquipmentRequest $request, Entity $entity)
+    public function update(UpdateEntityEquipmentRequest $request, EntityEquipment $equipment)
     {
-        $this->authorize('create', [EntityEquipment::class, $entity]);
+        $this->authorize('update', $equipment);
         
-        // 1. Crear el nuevo equipo
-        $newEquipment = $entity->entityEquipments()->create($request->validated());
-
-        // 2. Si es un reemplazo, actualizar el equipo antiguo
-        if ($request->has('replacing')) {
-            $oldEquipment = EntityEquipment::find($request->input('replacing'));
-            if ($oldEquipment && $oldEquipment->entity_id === $entity->id) { // Doble chequeo de pertenencia
-                $this->authorize('delete', $oldEquipment);
-                
-                $oldEquipment->replaced_by_equipment_id = $newEquipment->id;
-                $oldEquipment->save();
-                $oldEquipment->delete(); // Soft delete
-            }
+        $validatedData = $request->validated();
+        
+        $equipmentType = \App\Models\EquipmentType::find($validatedData['equipment_type_id']);
+        if ($equipmentType && $equipmentType->is_portable) {
+            $validatedData['location'] = null; // O 'Portátil'
         }
 
-        // 3. Redirigir a la página de detalles de la entidad
-        return redirect()->route('entities.show', $entity)
-                         ->with('success', '¡Equipo añadido con éxito!');
+        $equipment->update($validatedData);
+        return redirect()->route('entities.show', $equipment->entity)->with('success', 'Equipo actualizado.');
     }
 
-    /**
-     * (PRE-DESTROY) Muestra la página intermedia para decidir cómo eliminar un equipo.
-     */
-    public function preDestroy(EntityEquipment $equipment)
-    {
-        $this->authorize('delete', $equipment);
-        return view('equipment.pre-destroy', compact('equipment'));
+    public function show(Entity $entity, InventoryAnalysisService $analysisService)
+{
+    // 1. Autorización
+    $this->authorize('view', $entity);
+
+    // 2. Carga ansiosa de relaciones para optimizar consultas
+    $entity->load([
+        'locality.province',
+        'supplies.contracts.invoices.usageSnapshots', // Carga todo el árbol de facturación
+        'entityEquipments' => function ($query) {
+            $query->withTrashed()->with('equipmentType.equipmentCategory', 'usageSnapshots'); // Incluye equipos borrados
+        },
+    ]);
+
+    // 3. Obtener todas las facturas de la entidad
+    $allInvoices = $entity->supplies->flatMap->contracts->flatMap->invoices->sortByDesc('end_date');
+
+    // 4. Calcular el "Consumo Ajustado" para cada factura
+    $allInvoices->each(function ($invoice) {
+        $adjustedConsumption = $invoice->usageSnapshots->sum('calculated_kwh_period');
+        $invoice->adjusted_consumption = $adjustedConsumption;
+    });
+
+    // 5. Encontrar el contrato activo
+    $activeContract = $entity->supplies->flatMap->contracts->where('is_active', true)->first();
+    
+    // 6. Preparar el resumen del período activo (basado en la última factura)
+    $lastInvoice = $allInvoices->first();
+    $periodSummary = (object) [
+        'period_label' => 'N/A',
+        'period_days' => 0,
+        'real_consumption' => 0,
+        'estimated_consumption' => 0,
+    ];
+
+    if ($lastInvoice) {
+        $periodDays = $lastInvoice->start_date->diffInDays($lastInvoice->end_date) + 1;
+        $inventoryForPeriod = $analysisService->calculateEnergyProfileForPeriod($entity, $periodDays);
+        
+        $periodSummary->period_label = $lastInvoice->start_date->format('d/m') . ' - ' . $lastInvoice->end_date->format('d/m/Y');
+        $periodSummary->period_days = $periodDays;
+        $periodSummary->real_consumption = $lastInvoice->total_energy_consumed_kwh;
+        // El consumo estimado lo recalculamos aquí para el dashboard, pero el "ajustado" histórico viene de los snapshots
+        $periodSummary->estimated_consumption = $lastInvoice->adjusted_consumption;
     }
 
-    /**
-     * (DESTROY) Elimina (soft delete) un equipo del inventario.
-     */
+    // 7. Preparar los datos del inventario de equipos
+    $allEntityEquipments = $entity->entityEquipments;
+    
+    // Calcular el uso promedio real para cada equipo a partir de sus snapshots
+    $allEntityEquipments->each(function ($equipment) {
+        // Usamos la función de agregación de Laravel para calcular el promedio directamente en la relación
+        $avgMinutes = $equipment->usageSnapshots()->avg('avg_daily_use_minutes');
+        $equipment->usage_snapshots_avg_avg_daily_use_minutes = $avgMinutes;
+    });
+
+    // 8. Pasar todas las variables a la vista
+    return view('entities.show', compact(
+        'entity',
+        'activeContract',
+        'allInvoices',
+        'periodSummary',
+        'allEntityEquipments'
+    ));
+}
+
     public function destroy(EntityEquipment $equipment)
     {
         $this->authorize('delete', $equipment);
-        
         $entity = $equipment->entity;
         $equipment->delete();
-
-        return redirect()->route('entities.show', $entity)
-                         ->with('success', 'El equipo ha sido eliminado correctamente.');
+        return redirect()->route('entities.show', $entity)->with('success', 'Equipo eliminado.');
     }
 
-    // ... (El resto de los métodos: update, show, destroy, que ya están bien)
+    // He quitado preDestroy y la lógica de reemplazo para simplificar.
+    // Eso lo podemos añadir después como un flujo separado.
 }

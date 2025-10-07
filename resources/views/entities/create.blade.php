@@ -22,14 +22,14 @@
         </div>
         
         <div style="margin-top: 15px;">
-            <label for="type">Tipo de Entidad</label><br>
-            <select id="type" name="type" required style="width: 100%; padding: 8px;">
-                <option value="">Selecciona un tipo</option>
-                <option value="hogar" {{ old('type') == 'hogar' ? 'selected' : '' }}>Hogar</option>
-                <option value="oficina" {{ old('type') == 'oficina' ? 'selected' : '' }}>Oficina</option>
-                <option value="comercio" {{ old('type') == 'comercio' ? 'selected' : '' }}>Comercio</option>
-            </select>
-        </div>
+    <label for="type">Tipo de Entidad</label><br>
+    <select id="type" name="type" required style="width: 100%; padding: 8px;">
+        <option value="">Selecciona un tipo</option>
+        <option value="hogar" {{ old('type') == 'hogar' ? 'selected' : '' }}>Hogar</option>
+        <option value="oficina" {{ old('type') == 'oficina' ? 'selected' : '' }}>Oficina</option>
+        <option value="comercio" {{ old('type') == 'comercio' ? 'selected' : '' }}>Comercio</option>
+    </select>
+</div>
 
         <div style="margin-top: 15px;">
             <label for="province_id">Provincia</label><br>
@@ -64,9 +64,27 @@
             <label for="details_occupants_count">Cantidad de Personas</label><br>
             <input type="number" name="details[occupants_count]" id="details_occupants_count" value="{{ old('details.occupants_count', 1) }}" min="1" style="width: 100%; padding: 8px;">
         </div>
-        <div style="margin-top: 15px;">
-            <label for="details_surface_area">Superficie en m² (Opcional)</label><br>
-            <input type="number" name="details[surface_area]" id="details_surface_area" value="{{ old('details.surface_area') }}" min="0" style="width: 100%; padding: 8px;">
+        <div x-data="{ showCalculator: false, largo: '', ancho: '', superficie: '{{ old('details.surface_area') }}' }" x-init="$watch('largo', value => superficie = value * ancho); $watch('ancho', value => superficie = largo * value)">
+            <div style="margin-top: 15px;">
+                <label for="details_surface_area">
+                    Superficie en m² (Opcional)
+                    <a href="#" @click.prevent="showCalculator = !showCalculator" style="font-size: 0.8em; margin-left: 10px; text-decoration: none;">
+                        ¿No la conoces? Calcúlala aquí
+                    </a>
+                </label><br>
+                <input type="number" name="details[surface_area]" id="details_surface_area" x-model="superficie" min="0" style="width: 100%; padding: 8px; background-color: #f3f4f6;" readonly>
+            </div>
+
+            <div x-show="showCalculator" x-transition style="display: flex; gap: 15px; margin-top: 10px; background-color: #f9f9f9; padding: 15px; border-radius: 8px;">
+                <div style="flex-grow: 1;">
+                    <label for="calc_largo">Largo (m)</label><br>
+                    <input type="number" id="calc_largo" x-model.debounce.500ms="largo" style="width: 100%; padding: 8px;" placeholder="ej: 5.5">
+                </div>
+                <div style="flex-grow: 1;">
+                    <label for="calc_ancho">Ancho (m)</label><br>
+                    <input type="number" id="calc_ancho" x-model.debounce.500ms="ancho" style="width: 100%; padding: 8px;" placeholder="ej: 4">
+                </div>
+            </div>
         </div>
 
         <!-- =========== SECCIÓN 2: ESTRUCTURA Y HABITACIONES =========== -->

@@ -32,17 +32,27 @@ class EntityController extends Controller
         return view('entities.create', compact('localities', 'provinces'));
     }
 
-    public function store(StoreEntityRequest $request)
-    {
-        $data = $request->validated();
-        $detailsData = $data['details'] ?? [];
-        if (isset($detailsData['rooms'])) {
-            $detailsData['rooms'] = array_values($detailsData['rooms']);
-        }
-        $data['details'] = $detailsData;
-        Auth::user()->company->entities()->create($data);
-        return redirect()->route('entities.index')->with('success', 'Entidad creada exitosamente.');
+   public function store(StoreEntityRequest $request)
+{
+    // Obtenemos todos los datos validados
+    $validatedData = $request->validated();
+    
+    
+    unset($validatedData['province_id']);
+
+    // Procesamos el JSON 'details' como ya lo hacíamos
+    $detailsData = $validatedData['details'] ?? [];
+    if (isset($detailsData['rooms'])) {
+        $detailsData['rooms'] = array_values($detailsData['rooms']);
     }
+    $validatedData['details'] = $detailsData;
+
+    // Creamos la entidad con los datos limpios
+    Auth::user()->company->entities()->create($validatedData);
+
+    return redirect()->route('entities.index')
+                     ->with('success', 'Entidad creada exitosamente.');
+}
 
     /**
      * (SHOW) Muestra los detalles de una entidad específica y su análisis.

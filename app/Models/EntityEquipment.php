@@ -5,76 +5,46 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\EquipmentUsageSnapshot;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EntityEquipment extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'entity_equipment'; // Buena práctica especificar el nombre
+    protected $table = 'entity_equipment';
 
     protected $fillable = [
-        'entity_id', 'equipment_type_id', 'quantity', 'acquisition_cost', 'custom_name',
-        'power_watts_override', 'avg_daily_use_minutes_override',
-        'replaced_by_equipment_id', 'is_backup_for_id', 'location',
-        'has_standby_mode'
+        'entity_id', 'equipment_type_id', 'quantity', 'custom_name', 'location',
+        'power_watts_override', 'avg_daily_use_minutes_override', 'has_standby_mode',
+        'replaced_by_equipment_id', 'is_backup_for_id', 'acquisition_cost',
+    ];
+    
+    protected $casts = [
+        'has_standby_mode' => 'boolean',
     ];
 
-    public function entity()
+    public function entity(): BelongsTo
     {
         return $this->belongsTo(Entity::class);
     }
 
-    public function equipmentType()
+    public function equipmentType(): BelongsTo
     {
         return $this->belongsTo(EquipmentType::class);
     }
 
-    /**
-     * El equipo que reemplazó a este.
-     */
     public function replacement(): BelongsTo
     {
+        // Corregido: La relación es con la clave foránea 'replaced_by_equipment_id'
+        // pero apunta a la clave primaria 'id' de la misma tabla.
         return $this->belongsTo(EntityEquipment::class, 'replaced_by_equipment_id');
     }
 
-    /**
-     * Obtiene todos los snapshots de uso histórico para este equipo.
-     */
-    public function usageSnapshots()
+    public function usageSnapshots(): HasMany
     {
         return $this->hasMany(EquipmentUsageSnapshot::class);
     }
-
-    public static function getUniqueLocationsForEntity(Entity $entity): \Illuminate\Support\Collection
-    {
-        $locations_from_db = $entity->entityEquipment()->whereNotNull('location')->distinct()->pluck('location');
-
-        $unique_locations = collect();
-
-        foreach ($locations_from_db as $location_value) {
-            $decoded = json_decode($location_value, true);
-
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                if (isset($decoded['rooms']) && is_array($decoded['rooms'])) {
-                    foreach ($decoded['rooms'] as $room) {
-                        if (!empty($room['name'])) {
-                            $unique_locations->push($room['name']);
-                        }
-                    }
-                } elseif (isset($decoded['name'])) {
-                    if (!empty($decoded['name'])) {
-                        $unique_locations->push($decoded['name']);
-                    }
-                }
-            } else {
-                if (!empty($location_value)) {
-                    $unique_locations->push($location_value);
-                }
-            }
-        }
-
-        return $unique_locations->unique()->sort()->values();
-    }
+    
+    // HEMOS ELIMINADO EL MÉTODO getUniqueLocationsForEntity()
 }

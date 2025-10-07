@@ -22,18 +22,22 @@ class StoreEntityRequest extends FormRequest
     public function rules(): array
     {
         return [
+             // Campos que SÍ se guardan en la tabla 'entities'
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'in:hogar,oficina,comercio'], // Asegura que solo se usen los tipos permitidos
-            'province_id' => ['required', 'exists:provinces,id'],
-            'locality_id' => ['required', 'exists:localities,id'], // Asegura que la localidad exista en nuestra BD
+            'type' => ['required', 'in:hogar,oficina,comercio'],
+            'locality_id' => ['required', 'exists:localities,id'],
             'address_street' => ['nullable', 'string', 'max:255'],
-            // Aquí puedes añadir validación para los campos del JSON 'details'
-            // Ej: 'details.bedrooms_count' => ['required_if:type,hogar', 'integer', 'min:0']
+            
+            // Campo que NO se guarda directamente pero se usa para la cascada.
+            // Lo validamos para asegurarnos de que el usuario seleccionó algo.
+            'province_id' => ['required', 'exists:provinces,id'],
+            
+            // Campos del JSON 'details'
             'details' => ['nullable', 'array'],
+            'details.occupants_count' => ['nullable', 'integer', 'min:1'],
+            'details.surface_area' => ['nullable', 'numeric', 'min:0'],
             'details.rooms' => ['nullable', 'array'],
-            // Validamos que cada habitación en el array tenga un nombre
-            'details.rooms.*.name' => ['required', 'string', 'max:100'],
-            'details.surface_area' => ['nullable', 'integer', 'min:0'],
+            'details.rooms.*.name' => ['sometimes', 'required', 'string', 'max:100'],
         ];
     }
 }

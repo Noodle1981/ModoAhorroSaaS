@@ -73,7 +73,11 @@ Route::middleware(['auth'])->group(function () {
 
     // Grupo de rutas para Equipos, incluyendo acciones personalizadas
     Route::get('/equipment/{equipment}/pre-destroy', [EntityEquipmentController::class, 'preDestroy'])->name('equipment.pre-destroy');
-    Route::resource('entities.equipment', EntityEquipmentController::class)->shallow();
+    Route::resource('entities.equipment', EntityEquipmentController::class)
+    ->shallow()
+    ->except(['create', 'store']);
+    Route::get('/entities/{entity}/equipment/create', [EntityEquipmentController::class, 'create'])->name('entities.equipment.create');
+Route::post('/entities/{entity}/equipment', [EntityEquipmentController::class, 'store'])->name('entities.equipment.store');
 
     // ======================================================================
     // === NUEVAS RUTAS PARA LA CONFIRMACIÓN DE USO (SNAPSHOTS) ===

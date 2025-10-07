@@ -18,7 +18,7 @@ class Entity extends Model
         'city',
         'postal_code',
         'country',
-        'entity_type',
+        'type',
         'area',
         'occupants',
     ];
