@@ -1,9 +1,32 @@
 <x-app-layout>
+
+    @php
+        // Obtenemos la información del plan para la lógica condicional
+        $plan = $user->subscription?->plan;
+        $canAddMore = false;
+        if ($plan) {
+            $entityCount = $entities->count();
+            $maxEntities = $plan->max_entities;
+            $canAddMore = is_null($maxEntities) || $entityCount < $maxEntities;
+        }
+    @endphp
+
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h1>Mis Entidades</h1>
-        <a href="{{ route('entities.create') }}" style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
-            + Añadir Nueva Entidad
-        </a>
+        
+        {{-- Lógica para mostrar el botón o el mensaje de mejora --}}
+        @if ($canAddMore)
+            <a href="{{ route('entities.create') }}" style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
+                + Añadir Nueva Entidad
+            </a>
+        @else
+            <div style="text-align: right;">
+                <span style="background-color: #6c757d; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; cursor: not-allowed; opacity: 0.65; font-size: 0.9em;">
+                    Límite de entidades alcanzado
+                </span>
+                <a href="#" style="font-size: 0.9em; margin-top: 5px; display: block;">Mejorar plan</a>
+            </div>
+        @endif
     </div>
 
     @if($entities->isEmpty())

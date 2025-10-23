@@ -19,11 +19,12 @@ class EntityController extends Controller
 
     public function index()
     {
+        $user = Auth::user();
         $entities = collect(); // Initialize as an empty collection
-        if (Auth::user()->company) {
-            $entities = Auth::user()->company->entities()->latest()->get();
+        if ($user->company) {
+            $entities = $user->company->entities()->latest()->get();
         }
-        return view('entities.index', compact('entities'));
+        return view('entities.index', compact('entities', 'user'));
     }
 
     public function create()
