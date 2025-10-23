@@ -1,101 +1,102 @@
 # Modo Ahorro
 
-Modo Ahorro es una aplicación web diseñada para ayudar a los usuarios a comprender y optimizar su consumo de energía. Permite a los usuarios registrar sus propiedades, inventariar sus equipos eléctricos, analizar sus facturas y recibir recomendaciones personalizadas para reducir sus costos energéticos y su huella de carbono.
+Modo Ahorro es una aplicación web diseñada para ayudar a los usuarios a comprender y optimizar su consumo de energía. Permite a los usuarios registrar sus propiedades (entidades), inventariar sus equipos eléctricos, analizar sus facturas y recibir recomendaciones personalizadas para reducir sus costos energéticos y su huella de carbono.
 
-## Contexto del Proyecto
+## Filosofía de Navegación
 
-El objetivo principal de este proyecto es ofrecer una herramienta intuitiva que centralice toda la información energética de un usuario. Desde el detalle de sus contratos de suministro hasta el consumo de cada electrodoméstico, Modo Ahorro busca empoderar al usuario con datos claros y accionables para tomar decisiones informadas sobre su uso de la energía.
+La aplicación se estructura en torno a dos niveles de dashboards para una experiencia de usuario clara y eficiente:
 
-La aplicación también cuenta con un panel de administración para "Gestores", diseñado para que personal de la empresa pueda supervisar a los clientes y gestionar los catálogos de la aplicación.
+1.  **Dashboard General (`/dashboard`):** Actúa como la página de inicio y un centro de mando global. Ofrece un resumen de todas las entidades gestionadas por el usuario, mostrando métricas clave y proporcionando acceso directo a cada una de ellas.
+2.  **Dashboard de Entidad (`/entities/{id}`):** Es el panel de control detallado para una entidad específica (ej: un hogar o una oficina). Aquí, el usuario puede analizar el consumo, gestionar el inventario de equipos, administrar suministros y facturas, y ver informes específicos de esa entidad.
 
 ## Funcionalidades Implementadas
 
 *   **Autenticación de Usuarios:** Sistema completo de registro, inicio y cierre de sesión.
 *   **Gestión de Perfil:** Los usuarios pueden editar su información personal.
+*   **Navegación por Dashboards:**
+    *   **Dashboard General:** Vista de pájaro de todas las propiedades del usuario.
+    *   **Dashboard de Entidad:** Análisis y gestión detallada por propiedad.
+    *   **Redirección Inteligente:** Los usuarios con una sola entidad son llevados directamente a su dashboard de entidad para un acceso más rápido.
 *   **Gestión de Entidades y Suministros:** CRUD completo para propiedades y sus puntos de suministro.
 *   **Gestión de Contratos y Facturas:** Permite registrar contratos y facturas de compañías eléctricas.
 *   **Inventario de Equipos Dinámico:**
     *   Formulario de creación de equipos con lógica condicional avanzada.
     *   Menús desplegables en cascada (Categoría -> Tipo de Equipo).
-    *   Campos que aparecen o se ocultan según las propiedades del equipo (ej: la ubicación no se pide para equipos portátiles).
-    *   Entrada de tiempo de uso adaptable y cálculo opcional de **consumo en standby**.
-*   **Sistema de Historial y Snapshots de Uso:**
-    *   La aplicación ya no es "amnésica". Se ha implementado una arquitectura que guarda un "snapshot" (una foto) del uso del inventario para cada período de facturación.
-    *   **Nuevo Flujo:** Tras cargar una factura, el usuario es redirigido a una pantalla para confirmar los patrones de uso de sus equipos para ese período específico.
-    *   **Nuevos Componentes:** Este sistema se apoya en una nueva tabla `equipment_usage_snapshots`, el controlador `UsageSnapshotController` y rutas dedicadas.
-    *   **Análisis de Período Activo:** La página de detalle de la entidad ahora muestra un dashboard que compara con precisión el consumo real de la última factura contra el consumo estimado del inventario para ese mismo período.
-*   **Motor de Análisis y Recomendaciones (v1.5):**
-    *   Cálculo del perfil de consumo energético anual estimado basado en el inventario.
-    *   Generación de un informe de oportunidades de mejora con 3 estados por equipo: "Equipo Deficiente" (con recomendación), "Equipo Eficiente" y "Equipo sin Comparativa".
-    *   **Log de Faltantes:** Creación de un log (`mejoras_faltantes.log`) que registra automáticamente los equipos que no se pudieron comparar por falta de alternativas en el catálogo, facilitando la mejora continua del motor.
-*   **Panel de Gestor:** Sección privada para administradores (`/gestor`) con gestión de clientes y catálogos de la aplicación.
-*   **Flujo de Gestión de Facturas Mejorado:**
-    *   **Guía al Usuario:** La interfaz ahora guía activamente al usuario para que complete los datos necesarios. Si una entidad no tiene un punto de suministro o un contrato, los enlaces para "añadir factura" se transforman inteligentemente para llevar al usuario al formulario de creación de suministros o contratos, evitando así callejones sin salida.
-    *   **Centro de Gestión de Suministros:** La página de detalles de un suministro se ha rediseñado para ser un centro de operaciones de facturación. Ahora incluye un botón para añadir facturas directamente al contrato activo y un historial completo de todas las facturas cargadas para ese suministro.
+    *   Campos que se adaptan a las propiedades del equipo (ej: ubicación para equipos fijos).
+    *   Cálculo opcional de **consumo en standby**.
+*   **Análisis de Período Activo:** El dashboard de la entidad compara el consumo real (de la factura) con el consumo estimado (del inventario) para el último período de facturación, identificando el porcentaje de consumo explicado.
+*   **Flujo de Usuario Guiado:** La interfaz guía activamente al usuario para que complete los datos necesarios. Si faltan datos (como un suministro o un contrato), los botones se adaptan para llevar al usuario al formulario correcto, evitando callejones sin salida.
 
-## Etapas Futuras
+## Modelo de Dominio Principal
 
-*   **Dashboard Histórico:** Aprovechar el nuevo sistema de snapshots para construir un dashboard con gráficos que muestren la evolución del consumo real vs. el estimado a lo largo del tiempo.
-*   **Refinamiento del Motor de Análisis:** Ampliar el tipo de recomendaciones (ej: sugerencias por cambio de hábitos, optimización de tarifas).
-*   **Notificaciones y Alertas:** Implementar un sistema que notifique a los usuarios sobre mantenimientos próximos o nuevas oportunidades de ahorro detectadas.
+La lógica de la aplicación gira en torno a los siguientes conceptos:
+
+*   **Usuario (User):** El titular de la cuenta.
+*   **Compañía (Company):** Una entidad que agrupa a un usuario y sus propiedades. Permite la futura expansión a modelos B2B.
+*   **Entidad (Entity):** Una propiedad que se quiere analizar (ej: "Casa de Campo", "Oficina Central").
+*   **Suministro (Supply):** Un punto de suministro eléctrico dentro de una Entidad, identificado por su CUPS.
+*   **Contrato (Contract):** Un contrato con una comercializadora eléctrica, asociado a un Suministro.
+*   **Factura (Invoice):** Una factura de un período específico, asociada a un Contrato.
+*   **Equipo de Entidad (EntityEquipment):** Un equipo o electrodoméstico individual que pertenece a una Entidad.
+
+## Nota sobre el Rol "Gestor"
+
+El código fuente contiene rutas, controladores y vistas para un panel de "Gestor" (ubicado en el prefijo de ruta `/gestor`). **Esta funcionalidad está actualmente comentada y desactivada del flujo principal de la aplicación.**
+
+Se tomó la decisión de centrar el desarrollo en la experiencia del usuario final. El código del Gestor se ha mantenido por si se decide retomar en el futuro, pero es posible que sea eliminado en próximas versiones para simplificar la base del código.
 
 ## Tecnologías Utilizadas
 
 *   **Backend:** Laravel 11
-*   **Frontend:** Vite (con una implementación básica de Blade y JavaScript, pendiente de rediseño con un framework como Vue/React o mejora con Tailwind CSS).
-*   **Base de Datos:** SQLite (configurado por defecto para desarrollo local).
-*   **Versión de PHP:** 8.2 o superior
+*   **Frontend:** Vite con Blade y JavaScript vanilla.
+*   **Base de Datos:** SQLite (para desarrollo).
+*   **Versión de PHP:** 8.2 o superior.
 
-## Puesta en Marcha (Instalación)
+## Instalación y Puesta en Marcha
 
 Para clonar y ejecutar este proyecto en un entorno de desarrollo local, sigue estos pasos:
 
 1.  **Clonar el repositorio:**
     ```bash
     git clone <URL_DEL_REPOSITORIO>
-    cd ModoAhorroSaaS
+    cd modoahorro
     ```
 
-2.  **Instalar dependencias de PHP:**
+2.  **Instalar dependencias:**
     ```bash
     composer install
-    ```
-
-3.  **Instalar dependencias de JavaScript:**
-    ```bash
     npm install
     ```
 
-4.  **Configurar el entorno:**
-    Copia el archivo de ejemplo para las variables de entorno y genera la clave de la aplicación.
+3.  **Configurar el entorno:**
+    Copia el archivo `.env.example` y genera la clave de la aplicación.
     ```bash
     cp .env.example .env
     php artisan key:generate
     ```
 
-5.  **Crear la base de datos:**
-    El proyecto está configurado para usar SQLite. Simplemente crea el archivo de la base de datos.
+4.  **Crear la base de datos:**
+    El proyecto usa SQLite por defecto. Simplemente crea el archivo.
     ```bash
     touch database/database.sqlite
     ```
 
-6.  **Ejecutar las migraciones y los seeders:**
-    Esto creará la estructura de la base de datos y la llenará con los datos de catálogo iniciales.
+5.  **Ejecutar migraciones y seeders:**
+    Esto creará la estructura de la base de datos y la llenará con datos de catálogo iniciales.
     ```bash
     php artisan migrate:fresh --seed
     ```
 
-7.  **Compilar los assets y arrancar el servidor:**
+6.  **Compilar assets y arrancar el servidor de desarrollo:**
     ```bash
-    npm run dev
-    php artisan serve
+    npm run dev & php artisan serve
     ```
 
-    Una vez ejecutado, la aplicación estará disponible en `http://127.0.0.1:8000`.
+La aplicación estará disponible en `http://127.0.0.1:8000`.
 
 ## Ejecución de Pruebas
 
-Para ejecutar el conjunto de pruebas automatizadas y asegurar que todo funciona correctamente, utiliza el siguiente comando:
+Para ejecutar el conjunto de pruebas automatizadas, utiliza el siguiente comando:
 
 ```bash
 php artisan test

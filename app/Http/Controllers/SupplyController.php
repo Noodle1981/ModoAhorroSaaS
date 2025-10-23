@@ -12,6 +12,13 @@ class SupplyController extends Controller
     // Hemos quitado el __construct() para manejar la autorización
     // explícitamente en cada método, lo que es más claro.
 
+    public function index(Entity $entity)
+    {
+        $this->authorize('viewAny', [Supply::class, $entity]);
+        $supplies = $entity->supplies()->with('rate')->get();
+        return view('supplies.index', compact('entity', 'supplies'));
+    }
+
     public function create(Entity $entity)
     {
         // Autorizamos ANTES de hacer nada.

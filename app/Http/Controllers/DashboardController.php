@@ -13,16 +13,23 @@ class DashboardController extends Controller
      */
     public function index(): View
     {
-        $user = Auth::user();
+        $user = Auth::user()->load('company.entities');
 
-        // En el futuro, aquí podrías recopilar datos para mostrar en el dashboard,
-        // como la cantidad de entidades, el consumo del último mes, etc.
-        // $entityCount = $user->company->entities()->count();
-        // $lastMonthConsumption = ...
+        $entities = $user->company ? $user->company->entities : collect();
 
-        // Por ahora, simplemente devolvemos la vista.
+        $globalSummary = [
+            'entity_count' => $entities->count(),
+            'total_consumption' => 0, // TODO: Implementar cálculo real
+            'total_cost' => 0,        // TODO: Implementar cálculo real
+        ];
+
+        // En el futuro, se podría expandir esto para calcular el consumo y coste
+        // global real iterando sobre las últimas facturas de cada entidad.
+
         return view('dashboard', [
-            'user' => $user
+            'user' => $user,
+            'entities' => $entities,
+            'globalSummary' => (object) $globalSummary,
         ]);
     }
 }

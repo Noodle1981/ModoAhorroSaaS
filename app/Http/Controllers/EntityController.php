@@ -24,6 +24,14 @@ class EntityController extends Controller
         if ($user->company) {
             $entities = $user->company->entities()->latest()->get();
         }
+
+        // Si el usuario tiene exactamente una entidad, lo redirigimos
+        // directamente al "dashboard" de esa entidad (la vista show).
+        if ($entities->count() === 1) {
+            return redirect()->route('entities.show', $entities->first());
+        }
+
+        // Si tiene 0 o más de 1, mostramos la lista normal.
         return view('entities.index', compact('entities', 'user'));
     }
 
@@ -67,6 +75,9 @@ class EntityController extends Controller
 public function show(Entity $entity, InventoryAnalysisService $analysisService)
 {
     $this->authorize('view', $entity);
+
+    // Cargamos las relaciones que necesitaremos en la vista para el dashboard.
+    $entity->load('supplies.contracts.invoices', 'locality', 'equipments');
 
     // --- LÓGICA DE PERÍODO ACTIVO ---
     

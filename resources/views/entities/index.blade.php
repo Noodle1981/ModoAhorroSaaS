@@ -11,6 +11,7 @@
         }
     @endphp
 
+    <a href="{{ route('dashboard') }}" style="text-decoration: none; color: #007bff; margin-bottom: 1rem; display: inline-block;">&larr; Volver al Dashboard</a>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h1>Mis Entidades</h1>
         

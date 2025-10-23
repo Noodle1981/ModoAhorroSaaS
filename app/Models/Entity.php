@@ -38,7 +38,7 @@ class Entity extends Model
         return $this->hasMany(Supply::class);
     }
 
-    public function entityEquipment()
+    public function equipments()
     {
         return $this->hasMany(EntityEquipment::class);
     }

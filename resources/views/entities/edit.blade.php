@@ -75,6 +75,17 @@
             <button type="button" id="add-room-btn" style="margin-top: 10px; background-color: #007bff; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px;">+ Añadir Habitación</button>
         </div>
 
+        <!-- =========== SECCIÓN 3: SUMINISTROS ELÉCTRICOS =========== -->
+        <div style="margin-top: 30px; border: 1px solid #ccc; padding: 20px; border-radius: 8px;">
+            <h3>Suministros Eléctricos</h3>
+            <p style="color: #666; font-size: 0.9em;">Añade y gestiona los suministros eléctricos asociados a esta entidad.</p>
+            <div style="margin-top: 1rem;">
+                <a href="{{ route('entities.supplies.create', ['entity' => $entity->id]) }}" style="background-color: #17a2b8; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
+                    + Añadir Suministro Eléctrico
+                </a>
+            </div>
+        </div>
+
         <div style="margin-top: 30px; text-align: right;">
             <button type="submit" style="background-color: #28a745; color: white; padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; font-size: 1.1em;">
                 Guardar Cambios en la Entidad

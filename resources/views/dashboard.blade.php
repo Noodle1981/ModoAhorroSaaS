@@ -1,74 +1,71 @@
 <x-app-layout>
 
     @php
-        // Usamos el operador null-safe (?->) por si la suscripción fuera nula.
-        // De esta forma, $plan será null en lugar de causar un error.
         $plan = $user->subscription?->plan;
     @endphp
 
-    <h1>Dashboard Principal</h1>
+    <h1 style="font-size: 2em; font-weight: bold; margin-bottom: 20px;">Dashboard General</h1>
 
-    {{-- Verificamos si el usuario realmente tiene un plan asociado --}}
-    @if ($plan)
-        @php
-            // Accedemos a las entidades a través de la compañía del usuario.
-            // Añadimos una comprobación para asegurarnos de que la compañía existe.
-            $entityCount = $user->company ? $user->company->entities()->count() : 0;
-            $maxEntities = $plan->max_entities;
-        @endphp
+    <!-- ======================================================= -->
+    <!-- RESUMEN GLOBAL                                          -->
+    <!-- ======================================================= -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div style="padding: 20px; background-color: #f9f9f9; border-radius: 8px; text-align: center;">
+            <span style="font-size: 0.9em; color: #666;">Nº de Entidades</span>
+            <p style="font-size: 2.5em; font-weight: bold; margin: 5px 0; color: #007bff;">
+                {{ $globalSummary->entity_count }}
+            </p>
+        </div>
+        <!-- Puedes añadir más métricas globales aquí cuando las implementes en el controlador -->
+    </div>
 
-        {{-- Lógica para el Plan Gratuito --}}
-        @if ($plan->name === 'Gratuito')
-            
-            @if ($entityCount < $maxEntities)
-                {{-- Aún no ha creado su única entidad permitida --}}
-                <p>¡Bienvenido a tu panel de control de Modo Ahorro!</p>
-                <p>Estás en el plan <strong>Gratuito</strong>. Comienza a ahorrar energía y dinero.</p>
-                <div style="margin-top: 2rem;">
-                    <a href="{{ route('entities.create') }}" style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
-                        + Analiza tu hogar
-                    </a>
-                </div>
-            @else
-                {{-- Ya creó la entidad permitida --}}
-                <p>¡Bienvenido de nuevo!</p>
-                <p>Ya estás analizando tu hogar. Para gestionar más entidades (oficinas, otros hogares, etc.), necesitarás un plan superior.</p>
+    <!-- ======================================================= -->
+    <!-- LISTA DE ENTIDADES                                      -->
+    <!-- ======================================================= -->
+    <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="font-size: 1.5em; font-weight: bold;">Mis Entidades</h2>
+            @if ($plan && (is_null($plan->max_entities) || $globalSummary->entity_count < $plan->max_entities))
+                <a href="{{ route('entities.create') }}" style="background-color: #28a745; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
+                    + Añadir Nueva Entidad
+                </a>
             @endif
+        </div>
 
-            {{-- Mensaje de Upsell --}}
-            <div style="margin-top: 3rem; border: 1px solid #e2e8f0; border-radius: 5px; padding: 1.5rem; background-color: #f7fafc;">
-                <h3 style="font-size: 1.25rem; font-weight: bold;">¿Necesitas analizar más lugares?</h3>
-                <p style="margin-top: 0.5rem;">Adquiere un plan superior para analizar múltiples hogares, oficinas y/o comercios y lleva tu ahorro al siguiente nivel.</p>
-                <a href="#" style="display: inline-block; margin-top: 1rem; background-color: #2d3748; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
-                    Ver Planes y Precios
+        @if($entities->isEmpty())
+            <div style="border: 1px dashed #ccc; padding: 40px; text-align: center; border-radius: 8px; background-color: #fdfdfd;">
+                <p>Aún no has añadido ninguna entidad.</p>
+                <a href="{{ route('entities.create') }}" style="display: inline-block; margin-top: 10px; background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                    + Crea tu primera entidad
                 </a>
             </div>
-
-        {{-- Lógica para Planes de Pago (Base, Gestor, etc.) --}}
         @else
-            <p>¡Bienvenido a tu panel de control de Modo Ahorro!</p>
-            <p>Estás en el plan <strong>{{ $plan->name }}</strong>. Desde aquí podrás gestionar tus entidades, revisar tus consumos y obtener recomendaciones.</p>
-
-            {{-- Muestra el botón de añadir solo si no ha alcanzado el límite (si es que tiene uno) --}}
-            @if (is_null($maxEntities) || $entityCount < $maxEntities)
-                <div style="margin-top: 2rem;">
-                    <a href="{{ route('entities.create') }}" style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
-                        + Añadir Nueva Entidad
-                    </a>
-                </div>
-            @else
-                <div style="margin-top: 2rem; background-color: #fffbea; border: 1px solid #fce58a; padding: 1rem; border-radius: 5px;">
-                    <p>Has alcanzado el límite de <strong>{{ $maxEntities }} entidades</strong> para tu plan actual.</p>
-                </div>
-            @endif
-
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                @foreach ($entities as $entity)
+                    <div style="border: 1px solid #eee; border-radius: 8px; padding: 20px; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <h3 style="font-size: 1.2em; font-weight: bold;">{{ $entity->name }}</h3>
+                        <p style="color: #666; margin-top: 5px;">{{ ucfirst($entity->type) }}</p>
+                        <div style="margin-top: 15px;">
+                            <a href="{{ route('entities.show', $entity) }}" style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                                Ver Dashboard &rarr;
+                            </a>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         @endif
+    </div>
 
-    @else
-        {{-- Fallback por si un usuario no tiene plan. --}}
-        <div style="margin-top: 2rem; background-color: #fed7d7; border: 1px solid #f56565; padding: 1rem; border-radius: 5px;">
-            <h3 style="font-size: 1.25rem; font-weight: bold;">Error de Configuración</h3>
-            <p>Tu cuenta no tiene un plan de suscripción activo. Por favor, contacta con el soporte técnico.</p>
+    <!-- ======================================================= -->
+    <!-- INFORMACIÓN DEL PLAN Y MEJORA                         -->
+    <!-- ======================================================= -->
+    @if ($plan && !is_null($plan->max_entities) && $globalSummary->entity_count >= $plan->max_entities)
+        <div style="margin-top: 3rem; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; background-color: #f7fafc; text-align: center;">
+            <h3 style="font-size: 1.25rem; font-weight: bold;">Límite de Entidades Alcanzado</h3>
+            <p style="margin-top: 0.5rem;">Has alcanzado el límite de {{ $plan->max_entities }} entidades para tu plan <strong>{{ $plan->name }}</strong>.</p>
+            <a href="#" style="display: inline-block; margin-top: 1rem; background-color: #2d3748; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
+                Mejorar Plan para Añadir Más
+            </a>
         </div>
     @endif
 
