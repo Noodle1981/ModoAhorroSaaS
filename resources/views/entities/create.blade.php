@@ -23,12 +23,25 @@
         
         <div style="margin-top: 15px;">
             <label for="type">Tipo de Entidad</label><br>
-            <select id="type" name="type" required style="width: 100%; padding: 8px;">
-                <option value="">Selecciona un tipo</option>
-                <option value="hogar" {{ old('type') == 'hogar' ? 'selected' : '' }}>Hogar</option>
-                <option value="oficina" {{ old('type') == 'oficina' ? 'selected' : '' }}>Oficina</option>
-                <option value="comercio" {{ old('type') == 'comercio' ? 'selected' : '' }}>Comercio</option>
-            </select>
+            
+            {{-- Lógica Dinámica para el Tipo de Entidad --}}
+            @if (count($allowed_types) === 1)
+                {{-- Si solo hay un tipo, muéstralo como texto y usa un input oculto --}}
+                <input type="hidden" name="type" value="{{ $allowed_types[0] }}">
+                <p style="padding: 8px; background-color: #f4f4f4; border: 1px solid #ddd; border-radius: 5px;">
+                    <strong>{{ ucfirst($allowed_types[0]) }}</strong> (Permitido por tu plan actual)
+                </p>
+            @else
+                {{-- Si hay varios tipos, muestra el menú desplegable --}}
+                <select id="type" name="type" required style="width: 100%; padding: 8px;">
+                    <option value="">Selecciona un tipo</option>
+                    @foreach ($allowed_types as $type)
+                        <option value="{{ $type }}" {{ old('type') == $type ? 'selected' : '' }}>
+                            {{ ucfirst($type) }} {{-- Pone la primera letra en mayúscula --}}
+                        </option>
+                    @endforeach
+                </select>
+            @endif
         </div>
         
         <div style="margin-top: 15px;">

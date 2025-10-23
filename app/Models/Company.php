@@ -9,6 +9,11 @@ class Company extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'name',
         'tax_id',
@@ -30,5 +35,13 @@ class Company extends Model
     public function entities()
     {
         return $this->hasMany(Entity::class);
+    }
+
+    /**
+     * Una Compañía tiene una Suscripción.
+     */
+    public function subscription()
+    {
+        return $this->hasOne(Subscription::class);
     }
 }

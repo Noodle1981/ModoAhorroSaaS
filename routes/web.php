@@ -20,12 +20,11 @@ use App\Http\Controllers\SolarController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UsageSnapshotController; // <-- IMPORT NUEVO AÑADIDO
 
-// Controladores del Panel de Gestor
-use App\Http\Controllers\Gestor\DashboardController as GestorDashboardController;
-use App\Http\Controllers\Gestor\ClientController;
-use App\Http\Controllers\Gestor\PlanController;
-use App\Http\Controllers\Gestor\EquipmentTypeController;
-
+// Controladores del Panel de Gestor (Desactivados)
+// use App\Http\Controllers\Gestor\DashboardController as GestorDashboardController;
+// use App\Http\Controllers\Gestor\ClientController;
+// use App\Http\Controllers\Gestor\PlanController;
+// use App\Http\Controllers\Gestor\EquipmentTypeController;
 /*
 |--------------------------------------------------------------------------
 | Rutas Web
@@ -83,7 +82,8 @@ Route::middleware(['auth'])->group(function () {
 });
 
 
-// --- RUTAS DE GESTOR (Requieren rol específico) ---
+// --- RUTAS DE GESTOR (Desactivadas para simplificar el proyecto) ---
+/*
 Route::middleware(['auth', 'role:gestor'])->prefix('gestor')->name('gestor.')->group(function () {
     
     Route::get('/dashboard', [GestorDashboardController::class, 'index'])->name('dashboard');
@@ -96,3 +96,4 @@ Route::middleware(['auth', 'role:gestor'])->prefix('gestor')->name('gestor.')->g
     Route::resource('plans', PlanController::class)->except(['show']);
     Route::resource('equipment-types', EquipmentTypeController::class)->except(['show']);
 });
+*/

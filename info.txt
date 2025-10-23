@@ -1,4 +1,10 @@
-<?php
+<ESTE ES EL OFICIAL NO JODER MAS
+
+
+
+
+
+?php
 
 use Illuminate\Support\Facades\Route;
 

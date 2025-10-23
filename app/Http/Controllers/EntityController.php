@@ -19,14 +19,25 @@ class EntityController extends Controller
 
     public function index()
     {
-        $entities = Auth::user()->company->entities()->latest()->get();
+        $entities = collect(); // Initialize as an empty collection
+        if (Auth::user()->company) {
+            $entities = Auth::user()->company->entities()->latest()->get();
+        }
         return view('entities.index', compact('entities'));
     }
 
     public function create()
     {
+        $user = Auth::user();
+        $plan = $user->subscription->plan;
+        $allowed_types = $plan->allowed_entity_types; // El modelo Plan ya lo convierte en un array
+
         $localities = Locality::orderBy('name')->get();
-        return view('entities.create', compact('localities'));
+        
+        return view('entities.create', [
+            'localities' => $localities,
+            'allowed_types' => $allowed_types
+        ]);
     }
 
     public function store(StoreEntityRequest $request)
@@ -37,6 +48,12 @@ class EntityController extends Controller
             $detailsData['rooms'] = array_values($detailsData['rooms']);
         }
         $data['details'] = $detailsData;
+
+        if (!Auth::user()->company) {
+            // Handle the case where the user has no company
+            return redirect()->back()->with('error', 'No tienes una empresa asociada para crear entidades.');
+        }
+
         Auth::user()->company->entities()->create($data);
         return redirect()->route('entities.index')->with('success', 'Entidad creada exitosamente.');
     }

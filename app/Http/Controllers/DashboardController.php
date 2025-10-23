@@ -21,8 +21,8 @@ class DashboardController extends Controller
         // $lastMonthConsumption = ...
 
         // Por ahora, simplemente devolvemos la vista.
-        return view('dashboard'
-            // , compact('entityCount', 'lastMonthConsumption')
-        );
+        return view('dashboard', [
+            'user' => $user
+        ]);
     }
 }

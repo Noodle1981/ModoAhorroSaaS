@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Casts\Attribute; // Importar Attribute
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -36,6 +36,17 @@ class User extends Authenticatable
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    /**
+     * ACCESOR: Obtiene la suscripción del usuario a través de su compañía.
+     * Esto nos permite usar la sintaxis `$user->subscription` de forma segura.
+     */
+    protected function subscription(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->company?->subscription,
+        );
     }
 
     /**

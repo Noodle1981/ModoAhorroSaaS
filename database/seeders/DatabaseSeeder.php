@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             // --- Catálogos Base ---
+            CompaniesTableSeeder::class,           // Necesario para el registro de usuarios.
             PlansTableSeeder::class,               // Necesario para que el registro asigne el plan "Gratuito".
             ProvincesTableSeeder::class,           // Necesario para los dropdowns de ubicación.
             LocalitiesTableSeeder::class,          // Necesario para los dropdowns de ubicación.
