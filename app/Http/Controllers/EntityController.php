@@ -77,48 +77,73 @@ public function show(Entity $entity, InventoryAnalysisService $analysisService)
 {
     $this->authorize('view', $entity);
 
-    // Cargamos las relaciones que necesitaremos en la vista para el dashboard.
+    // Cargamos las relaciones necesarias.
     $entity->load('supplies.contracts.invoices', 'locality', 'equipments');
 
-    // --- LÓGICA DE PERÍODO ACTIVO ---
+    // --- LÓGICA DE ANÁLISIS DE PERÍODOS ---
     
-    // 1. Buscamos la última factura.
-    $lastInvoice = $entity->supplies
+    // 1. Obtenemos todas las facturas de la entidad, ordenadas de más reciente a más antigua.
+    $allInvoices = $entity->supplies
         ->flatMap->contracts
         ->flatMap->invoices
-        ->sortByDesc('end_date')
-        ->first();
+        ->sortByDesc('end_date');
     
-    $inventoryReportForPeriod = collect(); // Creamos una colección vacía por defecto
-    $periodSummary = [
-        'period_days' => 0,
-        'period_label' => 'N/A',
-        'real_consumption' => null,
-        'estimated_consumption' => 0,
-    ];
+    $periodsAnalysis = [];
 
-    // 2. Si la factura EXISTE, hacemos el análisis para su período.
-    if ($lastInvoice) {
-        // Calculamos cuántos días tiene el período de la factura
-        $periodDays = Carbon::parse($lastInvoice->start_date)->diffInDays($lastInvoice->end_date) + 1;
+    // 2. Iteramos sobre cada factura para generar un análisis para su período.
+    foreach ($allInvoices as $invoice) {
+        // Calculamos cuántos días tiene el período de la factura.
+        $periodDays = Carbon::parse($invoice->start_date)->diffInDays(Carbon::parse($invoice->end_date)) + 1;
 
-        // Llamamos a nuestro nuevo método del servicio para este período
-        $inventoryReportForPeriod = $analysisService->calculateEnergyProfileForPeriod($entity, $periodDays);
+        // Llamamos al servicio de análisis para obtener el consumo estimado del inventario.
+        $inventoryReport = $analysisService->calculateEnergyProfileForPeriod($entity, $periodDays);
+        $estimatedConsumption = $inventoryReport->sum('consumo_kwh_total_periodo');
         
-        // Preparamos el resumen para la vista
-        $periodSummary = [
-            'period_days' => $periodDays,
-            'period_label' => $lastInvoice->start_date->format('d/m') . ' - ' . $lastInvoice->end_date->format('d/m/Y'),
-            'real_consumption' => $lastInvoice->total_energy_consumed_kwh,
-            'estimated_consumption' => $inventoryReportForPeriod->sum('consumo_kwh_total_periodo'),
+        // Calculamos el porcentaje del consumo que el inventario puede explicar.
+        $percentageExplained = $invoice->total_energy_consumed_kwh > 0 
+            ? ($estimatedConsumption / $invoice->total_energy_consumed_kwh) * 100
+            : 0;
+
+        // Preparamos el resumen para este período.
+        $periodsAnalysis[] = (object) [
+            'invoice' => $invoice, // Pasamos la factura completa para el botón
+            'period_label' => Carbon::parse($invoice->start_date)->format('d/m/Y') . ' - ' . Carbon::parse($invoice->end_date)->format('d/m/Y'),
+            'real_consumption' => $invoice->total_energy_consumed_kwh,
+            'estimated_consumption' => $estimatedConsumption,
+            'total_amount' => $invoice->total_amount,
+            'percentage_explained' => $percentageExplained,
+        ];
+    }
+
+    // --- CÁLCULO DEL RESUMEN GENERAL ---
+    $summary = null;
+    if (count($periodsAnalysis) > 0) {
+        $analysisCollection = collect($periodsAnalysis);
+        $invoiceCount = $analysisCollection->count();
+
+        $totalRealConsumption = $analysisCollection->sum('real_consumption');
+        $totalEstimatedConsumption = $analysisCollection->sum('estimated_consumption');
+        $totalAmount = $analysisCollection->sum('total_amount');
+
+        $summary = (object) [
+            'start_date' => Carbon::parse($allInvoices->last()->start_date)->format('d/m/Y'),
+            'end_date' => Carbon::parse($allInvoices->first()->end_date)->format('d/m/Y'),
+            'total_real_consumption' => $totalRealConsumption,
+            'total_estimated_consumption' => $totalEstimatedConsumption,
+            'total_amount' => $totalAmount,
+            'average_percentage_explained' => $analysisCollection->avg('percentage_explained'),
+            'average_real_consumption' => $totalRealConsumption / $invoiceCount,
+            'average_estimated_consumption' => $totalEstimatedConsumption / $invoiceCount,
+            'average_amount' => $totalAmount / $invoiceCount,
         ];
     }
     
-    // --- FIN DE LA LÓGICA DE PERÍODO ---
+    // --- FIN DE LA LÓGICA DE ANÁLISIS ---
 
     return view('entities.show', [
         'entity' => $entity,
-        'periodSummary' => (object) $periodSummary, // Lo convertimos a objeto para un acceso más fácil
+        'periodsAnalysis' => $periodsAnalysis,
+        'summary' => $summary, // Pasamos el resumen a la vista
     ]);
 }
 

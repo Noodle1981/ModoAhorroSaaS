@@ -37,12 +37,8 @@ class InvoiceController extends Controller
          // Creamos la factura como antes
     $invoice = $contract->invoices()->create($data);
 
-    // --- ¡EL CAMBIO IMPORTANTE! ---
-    // En lugar de redirigir al detalle del contrato, redirigimos
-    // al nuevo formulario para crear el snapshot de uso, pasándole
-    // la factura que acabamos de crear.
-    return redirect()->route('snapshots.create', $invoice)
-                     ->with('success', 'Factura cargada. Ahora, por favor, confirma el uso de tus equipos para este período.');
+    return redirect()->route('invoices.show', $invoice)
+                     ->with('success', '¡Factura cargada exitosamente!');
     }
 
     /**
