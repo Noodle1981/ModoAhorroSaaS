@@ -137,13 +137,22 @@ public function show(Entity $entity, InventoryAnalysisService $analysisService)
             'average_amount' => $totalAmount / $invoiceCount,
         ];
     }
+
+    // --- SEPARACIÓN DE DATOS PARA LA VISTA ---
     
+    // El primer período (el más reciente) es para el medidor inteligente.
+    $meterAnalysis = array_shift($periodsAnalysis) ?? null;
+    
+    // El resto de los períodos son para la lista del historial.
+    $historyPeriods = $periodsAnalysis;
+
     // --- FIN DE LA LÓGICA DE ANÁLISIS ---
 
     return view('entities.show', [
         'entity' => $entity,
-        'periodsAnalysis' => $periodsAnalysis,
-        'summary' => $summary, // Pasamos el resumen a la vista
+        'summary' => $summary,
+        'meterAnalysis' => $meterAnalysis,
+        'periodsAnalysis' => $historyPeriods, // Renombrado para claridad en la vista
     ]);
 }
 
