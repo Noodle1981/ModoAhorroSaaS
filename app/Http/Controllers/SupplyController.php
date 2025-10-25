@@ -15,7 +15,7 @@ class SupplyController extends Controller
     public function index(Entity $entity)
     {
         $this->authorize('viewAny', [Supply::class, $entity]);
-        $supplies = $entity->supplies()->with('rate')->get();
+        $supplies = $entity->supplies()->with('contracts')->get();
         return view('supplies.index', compact('entity', 'supplies'));
     }
 

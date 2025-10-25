@@ -1,5 +1,5 @@
 <x-app-layout>
-    <h1>Editar Suministro de: {{ $supply->entity->name }}</h1>
+    <h1>Editar Suministro Eléctrico de: {{ $supply->entity->name }}</h1>
 
     @if ($errors->any())
         <div style="color:red; margin-bottom: 1rem;">
@@ -16,17 +16,6 @@
         @csrf
         @method('PUT') <!-- O 'PATCH', le dice a Laravel que es una actualización -->
 
-        <div>
-            <label for="type">Tipo de Suministro</label><br>
-            <!-- Deshabilitamos el tipo porque no debería cambiarse una vez creado -->
-            <select id="type" name="type" required style="width: 100%; padding: 8px; background-color: #e9ecef;" disabled>
-                <option value="electricity" {{ $supply->type == 'electricity' ? 'selected' : '' }}>Electricidad</option>
-                <option value="gas" {{ $supply->type == 'gas' ? 'selected' : '' }}>Gas</option>
-                <option value="water" {{ $supply->type == 'water' ? 'selected' : '' }}>Agua</option>
-            </select>
-            <small>El tipo de suministro no se puede modificar.</small>
-        </div>
-        
         <div style="margin-top: 15px;">
             <label for="supply_point_identifier">Identificador del Suministro (NIS, CUPS, etc.)</label><br>
             <input type="text" id="supply_point_identifier" name="supply_point_identifier" value="{{ old('supply_point_identifier', $supply->supply_point_identifier) }}" required style="width: 100%; padding: 8px;">
@@ -39,4 +28,8 @@
             <a href="{{ route('entities.show', $supply->entity) }}" style="margin-left: 10px;">Cancelar</a>
         </div>
     </form>
+
+    <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; text-align: center;">
+        <p>Esta versión de la plataforma solo estará disponible para cálculos de eficiencia en energía.</p>
+    </div>
 </x-app-layout>

@@ -92,6 +92,7 @@
             <p><strong>Tipo:</strong> {{ ucfirst($entity->type) }}</p>
             <p style="margin-top: 10px;"><strong>Dirección:</strong> {{ $entity->address_street }}, {{ $entity->locality->name ?? 'N/A' }}</p>
             <p style="margin-top: 10px;"><strong>Ocupantes:</strong> {{ $entity->details['occupants_count'] ?? 'No especificado' }}</p>
+             <p style="margin-top: 10px;"><strong>Secciones:</strong> {{ count($entity->details['rooms'] ?? []) }}</p>
         </div>
 
         <!-- Columna de Inventario y Suministros -->

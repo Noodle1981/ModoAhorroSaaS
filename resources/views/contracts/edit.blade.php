@@ -52,6 +52,11 @@
             </div>
         </div>
 
+        <div style="background-color: #fff3cd; color: #664d03; border: 1px solid #ffecb5; border-radius: 5px; padding: 15px; margin-top: 20px;">
+            <strong>¿No conoces la fecha de inicio?</strong>
+            <p style="margin: 0; margin-top: 5px;">Puedes usar la fecha de inicio de tu primera factura. Necesitarás un contrato para cargar facturas y analizar tu consumo energético.</p>
+        </div>
+
         <div style="margin-top: 15px;">
             <input type="hidden" name="is_active" value="0">
             <input type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', $contract->is_active) ? 'checked' : '' }}>
