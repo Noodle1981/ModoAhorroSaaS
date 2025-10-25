@@ -30,7 +30,7 @@ class InventoryAnalysisService
      */
     public function calculateEnergyProfileForPeriod(Entity $entity, int $numberOfDays): Collection
     {
-        $inventory = $entity->entityEquipment()
+        $inventory = $entity->equipments()
             ->with(['equipmentType.equipmentCategory.calculationFactor'])
             ->get();
 

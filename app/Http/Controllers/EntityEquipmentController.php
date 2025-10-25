@@ -26,7 +26,7 @@ class EntityEquipmentController extends Controller
     $locations = collect($roomsData)->pluck('name')->filter()->unique()->all();
 
     // Obtenemos los equipos existentes para mostrarlos en la tabla.
-    $equipments = $entity->entityEquipment()->with('equipmentType.equipmentCategory')->latest()->get();
+    $equipments = $entity->equipments()->with('equipmentType.equipmentCategory')->latest()->get();
 
     return view('equipment.create', compact('entity', 'categories', 'locations', 'equipments'));
 }
@@ -53,7 +53,7 @@ class EntityEquipmentController extends Controller
     public function store(StoreEntityEquipmentRequest $request, Entity $entity)
     {
         $this->authorize('create', [EntityEquipment::class, $entity]);
-        $entity->entityEquipment()->create($request->validated());
+        $entity->equipments()->create($request->validated());
 
         // Redirigimos a la página de detalles de la entidad con un mensaje de éxito.
         return redirect()->route('entities.show', $entity)

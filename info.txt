@@ -1,106 +1,21 @@
 <ESTE ES EL OFICIAL NO JODER MAS
 
-REVISAR FLUJO DE SUMINISTRO
+Revisar si faltan datos para Facturas (estos son los que tiene)
+
+Período de Consumo - Inicio
+Período de Consumo - Fin
+Consumo Total (kWh)
+Importe Total de la Factura ($)
+Datos Detallados (Opcionales)
+Número de Factura
+Fecha de Emisión
+Costo por Energía ($)
+Impuestos ($)
+Otros Cargos ($)
+
+Futuras implementaciones
 
 
-?php
-
-use Illuminate\Support\Facades\Route;
-
-/*
-|--------------------------------------------------------------------------
-| Rutas Web
-|--------------------------------------------------------------------------
-|
-| Aquí es donde registramos todas las rutas para la aplicación.
-| Están agrupadas por funcionalidad y protegidas por middleware cuando es necesario.
-|
-*/
-
-// --- Rutas Públicas ---
-// Cualquiera puede acceder a estas rutas, incluso sin iniciar sesión.
-Route::get('/', function () {
-    return view('welcome'); // O tu página de landing/marketing
-})->name('home');
-
-
-// --- Rutas de Autenticación ---
-// Laravel Breeze o Jetstream manejan esto automáticamente,
-// pero conceptualmente, estas son las rutas para login, registro, etc.
-// require __DIR__.'/auth.php'; // Así es como lo incluye Laravel Breeze
-
-
-// --- RUTAS PROTEGIDAS (Requieren que el usuario haya iniciado sesión) ---
-Route::middleware(['auth', 'verified'])->group(function () {
-
-    // 1. Dashboard Principal
-    // El punto de entrada a la aplicación después del login.
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
-
-    // 2. Gestión del Perfil de Usuario
-    // Rutas para que el usuario edite su nombre, email, contraseña, etc.
-    // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    // ---------------------------------------------------------------------
-    // GESTIÓN ENERGÉTICA DEL NÚCLEO
-    // ---------------------------------------------------------------------
-
-    // 3. Gestión de Entidades (Hogares, Oficinas, etc.)
-    // Usamos un controlador de recurso para las 7 acciones RESTful (index, create, store, show, edit, update, destroy).
-    Route::resource('entities', \App\Http\Controllers\EntityController::class);
-
-    // 4. Gestión de Suministros, Contratos y Facturas (Rutas Anidadas)
-    // La lógica es: un Suministro pertenece a una Entidad, un Contrato a un Suministro, etc.
-    // La URL refleja esta jerarquía para mayor claridad.
-    Route::resource('entities.supplies', \App\Http\Controllers\SupplyController::class)->shallow();
-    // ->shallow() es un truco útil: las rutas para 'index' y 'create' serán anidadas (ej: /entities/1/supplies/create)
-    // pero las rutas para 'edit', 'show', 'update', 'destroy' no necesitan el prefijo largo (ej: /supplies/5/edit)
-
-    Route::resource('supplies.contracts', \App\Http\Controllers\ContractController::class)->shallow();
-    Route::resource('contracts.invoices', \App\Http\Controllers\InvoiceController::class)->shallow();
-
-    // 5. Gestión de Equipamiento de una Entidad
-    // Los equipos también pertenecen a una entidad.
-    Route::resource('entities.equipment', \App\Http\Controllers\EntityEquipmentController::class)->shallow();
-
-    // ---------------------------------------------------------------------
-    // INTELIGENCIA Y ANÁLISIS
-    // ---------------------------------------------------------------------
-
-    // 6. Recomendaciones y Consejos
-    // Por ahora, una simple vista que muestra todas las recomendaciones aplicables al usuario.
-    Route::get('/recommendations', [\App\Http\Controllers\RecommendationController::class, 'index'])->name('recommendations.index');
-
-    // 7. Gestión de Mantenimiento
-    // Rutas para ver el historial y registrar un nuevo mantenimiento.
-    Route::get('/maintenance', [\App\Http\Controllers\MaintenanceController::class, 'index'])->name('maintenance.index');
-    Route::post('/maintenance', [\App\Http\Controllers\MaintenanceController::class, 'store'])->name('maintenance.store');
-    
-    // 8. Gestión de Paneles Solares
-    // Rutas para ver los detalles de la instalación solar y sus datos de producción.
-    Route::get('/solar', [\App\Http\Controllers\SolarController::class, 'dashboard'])->name('solar.dashboard');
-
-});
-
-
-// --- RUTAS DE GESTOR/ADMINISTRADOR (Requieren rol específico) ---
-// Estas rutas solo serán accesibles para usuarios con el rol 'gestor' o 'admin'.
-// Usamos un prefijo para que todas las URLs empiecen con /gestor/...
-Route::middleware(['auth', 'role:gestor'])->prefix('gestor')->name('gestor.')->group(function () {
-    
-    // Dashboard del Gestor
-    Route::get('/dashboard', [\App\Http\Controllers\Gestor\DashboardController::class, 'index'])->name('dashboard');
-    
-    // Gestión de Clientes
-    Route::get('/clients', [\App\Http\Controllers\Gestor\ClientController::class, 'index'])->name('clients.index');
-    Route::get('/clients/{user}', [\App\Http\Controllers\Gestor\ClientController::class, 'show'])->name('clients.show');
-    
-    // Gestión de Catálogos (Planes, Tipos de Equipos, etc.)
-    Route::resource('plans', \App\Http\Controllers\Gestor\PlanController::class)->except(['show']);
-    Route::resource('equipment-types', \App\Http\Controllers\Gestor\EquipmentTypeController::class)->except(['show']);
-
-});
+Carga de Equipos: Asegurarnos de que sea un proceso fácil y rápido (lo que estamos haciendo ahora).
+Análisis de Factura: Cargar una factura y que el sistema, de forma visual e impactante, muestre: "Consumo Real: 300 kWh | Consumo Explicado por tu Inventario: 220 kWh".
+Inteligencia: El paso clave. Mostrar el porqué de esa diferencia. Aquí es donde las ideas de "Perfiles de Uso" o "Calibración Guiada" que discutimos se vuelven cruciales para afinar esa "emulación".
