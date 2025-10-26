@@ -1,5 +1,8 @@
 <ESTE ES EL OFICIAL NO JODER MAS
 
+revisar lógica de carga de equipos
+
+
 Revisar si faltan datos para Facturas (estos son los que tiene)
 
 Período de Consumo - Inicio

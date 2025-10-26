@@ -1,0 +1,23 @@
+Cómo conectar el Medidor Inteligente a una API real en el futuro
+La implementación actual está lista para que la conectes a datos reales. El consumo "en vivo" es una simulación que se encuentra en un bloque <script> dentro del componente. Para reemplazarlo, sigue estos pasos:
+
+Paso 1: Crear un Endpoint en tu API
+
+Primero, define una ruta en tu archivo routes/api.php. Esta ruta será la encargada de devolver el dato de consumo en tiempo real.
+
+// En routes/api.php
+use App\Http\Controllers\Api\ConsumptionController; // Ejemplo
+
+Route::get('/entidades/{entity}/consumo-actual', [ConsumptionController::class, 'getLiveConsumption']);
+
+Paso 2: Crear la Lógica en el Controlador
+
+El método getLiveConsumption en tu nuevo controlador se encargaría de obtener el dato real desde tu dispositivo IoT o base de datos y devolverlo en formato JSON.
+
+Paso 3: Actualizar el JavaScript del Componente
+
+Finalmente, edita el componente resources/views/components/electric-meter.blade.php y reemplaza el código dentro de la etiqueta <script>.
+
+Paso 4 (Opcional - Avanzado):
+
+Para una solución aún más profesional y eficiente, en el futuro podrías investigar el uso de WebSockets con Laravel. A diferencia de fetch que pide datos cada ciertos segundos (polling), los WebSockets mantienen una conexión abierta para que el servidor pueda empujar el dato al medidor en el instante en que ocurra un cambio, sin necesidad de peticiones constantes.
