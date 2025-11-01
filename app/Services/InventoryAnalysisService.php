@@ -6,8 +6,58 @@ use App\Models\Entity;
 use Illuminate\Support\Collection;
 use Carbon\CarbonPeriod;
 
+
 class InventoryAnalysisService
 {
+    protected $replacementService;
+
+    public function __construct(ReplacementAnalysisService $replacementService)
+    {
+        $this->replacementService = $replacementService;
+    }
+
+    /**
+     * Orquestador principal para encontrar todas las oportunidades de mejora.
+     *
+     * @param Entity $entity
+     * @return array
+     */
+    public function findAllOpportunities(Entity $entity): array
+    {
+        // 1. Calcular el costo unitario de la energía a partir de la última factura
+        $lastInvoice = $entity->supplies
+            ->flatMap->contracts
+            ->flatMap->invoices
+            ->sortByDesc('end_date')
+            ->first();
+
+        if (!$lastInvoice || $lastInvoice->total_energy_consumed_kwh == 0) {
+            return []; // No se pueden generar recomendaciones sin datos de facturación
+        }
+
+        $costoUnitarioKwh = $lastInvoice->total_amount / $lastInvoice->total_energy_consumed_kwh;
+
+        // 2. Obtener el perfil de consumo anual del inventario
+        $annualProfile = $this->getAnnualEnergyProfile($entity);
+
+        // 3. Buscar oportunidades de reemplazo
+        // Renombramos la propiedad 'consumo_kwh_total_periodo' a 'energia_secundaria_kwh' para que coincida
+        // con lo que espera el servicio de reemplazo.
+        $annualProfileForReplacement = $annualProfile->map(function ($item) {
+            $item->energia_secundaria_kwh = $item->consumo_kwh_total_periodo;
+            $item->consumo_nominal_kw = ($item->power_watts_override ?? $item->equipmentType->default_power_watts ?? 0) / 1000;
+            $item->horas_uso_anual = ($item->avg_daily_use_minutes_override ?? $item->equipmentType->default_avg_daily_use_minutes ?? 0) / 60 * 365;
+            return $item;
+        });
+        
+        $replacementOpps = $this->replacementService->findReplacementOpportunities($annualProfileForReplacement, $costoUnitarioKwh);
+
+        // Aquí se podrían añadir otros tipos de oportunidades (ej: de hábitos, de configuración, etc.)
+        $allOpportunities = array_merge($replacementOpps);
+
+        return $allOpportunities;
+    }
+
     /**
      * Calcula el perfil energético ANUALIZADO del inventario.
      * Útil para comparaciones a largo plazo y ROI.

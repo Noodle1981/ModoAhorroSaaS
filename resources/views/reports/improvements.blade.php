@@ -1,73 +1,73 @@
 <x-app-layout>
-    <h1>Análisis de Mejoras para: {{ $entity->name }}</h1>
-    <p>
-        <a href="{{ route('entities.show', $entity) }}">&larr; Volver a la Entidad</a>
-    </p>
+    <x-slot name="header">
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                Informe de Mejoras para: <span class="font-bold">{{ $entity->name }}</span>
+            </h2>
+            <a href="{{ route('entities.show', $entity) }}" class="inline-flex items-center px-4 py-2 bg-gray-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-600">
+                &larr; Volver a la Entidad
+            </a>
+        </div>
+    </x-slot>
 
-    @if ($hasBillingData)
-        <p style="margin-top: 10px;">Este es el análisis de tu inventario de equipos. Hemos comparado cada equipo con nuestro catálogo de modelos eficientes.</p>
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-        <div style="margin-top: 30px;">
-            @forelse ($opportunities as $analysis)
-                @switch($analysis['status'])
-                    
-                    @case('OPPORTUNITY_FOUND')
-                        {{-- ESTADO 1: EQUIPO DEFICIENTE (OPORTUNIDAD ENCONTRADA) --}}
-                        <div style="border-left: 5px solid #fd7e14; background-color: #fff; padding: 15px; margin-bottom: 15px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <span style="background-color: #fd7e14; color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.8em;">
-                                        Equipo Deficiente
-                                    </span>
-                                    <strong style="margin-left: 10px; font-size: 1.1em;">{{ $analysis['user_equipment_name'] }}</strong>
-                                </div>
-                                <div style="text-align: right;">
-                                    <strong style="font-size: 1.2em; color: #28a745;">Ahorro Anual: ${{ number_format($analysis['ahorro_anual_pesos'], 2, ',', '.') }}</strong>
-                                </div>
-                            </div>
-                            <p style="margin-top: 15px; margin-bottom: 5px; color: #333; font-size: 1em;"><strong>Sugerencia:</strong> {{ $analysis['suggestion'] }}</p>
-                            @if (isset($analysis['retorno_inversion_anios']))
-                                <small style="color: #666;">Retorno de la inversión estimado: {{ number_format($analysis['retorno_inversion_anios'], 1, ',', '.') }} años.</small>
-                            @endif
+            @if (!$hasBillingData)
+                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-6 rounded-lg shadow-md" role="alert">
+                    <h3 class="font-bold text-lg">Datos Insuficientes</h3>
+                    <p class="mt-2">Para poder generar un informe de mejoras, necesitamos que cargues al menos una factura con datos de consumo.</p>
+                    @php
+                        $firstSupply = $entity->supplies->first();
+                        $firstContract = $firstSupply?->contracts->where('is_active', true)->first() ?? $firstSupply?->contracts->first();
+                    @endphp
+                    @if ($firstContract)
+                        <div class="mt-4">
+                            <a href="{{ route('contracts.invoices.create', $firstContract) }}" class="font-bold text-yellow-800 hover:underline">
+                                + Cargar tu primera factura ahora
+                            </a>
                         </div>
-                        @break
-
-                    @case('ALREADY_EFFICIENT')
-                        {{-- ESTADO 2: EQUIPO EFICIENTE --}}
-                        <div style="border-left: 5px solid #28a745; background-color: #f8f9fa; padding: 10px 15px; margin-bottom: 15px; border-radius: 5px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <strong>{{ $analysis['user_equipment_name'] }}</strong>
-                                <span style="color: #28a745; font-weight: bold; font-size: 0.9em;">Equipo Eficiente</span>
-                            </div>
-                        </div>
-                        @break
-
-                    @case('NO_CATALOG_ENTRY')
-                        {{-- ESTADO 3: EQUIPO SIN COMPARATIVA --}}
-                        <div style="border-left: 5px solid #6c757d; background-color: #f8f9fa; padding: 10px 15px; margin-bottom: 15px; border-radius: 5px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <strong>{{ $analysis['user_equipment_name'] }}</strong>
-                                <span style="color: #6c757d; font-weight: bold; font-size: 0.9em;">Equipo sin Comparativa</span>
-                            </div>
-                        </div>
-                        @break
-                        
-                @endswitch
-            @empty
-                <div style="margin-top: 30px; padding: 40px; text-align: center; background-color: #f9f9f9; border-radius: 8px;">
-                    <h3>No tienes equipos en tu inventario.</h3>
-                    <p>Para poder analizar tus oportunidades de ahorro, primero necesitas <a href="{{ route('entities.show', $entity) }}">añadir equipos a tu entidad</a>.</p>
+                    @endif
                 </div>
-            @endforelse
-        </div>
-    @else
-        {{-- ESTADO 0: SIN DATOS DE FACTURACIÓN --}}
-        <div style="margin-top: 30px; padding: 40px; text-align: center; background-color: #fffbe6; border: 1px solid #ffe58f; border-radius: 8px;">
-            <h3>Recomendaciones Desactivadas</h3>
-            <p>Para poder calcular ahorros y ofrecerte recomendaciones personalizadas, necesitamos que cargues al menos una factura de energía con consumo.</p>
-            <p>Los cálculos de ahorro se basan en el costo por kWh de tu última factura.</p>
-            <a href="#" style="margin-top: 15px; display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Cargar Factura</a>
-        </div>
-    @endif
+            @elseif (empty($opportunities))
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-6 rounded-lg shadow-md text-center">
+                    <h3 class="font-bold text-lg">¡Felicitaciones!</h3>
+                    <p class="mt-2">No hemos encontrado oportunidades claras de reemplazo en tu inventario actual. ¡Parece que tus equipos son bastante eficientes!</p>
+                </div>
+            @else
+                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+                    <div class="p-6 sm:px-20 bg-white border-b border-gray-200">
+                        <h3 class="text-2xl font-bold text-gray-800">Oportunidades de Ahorro por Reemplazo</h3>
+                        <p class="mt-2 text-gray-600">Hemos analizado tu inventario y hemos encontrado las siguientes oportunidades para reducir tu consumo y tus costos reemplazando equipos por modelos más eficientes.</p>
+                    </div>
 
+                    <div class="p-6 sm:px-20">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            @foreach ($opportunities as $opp)
+                                <div class="border border-gray-200 rounded-lg p-6 shadow-lg hover:shadow-2xl transition-shadow duration-300">
+                                    <div class="flex items-start justify-between">
+                                        <h4 class="text-lg font-bold text-indigo-700">{{ $opp['user_equipment'] }}</h4>
+                                        <span class="px-2 py-1 text-xs font-semibold text-indigo-800 bg-indigo-100 rounded-full">Reemplazo</span>
+                                    </div>
+                                    
+                                    <p class="text-sm text-gray-500 mt-2">Reemplazar por:</p>
+                                    <p class="font-semibold text-gray-800">{{ $opp['suggestion'] }}</p>
+
+                                    <div class="mt-6 pt-4 border-t border-gray-200">
+                                        <p class="text-sm text-gray-500">Ahorro Anual Estimado</p>
+                                        <p class="text-2xl font-bold text-green-600">${{ number_format($opp['ahorro_anual_pesos'], 0, ',', '.') }}</p>
+                                    </div>
+
+                                    <div class="mt-4">
+                                        <p class="text-sm text-gray-500">Recupero de la Inversión</p>
+                                        <p class="text-lg font-semibold text-gray-800">~{{ number_format($opp['retorno_inversion_anios'], 1, ',', '.') }} años</p>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @endif
+        </div>
+    </div>
 </x-app-layout>

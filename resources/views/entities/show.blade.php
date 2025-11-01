@@ -32,7 +32,17 @@
             <!-- == RESUMEN GENERAL == -->
             @if($summary)
             <div style="margin-bottom: 30px; padding: 25px; border: 1px solid #007bff; border-radius: 8px; background-color: #f0f7ff;">
-                <h3 style="font-size: 1.6em; font-weight: bold; margin-bottom: 20px; color: #0056b3;">Análisis General Acumulado</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="font-size: 1.6em; font-weight: bold; color: #0056b3; margin: 0;">Análisis General Acumulado</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <a href="{{ route('entities.equipment.index', $entity) }}" style="background-color: #17a2b8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                            Gestionar Equipamiento
+                        </a>
+                        <a href="{{ route('entities.reports.improvements', $entity) }}" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                            Ver Informe de Mejoras
+                        </a>
+                    </div>
+                </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
                     <div>
                         <h4 style="font-weight: bold;">Período Total Analizado</h4>

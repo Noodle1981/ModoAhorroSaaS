@@ -1,55 +1,83 @@
 <x-app-layout>
     <x-slot name="header">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Inventario de Equipos para ') }} '{{ $entity->name }}'
+                <span class="text-gray-500">Entidad:</span> {{ $entity->name }}
             </h2>
-            <a href="{{ route('entities.equipment.create', $entity) }}" style="background-color: #28a745; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
-                {{ __('Añadir Nuevo Equipo') }}
+            <a href="{{ route('entities.show', $entity) }}" class="inline-flex items-center px-4 py-2 bg-gray-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-600 active:bg-gray-700 focus:outline-none focus:border-gray-700 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150">
+                &larr; Volver a la Entidad
             </a>
         </div>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 bg-white border-b border-gray-200">
+            
+            <!-- Botón para añadir equipo -->
+            <div class="flex justify-end mb-6">
+                <a href="{{ route('entities.equipment.create', $entity) }}" class="inline-flex items-center px-6 py-3 bg-green-500 border border-transparent rounded-md font-semibold text-white uppercase tracking-widest hover:bg-green-600 active:bg-green-700 focus:outline-none focus:border-green-700 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
+                    &#43; Añadir Equipo
+                </a>
+            </div>
 
-                    @if($equipments->isEmpty())
-                        <div style="text-align: center; padding: 20px; border: 2px dashed #ccc; border-radius: 8px;">
-                            <p class="text-gray-500">{{ __('Aún no has añadido ningún equipo a esta entidad.') }}</p>
-                            <p class="mt-2">{{ __('¡Empieza añadiendo tu primer equipo para poder analizar su consumo!') }}</p>
-                        </div>
-                    @else
-                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-                            @foreach ($equipments as $equipment)
-                                <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
-                                    <div>
-                                        <h3 class="font-bold text-lg">{{ $equipment->custom_name ?? $equipment->equipmentType->name }}</h3>
-                                        <p class="text-sm text-gray-600">{{ $equipment->equipmentType->equipmentCategory->name }}</p>
-                                        <p class="text-sm text-gray-500 mt-1">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="vertical-align: middle;">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            </svg>
-                                            {{ $equipment->location ?? 'Sin ubicación' }}
-                                        </p>
-                                        <p class="text-sm text-gray-500"><strong>{{ __('Cantidad:') }}</strong> {{ $equipment->quantity }}</p>
-                                    </div>
-                                    <div style="margin-top: 16px; display: flex; justify-content: flex-end; gap: 8px;">
-                                        <a href="{{ route('equipment.show', $equipment) }}" style="background-color: #007bff; color: white; padding: 8px 12px; text-decoration: none; border-radius: 5px; font-size: 0.875rem;">{{ __('Detalles') }}</a>
-                                        <a href="{{ route('equipment.edit', $equipment) }}" style="background-color: #ffc107; color: black; padding: 8px 12px; text-decoration: none; border-radius: 5px; font-size: 0.875rem;">{{ __('Editar') }}</a>
-                                        <form action="{{ route('equipment.destroy', $equipment) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este equipo?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" style="background-color: #dc3545; color: white; padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.875rem;">{{ __('Eliminar') }}</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
+            <!-- Contenedor principal -->
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+                <div class="p-6 sm:px-20 bg- border-b border-gray-200">
+                    <h3 class="text-2xl font-bold text-gray-800">Inventario de Equipamiento</h3>
+                    <p class="mt-2 text-gray-600">Aquí puedes ver y gestionar todos los equipos asociados a esta entidad.</p>
                 </div>
+
+                @if ($equipments->isEmpty())
+                    <div class="text-center py-16 px-6">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l.707-.707M6.343 17.657l-.707.707m12.728 0l.707.707M12 21v-1m0-16a8 8 0 100 16 8 8 0 000-16z" />
+                        </svg>
+                        <h3 class="mt-2 text-lg font-medium text-gray-900">No hay equipos todavía</h3>
+                        <p class="mt-1 text-sm text-gray-500">Empieza añadiendo tu primer equipo para analizar su consumo.</p>
+                    </div>
+                @else
+                    <div class="border border-gray-200 rounded-lg overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-300">
+                            <thead class="bg-indigo-600">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Nombre</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Tipo / Categoría</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Ubicación</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Potencia</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach ($equipments as $equipment)
+                                    <tr class="even:bg-gray-50 hover:bg-indigo-100">
+                                        <td class="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                                            <div class="text-sm font-medium text-gray-900">{{ $equipment->name }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                                            <div class="text-sm text-gray-800">{{ $equipment->equipmentType->name }}</div>
+                                            <div class="text-xs text-gray-500">{{ $equipment->equipmentType->equipmentCategory->name }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap border-r border-gray-200 text-sm text-gray-500">
+                                            {{ $equipment->location ?? 'N/A' }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap border-r border-gray-200 text-sm text-gray-500">
+                                            {{ $equipment->power_watts_override ?? $equipment->equipmentType->default_power_watts }} W
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                            <a href="{{ route('equipment.show', $equipment) }}" class="text-green-600 hover:text-green-900 font-semibold">Detalles</a>
+                                            <a href="{{ route('equipment.edit', $equipment) }}" class="inline-flex items-center px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-md hover:bg-blue-600 ml-4">Editar</a>
+                                            <form action="{{ route('equipment.destroy', $equipment) }}" method="POST" class="inline-block ml-2" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este equipo?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="inline-flex items-center px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-md hover:bg-red-600">Eliminar</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </div>
         </div>
     </div>

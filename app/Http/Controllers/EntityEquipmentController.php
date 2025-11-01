@@ -47,7 +47,7 @@ class EntityEquipmentController extends Controller
         $this->authorize('create', [EntityEquipment::class, $entity]);
         $entity->equipments()->create($request->validated());
 
-        return redirect()->route('entities.show', $entity)
+        return redirect()->route('entities.equipment.index', $entity)
                          ->with('success', '¡Equipo añadido con éxito!');
     }
 
