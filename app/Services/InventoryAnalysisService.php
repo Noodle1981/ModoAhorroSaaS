@@ -25,10 +25,12 @@ class InventoryAnalysisService
     public function findAllOpportunities(Entity $entity): array
     {
         // 1. Calcular el costo unitario de la energía a partir de la última factura
-        $lastInvoice = $entity->supplies
-            ->flatMap->contracts
-            ->flatMap->invoices
-            ->sortByDesc('end_date')
+        $supplyIds = $entity->supplies()->pluck('id');
+        
+        $lastInvoice = \App\Models\Invoice::whereHas('contract', function($query) use ($supplyIds) {
+                $query->whereIn('supply_id', $supplyIds);
+            })
+            ->orderBy('end_date', 'desc')
             ->first();
 
         if (!$lastInvoice || $lastInvoice->total_energy_consumed_kwh == 0) {

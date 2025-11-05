@@ -18,14 +18,20 @@ class MaintenanceController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $userEquipmentIds = $user->company->entities()->with('entityEquipment')->get()->pluck('entityEquipment')->flatten()->pluck('id');
-        $userEquipments = EntityEquipment::whereIn('id', $userEquipmentIds)->with('equipmentType')->get();
+        
+        // Obtener todos los equipos de las entidades del usuario
+        $userEquipments = EntityEquipment::whereHas('entity', function($query) use ($user) {
+                $query->where('company_id', $user->company_id);
+            })
+            ->with(['equipmentType', 'entity'])
+            ->get();
 
-        $equipmentTypeIds = $userEquipments->pluck('equipmentType.id')->unique();
+        $equipmentTypeIds = $userEquipments->pluck('equipment_type_id')->unique();
         $applicableTasks = MaintenanceTask::whereIn('equipment_type_id', $equipmentTypeIds)->get();
 
+        $userEquipmentIds = $userEquipments->pluck('id');
         $maintenanceLogs = MaintenanceLog::whereIn('entity_equipment_id', $userEquipmentIds)
-                                         ->with('entityEquipment.equipmentType', 'maintenanceTask')
+                                         ->with(['entityEquipment.equipmentType', 'maintenanceTask'])
                                          ->latest('performed_on_date')
                                          ->get();
 

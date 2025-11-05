@@ -61,6 +61,23 @@ class StoreEntityRequest extends FormRequest
             'details' => ['nullable', 'array'],
             'details.rooms' => ['nullable', 'array'],
             'details.rooms.*.name' => ['required', 'string', 'max:100'],
+            'details.occupants' => ['nullable', 'integer', 'min:1'],
+            'details.area_m2' => ['nullable', 'numeric', 'min:1'],
+            'details.mixed_use' => ['nullable', 'boolean'],
+        ];
+    }
+
+    /**
+     * Mensajes de error personalizados para las validaciones.
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'El nombre de la entidad es obligatorio.',
+            'type.required' => 'Debes seleccionar un tipo de entidad.',
+            'type.in' => 'El tipo seleccionado no está permitido en tu plan actual.',
+            'locality_id.required' => 'Debes seleccionar una localidad.',
+            'locality_id.exists' => 'La localidad seleccionada no es válida.',
         ];
     }
 }

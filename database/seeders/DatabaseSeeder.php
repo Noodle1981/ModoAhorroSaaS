@@ -41,5 +41,13 @@ class DatabaseSeeder extends Seeder
         // COMO Companies, Users, Entities, Supplies, Contracts, Invoices, etc.
         // AHORA LA BASE DE DATOS EMPEZARÁ LIMPIA DE DATOS DE USUARIO.
         // ===================================================================
+
+        // Semilla opcional de una casa de ejemplo basada en el inventario provisto.
+        // Actívala poniendo SEED_SAMPLE_HOUSE=true en tu .env
+        if (env('SEED_SAMPLE_HOUSE', false)) {
+            $this->call([
+                SampleHouseCasaSeeder::class,
+            ]);
+        }
     }
 }

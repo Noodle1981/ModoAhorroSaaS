@@ -45,6 +45,11 @@ class UpdateEntityRequest extends FormRequest
             // la clave 'name' debe existir, ser un texto y tener máximo 100 caracteres.
             'details.rooms.*.name' => ['required', 'string', 'max:100'],
 
+            // Nuevos campos de detalles
+            'details.occupants' => ['nullable', 'integer', 'min:1'],
+            'details.area_m2' => ['nullable', 'numeric', 'min:1'],
+            'details.mixed_use' => ['nullable', 'boolean'],
+
             // Reglas para otros campos específicos para ciertos de elementos en la identidad
 
             'details.electronic_devices_count' => ['nullable', 'integer', 'min:0'],

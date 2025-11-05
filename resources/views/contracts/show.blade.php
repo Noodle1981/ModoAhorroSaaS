@@ -23,8 +23,13 @@
     
     <!-- Sección de Facturas (¡AHORA MEJORADA!) -->
     <div style="margin-top: 30px; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2>Facturas Asociadas</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div>
+                <h2 style="margin: 0;">Facturas Asociadas</h2>
+                <p style="color: #666; font-size: 0.9em; margin: 5px 0 0 0;">
+                    💡 Las fechas corresponden al <strong>período de consumo</strong>, no a la fecha de emisión
+                </p>
+            </div>
             <a href="{{ route('contracts.invoices.create', $contract) }}" style="background-color: #28a745; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
                 + Cargar Factura
             </a>

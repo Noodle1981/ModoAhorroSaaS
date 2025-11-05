@@ -38,32 +38,35 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Usamos una transacción para asegurar que ambas operaciones (crear usuario y suscripción) 
-        // se completen exitosamente. Si algo falla, se revierte todo.
+        // Usamos una transacción para asegurar que todas las operaciones se completen exitosamente.
+        // Si algo falla, se revierte todo automáticamente.
         DB::transaction(function () use ($request) {
+            // 1. Crear una Company (cuenta) única para este usuario
+            // Generamos un tax_id temporal usando el timestamp y un número aleatorio
+            $company = \App\Models\Company::create([
+                'name' => $request->name . "'s Account", // Ej: "Juan Pérez's Account"
+                'tax_id' => 'TEMP-' . time() . '-' . rand(1000, 9999), // Tax ID temporal
+            ]);
+
+            // 2. Crear el usuario asociado a su company
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'company_id' => 1, // Assign default company_id
-                'role' => 'user', // Assign default role
+                'company_id' => $company->id, // Asignar la company recién creada
+                'role' => 'user', // Rol por defecto
             ]);
 
-            // --- LÓGICA DE SUSCRIPCIÓN AÑADIDA ---
-            // Buscamos el plan gratuito por su nombre.
+            // 3. Buscar el plan gratuito
             $freePlan = Plan::where('name', 'Gratuito')->firstOrFail();
 
-            // Creamos la suscripción para la compañía del usuario.
-            // Usamos firstOrCreate para no crear una suscripción duplicada si ya existiera por alguna razón.
-            Subscription::firstOrCreate(
-                ['company_id' => $user->company_id],
-                [
-                    'plan_id' => $freePlan->id,
-                    'starts_at' => now(),
-                    'status' => 'active',
-                ]
-            );
-            // --- FIN DE LA LÓGICA AÑADIDA ---
+            // 4. Crear la suscripción gratuita para la company
+            Subscription::create([
+                'company_id' => $company->id,
+                'plan_id' => $freePlan->id,
+                'starts_at' => now(),
+                'status' => 'active',
+            ]);
 
             event(new Registered($user));
 

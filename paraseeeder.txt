@@ -1,0 +1,80 @@
+nombre entidad Casa
+tipo hogar
+Localidad Santa Lucía (San Juan)
+Dirección Carlos Gardel Casa 27 B° Enoe Bravo
+Codigo postal 5411
+Numero de ocupantes 4
+superficie 450
+
+
+
+
+
+cocina / comedor
+Living
+Baño
+Habitación Mamá
+Habitación Papá
+Habitación Omar
+Hall
+Fondo
+Vereda
+Garage
+Lavadero
+
+
+dentro de cada lugar estaría equipado así y los valores son actualmente, después se ajustará según la época de la factura
+
+cocina / comedor
+
+un aire acondicionado (aire principal) sin uso
+un ventilador de techo 5 hrs
+un microondas no llega a la media hora
+3 iluminarias 3 hrs
+1 tubo led 10 hrs
+
+Living
+un tv led grande 8 hrs
+1 iluminaria 1 hs
+ventilador de techo 3hrs
+un router 24 hrs
+
+Baño
+1 luminaria 3 hrs
+1 afeitadora hombre 5 minutos
+1 secador de pelo 5
+
+Habitación Mamá
+1 iluminaria 1 hrs
+1 velador 1 hrs
+1 ventilador de techo 5 hrs
+
+
+Habitación Papá
+1 iluminaria 1 hrs 
+1 velador 1 hrs
+1 ventilador de techo 5hs
+1 tv led mediano 2 hrs
+
+Habitación Omar
+1 pc gamer con dos monitores 10 hrs
+1 tira de led gamer 10 hrs
+1 ventilador 5 hrs
+1 iluminaria 1 hrs
+1 velador 4 hrs
+
+
+Hall
+1 iluminaria 1 hrs
+
+Fondo
+1 reflector led 15  wwtt 1 hrs
+Vereda
+1 iluminaria que no es led si no de los viejos 1 hrs
+Garage
+1 iluminaria 1 hrs
+1 una cortadora de fiambre 1hs
+1 heladera 24
+
+Lavadero
+1 lavarropa automático de 8 kg  2hs pero no son todos los dias

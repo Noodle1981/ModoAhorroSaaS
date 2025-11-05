@@ -21,6 +21,19 @@
     <form action="{{ route('contracts.invoices.store', $contract) }}" method="POST">
         @csrf
         
+        {{-- Mensaje explicativo sobre las fechas --}}
+        <div style="background-color: #e7f3ff; border-left: 4px solid #007bff; padding: 15px; border-radius: 5px; margin-bottom: 25px;">
+            <h4 style="margin: 0 0 10px 0; color: #0056b3;">📅 Importante: Sobre las fechas de la factura</h4>
+            <p style="margin: 0; font-size: 0.95em; line-height: 1.6;">
+                En Argentina, las facturas de servicios corresponden a <strong>consumos de períodos anteriores</strong>. 
+                <br>
+                👉 Ingresá las fechas del <strong>período de consumo</strong> que aparece en tu factura, 
+                <strong>NO</strong> la fecha de emisión o vencimiento.
+                <br>
+                <span style="color: #666; font-size: 0.9em;">Ejemplo: Si tu factura dice "Período: 01/01/2024 al 31/01/2024", usá esas fechas.</span>
+            </p>
+        </div>
+        
         <h3>Datos Principales (Obligatorios)</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border: 1px solid #ccc; padding: 20px; border-radius: 8px;">
             <div>

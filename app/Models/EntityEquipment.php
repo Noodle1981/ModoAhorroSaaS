@@ -31,7 +31,7 @@ class EntityEquipment extends Model
 
     public static function getUniqueLocationsForEntity(Entity $entity): \Illuminate\Support\Collection
     {
-        $locations_from_db = $entity->entityEquipment()->whereNotNull('location')->distinct()->pluck('location');
+        $locations_from_db = $entity->equipments()->whereNotNull('location')->distinct()->pluck('location');
 
         $unique_locations = collect();
 
