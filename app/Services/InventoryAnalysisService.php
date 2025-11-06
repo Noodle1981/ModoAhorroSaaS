@@ -105,7 +105,11 @@ class InventoryAnalysisService
             $energiaSecundariaConsumida = $horasDeUsoPeriodo * $factorCarga * $equipment->quantity * $consumoNominalKW / $eficiencia;
             
             // --- CÁLCULO STAND BY ---
-            $standbyPowerWatts = $equipment->equipmentType->standby_power_watts ?? 0;
+            // Solo considerar standby si el equipo tiene modo standby habilitado explícitamente
+            $standbyPowerWatts = 0;
+            if (($equipment->has_standby_mode ?? false) === true) {
+                $standbyPowerWatts = $equipment->equipmentType->standby_power_watts ?? 0;
+            }
             $horasStandByPeriodo = (24 * $numberOfDays) - $horasDeUsoPeriodo;
             if ($horasStandByPeriodo < 0) $horasStandByPeriodo = 0;
 

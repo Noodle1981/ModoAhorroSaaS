@@ -34,6 +34,9 @@ class DatabaseSeeder extends Seeder
             RecommendationsTableSeeder::class,      // Catálogo de textos de recomendaciones.
             CarbonIntensityFactorsTableSeeder::class, // Para el cálculo de huella de carbono.
             AppSettingsSeeder::class,               // Configuraciones globales.
+
+            // --- Defaults específicos ---
+            StandbyCategoryDefaultsSeeder::class,   // Marca categorías que suelen tener standby.
         ]);
 
         // ===================================================================

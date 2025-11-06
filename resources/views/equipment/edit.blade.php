@@ -46,8 +46,29 @@
         @endforelse
     </select>
 </div>
-        
-        <!-- ... (código de los otros campos como en el create.blade.php) ... -->
+
+        <!-- Potencia (override) -->
+        <div style="margin-bottom: 15px;">
+            <label for="power_watts_override">4. Potencia (W)</label><br>
+            <input type="number" id="power_watts_override" name="power_watts_override" min="0" value="{{ old('power_watts_override', $equipment->power_watts_override ?? $equipment->equipmentType->default_power_watts) }}" style="width: 100%; padding: 8px;">
+        </div>
+
+        <!-- Minutos de uso promedio por día -->
+        <div style="margin-bottom: 15px;">
+            <label for="avg_daily_use_minutes_override">5. Minutos de uso promedio por día</label><br>
+            <input type="number" id="avg_daily_use_minutes_override" name="avg_daily_use_minutes_override" min="0" max="1440" value="{{ old('avg_daily_use_minutes_override', $equipment->avg_daily_use_minutes_override ?? $equipment->equipmentType->default_avg_daily_use_minutes) }}" style="width: 100%; padding: 8px;">
+        </div>
+
+        <!-- Standby -->
+        <div style="margin-bottom: 15px;">
+            <label style="display:inline-flex;align-items:center;gap:8px;">
+                <input type="checkbox" name="has_standby_mode" value="1" {{ old('has_standby_mode', $equipment->has_standby_mode) ? 'checked' : '' }}>
+                <span><strong>Activar cálculo de consumo en Standby</strong></span>
+            </label>
+            <div style="font-size:12px;color:#6b7280;margin-top:4px;">
+                Marca esto solo si este equipo consume algo estando apagado (ej: TV). Si no estás seguro, déjalo desmarcado.
+            </div>
+        </div>
 
         <div style="margin-top: 20px;">
             <button type="submit" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">

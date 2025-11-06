@@ -15,6 +15,13 @@ class EquipmentCategory extends Model
         'name',
         'calculation_method',
         'description',
+        'supports_standby',
+        'is_portable',
+    ];
+
+    protected $casts = [
+        'supports_standby' => 'boolean',
+        'is_portable' => 'boolean',
     ];
 
     /**

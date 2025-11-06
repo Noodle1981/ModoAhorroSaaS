@@ -121,7 +121,9 @@
                                     $qty = max(1, (int)($equipment->quantity ?? 1));
                                     $room = $equipment->location ?: 'Sin ubicación';
                                     $category = optional($equipment->equipmentType->equipmentCategory)->name ?: 'Otros';
-                                    $hasStandby = (bool)($equipment->has_standby_mode ?? false);
+                                    $hasStandby = $existingSnapshots->has($equipment->id)
+                                        ? (bool)$existingSnapshots[$equipment->id]->has_standby_mode
+                                        : (bool)($equipment->has_standby_mode ?? false);
                                     $continuous = $defaultMinutes >= 720; // 12h+ lo consideramos continuo
                                     $usageType = $hasStandby || $continuous ? 'Continuo / Standby' : ($defaultMinutes <= 30 ? 'Esporádico' : 'Regular');
                                     return compact('index','equipment','power','defaultMinutes','qty','room','category','usageType','hasStandby');
@@ -217,7 +219,7 @@
                                                                         </span>
                                                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                                                             <i class="far fa-clock mr-1"></i>
-                                                                            <span x-text="$root.computeUsageType(minutes[{{ $index }}], {{ $equipment->has_standby_mode ? 'true' : 'false' }})"></span>
+                                                                            <span x-text="$root.computeUsageType(minutes[{{ $index }}], hasStandby[{{ $index }}])"></span>
                                                                         </span>
                                                                     </div>
                                                                 </td>
@@ -246,6 +248,15 @@
                                                                     <div class="text-xs text-gray-400 mt-1" x-show="!compact">
                                                                         (<span x-text="(minutes[{{ $index }}] / 60).toFixed(1)"></span> hs)
                                                                     </div>
+                                                                    <!-- Checkbox Standby por período -->
+                                                                    <div class="mt-2 flex items-center gap-2">
+                                                                        <input type="checkbox" id="standby_{{ $index }}"
+                                                                               name="equipments[{{ $index }}][has_standby_mode]"
+                                                                               x-model="hasStandby[{{ $index }}]"
+                                                                               :value="1"
+                                                                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                                                        <label for="standby_{{ $index }}" class="text-xs text-gray-600">Tiene standby este período</label>
+                                                                    </div>
                                                                 </td>
 
                                                                 <!-- Consumo -->
@@ -257,7 +268,7 @@
                                                                 </td>
 
                                                                 <!-- Estado inicial de minutos -->
-                                                                <input type="hidden" x-init="setInitial({{ $index }}, {{ $power }}, {{ $qty }}, {{ $defaultMinutes }}, { name: '{{ addslashes($equipment->custom_name ?? $equipment->equipmentType->name) }}', room: '{{ addslashes($room) }}', category: '{{ addslashes($categoryName) }}', hasStandby: {{ $equipment->has_standby_mode ? 'true' : 'false' }} })">
+                                                                <input type="hidden" x-init="setInitial({{ $index }}, {{ $power }}, {{ $qty }}, {{ $defaultMinutes }}, { name: '{{ addslashes($equipment->custom_name ?? $equipment->equipmentType->name) }}', room: '{{ addslashes($room) }}', category: '{{ addslashes($categoryName) }}', hasStandby: {{ $item['hasStandby'] ? 'true' : 'false' }} })">
                                                             </tr>
                                                         @endforeach
                                                     @endforeach
@@ -390,6 +401,7 @@
                 periodDays: periodDays || 30,
                 targetKwh: targetKwh || 0,
                 minutes: {},
+                hasStandby: {},
                 items: [], // {index, name, room, category, power, qty}
 
                 init() {
@@ -401,6 +413,7 @@
                     this.$nextTick(() => {
                         this.minutes[index] = Number(mins || 0);
                         this.items.push({ index, power: Number(power || 0), qty: Number(qty || 1), ...meta });
+                        this.hasStandby[index] = !!meta.hasStandby;
                         this.recomputeTotal();
                     });
                 },
@@ -456,9 +469,9 @@
                 getItem(index) {
                     return this.items.find(it => it.index === index);
                 },
-                computeUsageType(mins, hasStandby) {
+                computeUsageType(mins, standbyFlag) {
                     const m = Number(mins||0);
-                    if (hasStandby) return 'Continuo / Standby';
+                    if (standbyFlag) return 'Continuo / Standby';
                     if (m >= 720) return 'Continuo';
                     if (m <= 30) return 'Esporádico';
                     return 'Regular';

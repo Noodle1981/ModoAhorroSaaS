@@ -7,6 +7,21 @@ use Illuminate\Foundation\Http\FormRequest;
 class UpdateEntityEquipmentRequest extends FormRequest
 {
     /**
+     * Prepara los datos ANTES de la validación.
+     */
+    protected function prepareForValidation()
+    {
+        if ($this->has('avg_daily_use_hours_override') && !empty($this->avg_daily_use_hours_override)) {
+            $this->merge([
+                'avg_daily_use_minutes_override' => $this->avg_daily_use_hours_override * 60,
+            ]);
+        }
+
+        $this->merge([
+            'has_standby_mode' => $this->boolean('has_standby_mode'),
+        ]);
+    }
+    /**
      * Determina si el usuario está autorizado para hacer esta solicitud.
      */
     public function authorize(): bool
@@ -28,7 +43,9 @@ class UpdateEntityEquipmentRequest extends FormRequest
             'custom_name' => ['nullable', 'string', 'max:100'],
             'power_watts_override' => ['nullable', 'integer', 'min:0'],
             'avg_daily_use_hours_override' => ['nullable', 'numeric', 'min:0', 'max:24'],
+            'avg_daily_use_minutes_override' => ['nullable', 'integer', 'min:0', 'max:1440'],
             'location' => ['nullable', 'string', 'max:100'],
+            'has_standby_mode' => ['nullable', 'boolean'],
 
         ];
     }

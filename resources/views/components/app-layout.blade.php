@@ -26,8 +26,8 @@
                         <div class="flex">
                             <!-- Logo -->
                             <div class="shrink-0 flex items-center">
-                                <a href="{{ route('dashboard') }}" class="text-xl font-bold text-gray-900">
-                                    ⚡ Modo Ahorro
+                                <a href="{{ route('dashboard') }}" class="flex items-center">
+                                    <img src="{{ asset('img/logoMA.png') }}" alt="Modo Ahorro" class="h-10 w-auto">
                                 </a>
                             </div>
 
@@ -38,6 +38,9 @@
                                 </a>
                                 <a href="{{ route('entities.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('entities.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium leading-5 transition duration-150 ease-in-out">
                                     <i class="fas fa-building mr-2"></i> Mis Entidades
+                                </a>
+                                <a href="{{ route('recommendations.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('recommendations.*') || request()->routeIs('standby.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium leading-5 transition duration-150 ease-in-out">
+                                    <i class="fas fa-lightbulb mr-2"></i> Recomendaciones
                                 </a>
                                 <a href="{{ route('maintenance.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('maintenance.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium leading-5 transition duration-150 ease-in-out">
                                     <i class="fas fa-wrench mr-2"></i> Mantenimiento

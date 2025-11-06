@@ -8,9 +8,23 @@ use Illuminate\Support\Facades\Auth;
 class RecommendationController extends Controller
 {
     /**
-     * Muestra una lista de todas las recomendaciones y oportunidades de mejora.
+     * Muestra el hub central de recomendaciones
      */
-    public function index(InventoryAnalysisService $analysisService)
+    public function index()
+    {
+        $user = auth()->user();
+
+        // Aquí podrás agregar contadores o métricas en el futuro
+        // Ej: pendingMaintenances, unreadRecommendations, etc.
+
+        return view('recommendations.index', compact('user'));
+    }
+
+    /**
+     * Muestra una lista de todas las recomendaciones automáticas y oportunidades de mejora
+     * (Esta es la funcionalidad original que podría ser un submódulo)
+     */
+    public function opportunities(InventoryAnalysisService $analysisService)
     {
         $user = Auth::user();
         $entities = $user->company->entities()->get();
@@ -24,6 +38,6 @@ class RecommendationController extends Controller
             }
         }
 
-        return view('recommendations.index', compact('opportunitiesByEntity'));
+        return view('recommendations.opportunities', compact('opportunitiesByEntity'));
     }
 }

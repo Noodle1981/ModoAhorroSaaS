@@ -19,6 +19,11 @@ use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\SolarController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UsageSnapshotController; // <-- IMPORT NUEVO AÑADIDO
+use App\Http\Controllers\StandbySettingsController;
+use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\SolarHeaterController;
+use App\Http\Controllers\SolarPanelController;
+use App\Http\Controllers\VacationController;
 
 // Controladores del Panel de Gestor (Desactivados)
 // use App\Http\Controllers\Gestor\DashboardController as GestorDashboardController;
@@ -74,10 +79,34 @@ Route::middleware(['auth'])->group(function () {
     // ======================================================================
 
     // --- ANÁLISIS E INTELIGENCIA ---
+    Route::get('/recommendations', [RecommendationController::class, 'index'])->name('recommendations.index');
     Route::get('/entities/{entity}/report/improvements', [ReportController::class, 'improvements'])->name('entities.reports.improvements');
     Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
     Route::post('/maintenance', [MaintenanceController::class, 'store'])->name('maintenance.store');
     Route::get('/solar', [SolarController::class, 'dashboard'])->name('solar.dashboard');
+
+    // --- CONFIGURACIÓN DE STANDBY ---
+    Route::get('/standby', [StandbySettingsController::class, 'index'])->name('standby.index');
+    Route::patch('/standby/categories/{category}', [StandbySettingsController::class, 'updateCategory'])->name('standby.category.update');
+    Route::post('/standby/equipment/bulk', [StandbySettingsController::class, 'bulkUpdateEquipment'])->name('standby.equipment.bulk');
+
+    // --- CALEFÓN SOLAR ---
+    Route::get('/solar-heater', [SolarHeaterController::class, 'index'])->name('solar-heater.index');
+    Route::get('/solar-heater/{entity}/interest', [SolarHeaterController::class, 'showInterest'])->name('solar-heater.interest');
+    Route::post('/solar-heater/{entity}/interest', [SolarHeaterController::class, 'storeInterest'])->name('solar-heater.interest.store');
+
+    // --- PANELES SOLARES ---
+    Route::get('/solar-panel', [SolarPanelController::class, 'index'])->name('solar-panel.index');
+    Route::get('/solar-panel/{entity}/configure', [SolarPanelController::class, 'configure'])->name('solar-panel.configure');
+    Route::post('/solar-panel/{entity}/configure', [SolarPanelController::class, 'storeConfig'])->name('solar-panel.configure.store');
+    Route::get('/solar-panel/{entity}/simulate', [SolarPanelController::class, 'simulate'])->name('solar-panel.simulate');
+
+    // Vacaciones (Modo Ahorro)
+    Route::get('/vacations', [VacationController::class, 'index'])->name('vacations.index');
+    Route::get('/vacations/create', [VacationController::class, 'create'])->name('vacations.create');
+    Route::post('/vacations', [VacationController::class, 'store'])->name('vacations.store');
+    Route::get('/vacations/{plan}/recommendations', [VacationController::class, 'recommendations'])->name('vacations.recommendations');
+    Route::delete('/vacations/{plan}', [VacationController::class, 'destroy'])->name('vacations.destroy');
 
 });
 

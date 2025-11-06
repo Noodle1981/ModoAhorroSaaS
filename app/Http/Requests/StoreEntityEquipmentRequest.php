@@ -26,9 +26,14 @@ class StoreEntityEquipmentRequest extends FormRequest
             ]);
         }
         
-        // Nos aseguramos de que el checkbox de standby siempre envíe un booleano.
+        // Si el checkbox no vino en el request, aplicamos el default por categoría (si existe)
+        $equipmentType = EquipmentType::with('equipmentCategory')->find($this->input('equipment_type_id'));
+        $supportsStandbyByCategory = (bool) optional(optional($equipmentType)->equipmentCategory)->supports_standby;
+        $incomingHasStandby = $this->has('has_standby_mode');
+
         $this->merge([
-            'has_standby_mode' => $this->boolean('has_standby_mode'),
+            // Si el usuario lo envió, usamos su valor booleano; si no, usamos el default por categoría
+            'has_standby_mode' => $incomingHasStandby ? $this->boolean('has_standby_mode') : $supportsStandbyByCategory,
         ]);
     }
 

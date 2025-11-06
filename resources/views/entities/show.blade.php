@@ -197,7 +197,7 @@
                     </div>
                     <div class="bg-white rounded-lg p-3 text-center">
                         <p class="text-xs text-gray-600 mb-1">Coste Total</p>
-                        <p class="text-lg font-bold text-gray-800">€{{ number_format($summary->total_amount, 2) }}</p>
+                        <p class="text-lg font-bold text-gray-800">${{ number_format($summary->total_amount, 2) }}</p>
                     </div>
                 </div>
             </div>
@@ -252,7 +252,7 @@
                                             </div>
                                             <div class="text-center">
                                                 <p class="text-[10px] text-gray-500 uppercase">Importe</p>
-                                                <p class="text-sm font-bold text-gray-800">€{{ number_format($analysis->total_amount, 2) }}</p>
+                                                <p class="text-sm font-bold text-gray-800">${{ number_format($analysis->total_amount, 2) }}</p>
                                             </div>
                                         </div>
                                     </div>

@@ -61,10 +61,11 @@ class UsageSnapshotController extends Controller
             'equipments' => 'required|array',
             'equipments.*.entity_equipment_id' => 'required|exists:entity_equipments,id',
             'equipments.*.avg_daily_use_minutes' => 'required|numeric|min:0|max:1440',
+            'equipments.*.has_standby_mode' => 'nullable|boolean',
         ]);
         
         DB::transaction(function () use ($request, $invoice) {
-            // Eliminamos los snapshots anteriores de esta factura
+            // Soft-delete snapshots anteriores de esta factura (mantener historial)
             EquipmentUsageSnapshot::where('invoice_id', $invoice->id)->delete();
             
             // Creamos los nuevos snapshots
@@ -74,11 +75,20 @@ class UsageSnapshotController extends Controller
                 // Obtenemos la potencia real (override o default)
                 $powerWatts = $entityEquipment->power_watts_override ?? $entityEquipment->equipmentType->default_power_watts;
                 
-                // Calculamos el consumo del período
+                // Determinar si el usuario activó standby para este período
+                $hasStandby = isset($equipmentData['has_standby_mode']) ? (bool)$equipmentData['has_standby_mode'] : (bool)($entityEquipment->has_standby_mode ?? false);
+
+                // Calculamos el consumo del período (activo + standby si corresponde)
                 $periodDays = $invoice->start_date->diffInDays($invoice->end_date) + 1;
                 $dailyUseHours = $equipmentData['avg_daily_use_minutes'] / 60;
                 $totalHours = $dailyUseHours * $periodDays;
-                $calculatedKwh = ($powerWatts / 1000) * $totalHours;
+                $activeKwh = ($powerWatts / 1000) * $totalHours;
+
+                $standbyWatts = $hasStandby ? ($entityEquipment->equipmentType->standby_power_watts ?? 0) : 0;
+                $standbyHours = max(0, ($periodDays * 24) - $totalHours);
+                $standbyKwh = ($standbyWatts / 1000) * $standbyHours * max(1, (int)$entityEquipment->quantity);
+
+                $calculatedKwh = $activeKwh + $standbyKwh;
                 
                 EquipmentUsageSnapshot::create([
                     'entity_equipment_id' => $equipmentData['entity_equipment_id'],
@@ -87,7 +97,7 @@ class UsageSnapshotController extends Controller
                     'end_date' => $invoice->end_date,
                     'avg_daily_use_minutes' => $equipmentData['avg_daily_use_minutes'],
                     'power_watts' => $powerWatts,
-                    'has_standby_mode' => $entityEquipment->has_standby_mode ?? false,
+                    'has_standby_mode' => $hasStandby,
                     'calculated_kwh_period' => $calculatedKwh,
                 ]);
             }

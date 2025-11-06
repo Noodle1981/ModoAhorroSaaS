@@ -30,7 +30,7 @@
                             </div>
                             <div style="background-color: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                                 <span class="text-sm text-gray-600">{{ __('Importe Total') }}</span>
-                                <p class="text-2xl font-bold text-green-600">{{ number_format($invoice->total_amount, 2, ',', '.') }} €</p>
+                                <p class="text-2xl font-bold text-green-600">${{ number_format($invoice->total_amount, 2, ',', '.') }}</p>
                             </div>
                             <div style="background-color: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                                 <span class="text-sm text-gray-600">{{ __('Huella de Carbono') }}</span>
@@ -59,14 +59,14 @@
                         <div>
                             <h4 class="font-bold mb-2">{{ __('Detalles de Costes') }}</h4>
                             <div class="border-t pt-2">
-                                <p><strong>{{ __('Coste de Energía:') }}</strong> {{ number_format($invoice->cost_for_energy, 2, ',', '.') }} €</p>
-                                <p><strong>{{ __('Coste de Potencia:') }}</strong> {{ number_format($invoice->cost_for_power, 2, ',', '.') }} €</p>
-                                <p><strong>{{ __('Impuestos:') }}</strong> {{ number_format($invoice->taxes, 2, ',', '.') }} €</p>
-                                <p><strong>{{ __('Otros Cargos:') }}</strong> {{ number_format($invoice->other_charges, 2, ',', '.') }} €</p>
+                                <p><strong>{{ __('Coste de Energía:') }}</strong> ${{ number_format($invoice->cost_for_energy, 2, ',', '.') }}</p>
+                                <p><strong>{{ __('Coste de Potencia:') }}</strong> ${{ number_format($invoice->cost_for_power, 2, ',', '.') }}</p>
+                                <p><strong>{{ __('Impuestos:') }}</strong> ${{ number_format($invoice->taxes, 2, ',', '.') }}</p>
+                                <p><strong>{{ __('Otros Cargos:') }}</strong> ${{ number_format($invoice->other_charges, 2, ',', '.') }}</p>
                                 @if($invoice->surplus_compensation_amount > 0)
-                                <p class="text-green-700"><strong>{{ __('Compensación Excedentes:') }}</strong> -{{ number_format($invoice->surplus_compensation_amount, 2, ',', '.') }} €</p>
+                                <p class="text-green-700"><strong>{{ __('Compensación Excedentes:') }}</strong> -${{ number_format($invoice->surplus_compensation_amount, 2, ',', '.') }}</p>
                                 @endif
-                                <p class="font-bold mt-2"><strong>{{ __('Importe Total:') }}</strong> {{ number_format($invoice->total_amount, 2, ',', '.') }} €</p>
+                                <p class="font-bold mt-2"><strong>{{ __('Importe Total:') }}</strong> ${{ number_format($invoice->total_amount, 2, ',', '.') }}</p>
                             </div>
                         </div>
                     </div>

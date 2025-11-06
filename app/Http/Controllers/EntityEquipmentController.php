@@ -32,7 +32,12 @@ class EntityEquipmentController extends Controller
         $categories = EquipmentCategory::with('equipmentTypes')->orderBy('name')->get();
         
         $roomsData = $entity->details['rooms'] ?? [];
-        $locations = collect($roomsData)->pluck('name')->filter()->unique()->all();
+        $locations = collect($roomsData)->pluck('name')->filter()->unique();
+        
+        // Siempre incluir "Portátiles" en las ubicaciones disponibles
+        if (!$locations->contains('Portátiles')) {
+            $locations->prepend('Portátiles');
+        }
 
         $equipments = $entity->equipments()->with('equipmentType.equipmentCategory')->latest()->get();
 
@@ -71,7 +76,12 @@ class EntityEquipmentController extends Controller
         $categories = EquipmentCategory::with('equipmentTypes')->orderBy('name')->get();
 
         $roomsData = $equipment->entity->details['rooms'] ?? [];
-        $locations = collect($roomsData)->pluck('name')->filter()->unique()->all();
+        $locations = collect($roomsData)->pluck('name')->filter()->unique();
+        
+        // Siempre incluir "Portátiles" en las ubicaciones disponibles
+        if (!$locations->contains('Portátiles')) {
+            $locations->prepend('Portátiles');
+        }
 
         return view('equipment.edit', compact('equipment', 'categories', 'locations'));
     }

@@ -56,7 +56,7 @@
                     <div class="bg-green-500 text-white rounded-lg p-2">
                         <i class="fas fa-euro-sign text-lg"></i>
                     </div>
-                    <p class="text-3xl font-bold text-gray-800">€{{ number_format($globalSummary->total_cost, 0) }}</p>
+                    <p class="text-3xl font-bold text-gray-800">${{ number_format($globalSummary->total_cost, 0) }}</p>
                 </div>
                 <div class="flex items-center justify-between">
                     <p class="text-gray-700 text-xs font-semibold uppercase tracking-wide">Gasto</p>
@@ -128,7 +128,7 @@
                                 <span class="font-medium text-gray-700 truncate max-w-[200px]">{{ $entityData['name'] }}</span>
                                 <div class="text-right">
                                     <span class="text-gray-600">{{ number_format($entityData['consumption'], 0) }} kWh</span>
-                                    <span class="text-gray-500 text-xs ml-2">€{{ number_format($entityData['cost'], 2) }}</span>
+                                    <span class="text-gray-500 text-xs ml-2">${{ number_format($entityData['cost'], 2) }}</span>
                                 </div>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-3">
@@ -275,7 +275,7 @@
                                     </div>
                                     <div class="bg-green-50 rounded-lg p-2">
                                         <p class="text-green-600 text-xs font-medium">Coste</p>
-                                        <p class="text-gray-900 font-bold">€{{ number_format($lastInvoice->total_amount, 2) }}</p>
+                                        <p class="text-gray-900 font-bold">${{ number_format($lastInvoice->total_amount, 2) }}</p>
                                     </div>
                                 </div>
                             @endif

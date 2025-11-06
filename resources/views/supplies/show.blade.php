@@ -110,7 +110,7 @@
                         <tr>
                             <td style="padding: 12px; border: 1px solid #ddd;">{{ $invoice->start_date->format('d/m/Y') }} - {{ $invoice->end_date->format('d/m/Y') }}</td>
                             <td style="padding: 12px; border: 1px solid #ddd; text-align: right;">{{ number_format($invoice->total_energy_consumed_kwh, 0, ',', '.') }} kWh</td>
-                            <td style="padding: 12px; border: 1px solid #ddd; text-align: right;">{{ number_format($invoice->total_amount, 2, ',', '.') }} €</td>
+                            <td style="padding: 12px; border: 1px solid #ddd; text-align: right;">${{ number_format($invoice->total_amount, 2, ',', '.') }}</td>
                             <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">
                                 <span style="background-color: #17a2b8; color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.8em;">
                                     {{ $invoice->status }}

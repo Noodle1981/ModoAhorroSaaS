@@ -131,6 +131,12 @@ class SampleHouseCasaSeeder extends Seeder
             'Lavadero' => [
                 ['name' => 'Lavarropas Automático 8kg', 'minutes' => 120, 'qty' => 1],
             ],
+            'Portátiles' => [
+                // Celulares - carga promedio 1-2 horas por día
+                ['name' => 'Cargador de Celular', 'minutes' => 90, 'qty' => 3], // 3 celulares
+                // Notebook - carga/uso promedio 4-6 horas
+                ['name' => 'Notebook 14"', 'minutes' => 300, 'qty' => 1],
+            ],
         ];
 
         // 5) Limpiar inventario previo de esta entidad para idempotencia
@@ -148,6 +154,10 @@ class SampleHouseCasaSeeder extends Seeder
                     continue;
                 }
 
+                // Determinar si este equipo debe tener standby habilitado por defecto (solo TVs en este ejemplo)
+                $name = $et->name;
+                $isTv = str_contains(strtolower($name), 'tv');
+
                 EntityEquipment::create([
                     'entity_id' => $entity->id,
                     'equipment_type_id' => $et->id,
@@ -156,7 +166,8 @@ class SampleHouseCasaSeeder extends Seeder
                     'power_watts_override' => $item['power_override'] ?? null,
                     'avg_daily_use_minutes_override' => $item['minutes'] ?? null,
                     'location' => $room,
-                    'has_standby_mode' => in_array($et->name, ['Router WiFi']) ? true : false,
+                    // Solo TV en standby por defecto; el resto false
+                    'has_standby_mode' => $isTv ? true : false,
                 ]);
             }
         }

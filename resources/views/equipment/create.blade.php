@@ -36,11 +36,21 @@
                             <select id="category_id" name="category_id" required style="width: 100%; margin-top: 0.25rem; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.5rem;">
                                 <option value="">-- Selecciona una categoría --</option>
                                 @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}" data-types="{{ json_encode($category->equipmentTypes) }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                    <option value="{{ $category->id }}" 
+                                            data-types="{{ json_encode($category->equipmentTypes) }}" 
+                                            data-supports-standby="{{ $category->supports_standby ? '1' : '0' }}"
+                                            data-is-portable="{{ $category->is_portable ? '1' : '0' }}"
+                                            {{ old('category_id') == $category->id ? 'selected' : '' }}>
                                         {{ $category->name }}
                                     </option>
                                 @endforeach
                             </select>
+                            
+                            <!-- Badge de equipo portátil -->
+                            <div id="portable-badge" style="display: none; margin-top: 0.5rem; padding: 0.5rem; background-color: #dbeafe; border: 1px solid #93c5fd; border-radius: 0.375rem; font-size: 0.875rem; color: #1e40af;">
+                                <i class="fas fa-mobile-alt" style="margin-right: 0.5rem;"></i>
+                                <strong>Equipo Portátil:</strong> Se asignará automáticamente a la ubicación "Portátiles" (puedes cambiarlo si lo deseas).
+                            </div>
                         </div>
 
                         <!-- 2. Tipo de Equipo -->
@@ -57,8 +67,10 @@
                             <select id="location" name="location" style="width: 100%; margin-top: 0.25rem; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.5rem;">
                                 <option value="">-- Selecciona una ubicación --</option>
                                 @forelse ($locations as $locationName)
-                                    <option value="{{ $locationName }}" {{ old('location') == $locationName ? 'selected' : '' }}>
-                                        {{ $locationName }}
+                                    <option value="{{ $locationName }}" 
+                                            {{ old('location') == $locationName ? 'selected' : '' }}
+                                            {{ $locationName === 'Portátiles' ? 'data-portable-option="1"' : '' }}>
+                                        {{ $locationName === 'Portátiles' ? '📱 ' : '' }}{{ $locationName }}
                                     </option>
                                 @empty
                                     <option value="" disabled>Primero debes definir las habitaciones en la entidad.</option>
@@ -134,6 +146,7 @@
             const hoursInput = document.getElementById('avg_daily_use_hours_override');
             const minutesInputWrapper = document.getElementById('minutes-input-wrapper');
             const minutesInput = document.getElementById('avg_daily_use_minutes_override');
+            const portableBadge = document.getElementById('portable-badge');
 
             let allTypes = {};
 
@@ -150,13 +163,28 @@
                 powerInput.value = '';
                 hoursInput.value = '';
                 minutesInput.value = '';
+                portableBadge.style.display = 'none';
 
                 const selectedOption = this.options[this.selectedIndex];
+                const isPortable = selectedOption.dataset.isPortable === '1';
+                
+                // Mostrar badge si es categoría portátil
+                if (isPortable) {
+                    portableBadge.style.display = 'block';
+                }
+
                 if (selectedOption.value && selectedOption.dataset.types) {
                     try {
                         const types = JSON.parse(selectedOption.dataset.types);
                         allTypes = {}; 
                         types.forEach(function (type) {
+                            // Agregamos la categoría parent para luego poder verificar supports_standby
+                            const selectedCategoryId = selectedOption.value;
+                            type.equipment_category = {
+                                id: selectedCategoryId,
+                                supports_standby: selectedOption.dataset.supportsStandby === '1',
+                                is_portable: isPortable
+                            };
                             allTypes[type.id] = type;
                             const option = new Option(type.name, type.id);
                             typeSelect.appendChild(option);
@@ -197,8 +225,8 @@
                             minutesInputWrapper.style.display = 'block';
                             hoursInputWrapper.style.display = 'none';
                             minutesInput.value = defaultMinutes;
-                        }
                     }
+                }
 
                     if (selectedType.is_portable) {
                         locationWrapper.style.display = 'none';
@@ -208,9 +236,19 @@
                     } else {
                         locationWrapper.style.display = 'block';
                         locationSelect.required = true;
-                    }
-
-                    if (selectedType.standby_power_watts && parseFloat(selectedType.standby_power_watts) > 0 && defaultMinutes < 1440) {
+                        
+                        // Si la categoría es portátil, auto-seleccionar "Portátiles"
+                        const categoryIsPortable = selectedType.equipment_category && selectedType.equipment_category.is_portable;
+                        if (categoryIsPortable) {
+                            // Buscar opción "Portátiles"
+                            const portablesOption = Array.from(locationSelect.options).find(opt => opt.value === 'Portátiles');
+                            if (portablesOption) {
+                                locationSelect.value = 'Portátiles';
+                            }
+                        }
+                    }                    // Mostrar standby SI la categoría soporta standby Y tiene power>0 Y no opera 24h
+                    const categorySupportsStandby = selectedType.equipment_category && selectedType.equipment_category.supports_standby;
+                    if (categorySupportsStandby && selectedType.standby_power_watts && parseFloat(selectedType.standby_power_watts) > 0 && defaultMinutes < 1440) {
                         standbyWrapper.style.display = 'block';
                     } else {
                         standbyWrapper.style.display = 'none';
