@@ -75,6 +75,8 @@ Route::middleware(['auth'])->group(function () {
     // === NUEVAS RUTAS PARA LA CONFIRMACIÓN DE USO (SNAPSHOTS) ===
     // ======================================================================
     Route::get('/invoices/{invoice}/snapshots/create', [UsageSnapshotController::class, 'create'])->name('snapshots.create');
+    // Vista resumen de snapshots (dashboard del período)
+    Route::get('/invoices/{invoice}/snapshots', [UsageSnapshotController::class, 'show'])->name('snapshots.show');
     Route::post('/invoices/{invoice}/snapshots', [UsageSnapshotController::class, 'store'])->name('snapshots.store');
     // ======================================================================
 

@@ -21,142 +21,102 @@ class DashboardController extends Controller
 
         $entities = $user->company ? $user->company->entities : collect();
 
-        // Calcular métricas globales
-        $totalConsumption = 0;
-        $totalCost = 0;
-        $lastMonthConsumption = 0;
-        $lastMonthCost = 0;
-        $equipmentCount = 0;
-
-        foreach ($entities as $entity) {
-            // Obtener facturas de esta entidad a través de supplies -> contracts
+        // Construir datos por entidad de forma segura
+        $entitiesData = $entities->map(function ($entity) {
             $supplyIds = $entity->supplies()->pluck('id');
-            
-            // Última factura de cada entidad
-            $lastInvoice = Invoice::whereHas('contract', function($query) use ($supplyIds) {
+
+            // Última y penúltima factura
+            $lastInvoice = Invoice::whereHas('contract', function ($query) use ($supplyIds) {
                     $query->whereIn('supply_id', $supplyIds);
                 })
                 ->orderBy('end_date', 'desc')
                 ->first();
 
-            if ($lastInvoice) {
-                $totalConsumption += $lastInvoice->total_energy_consumed_kwh;
-                $totalCost += $lastInvoice->total_amount;
-            }
-
-            // Penúltima factura para comparación
-            $previousInvoice = Invoice::whereHas('contract', function($query) use ($supplyIds) {
+            $previousInvoice = Invoice::whereHas('contract', function ($query) use ($supplyIds) {
                     $query->whereIn('supply_id', $supplyIds);
                 })
                 ->orderBy('end_date', 'desc')
                 ->skip(1)
                 ->first();
 
-            if ($previousInvoice) {
-                $lastMonthConsumption += $previousInvoice->total_energy_consumed_kwh;
-                $lastMonthCost += $previousInvoice->total_amount;
-            }
-
-            // Contar equipos
-            $equipmentCount += $entity->equipments()->count();
-        }
-
-        // Calcular tendencias
-        $consumptionTrend = $lastMonthConsumption > 0 
-            ? (($totalConsumption - $lastMonthConsumption) / $lastMonthConsumption) * 100 
-            : 0;
-
-        $costTrend = $lastMonthCost > 0 
-            ? (($totalCost - $lastMonthCost) / $lastMonthCost) * 100 
-            : 0;
-
-        // Obtener todas las supply IDs de todas las entidades
-        $allSupplyIds = collect();
-        foreach ($entities as $entity) {
-            $allSupplyIds = $allSupplyIds->merge($entity->supplies()->pluck('id'));
-        }
-
-        // Obtener últimas facturas para gráfico (últimos 6 meses)
-        $recentInvoices = Invoice::whereHas('contract', function($query) use ($allSupplyIds) {
-                $query->whereIn('supply_id', $allSupplyIds);
-            })
-            ->where('end_date', '>=', now()->subMonths(6))
-            ->orderBy('end_date', 'asc')
-            ->get()
-            ->groupBy(function($invoice) {
-                return $invoice->end_date->format('Y-m');
-            })
-            ->map(function($group) {
-                return [
-                    'consumption' => $group->sum('total_energy_consumed_kwh'),
-                    'cost' => $group->sum('total_amount'),
-                    'month' => $group->first()->end_date->locale('es')->isoFormat('MMM YYYY'),
-                ];
-            });
-
-        // Consumo por entidad para gráfico de distribución
-        $consumptionByEntity = $entities->map(function($entity) {
-            $supplyIds = $entity->supplies()->pluck('id');
-            
-            $lastInvoice = Invoice::whereHas('contract', function($query) use ($supplyIds) {
+            // Evolución últimos 6 meses
+            $monthlyEvolution = Invoice::whereHas('contract', function ($query) use ($supplyIds) {
                     $query->whereIn('supply_id', $supplyIds);
                 })
-                ->orderBy('end_date', 'desc')
-                ->first();
+                ->where('end_date', '>=', now()->subMonths(6))
+                ->orderBy('end_date', 'asc')
+                ->get()
+                ->groupBy(function ($invoice) {
+                    return $invoice->end_date->format('Y-m');
+                })
+                ->map(function ($group) {
+                    return [
+                        'consumption' => $group->sum('total_energy_consumed_kwh'),
+                        'month' => $group->first()->end_date->locale('es')->isoFormat('MMM'),
+                    ];
+                })
+                ->values();
+
+            // Consumo por categoría a partir de equipos
+            $consumptionByCategory = $entity->equipments()
+                ->with(['equipmentType.equipmentCategory'])
+                ->get()
+                ->groupBy(function ($eq) {
+                    return $eq->equipmentType?->equipmentCategory?->name ?? 'Sin categoría';
+                })
+                ->map(function ($equipments, $categoryName) {
+                    $totalMonthlyKwh = $equipments->sum(function ($eq) {
+                        $power = $eq->power_watts_override ?? ($eq->equipmentType->default_power_watts ?? 0);
+                        // Si no hay minutos override, derivar desde horas por defecto
+                        $minutesOverride = $eq->avg_daily_use_minutes_override ?? null;
+                        $hoursDefault = $eq->equipmentType->default_avg_daily_use_hours ?? 0;
+                        $minutes = $minutesOverride !== null ? $minutesOverride : ($hoursDefault * 60);
+                        $qty = max(1, $eq->quantity ?? 1);
+                        $dailyKwh = ($power / 1000) * ($minutes / 60) * $qty;
+                        return $dailyKwh * 30;
+                    });
+
+                    // Estimación simple de costo (fallback)
+                    $estimatedCost = $totalMonthlyKwh * 20; // $/kWh aproximado
+
+                    return [
+                        'category' => $categoryName,
+                        'consumption' => $totalMonthlyKwh,
+                        'cost' => $estimatedCost,
+                    ];
+                })
+                ->sortByDesc('consumption')
+                ->values();
+
+            $currentConsumption = $lastInvoice->total_energy_consumed_kwh ?? 0;
+            $previousConsumption = $previousInvoice->total_energy_consumed_kwh ?? 0;
+            $trend = $previousConsumption > 0
+                ? (($currentConsumption - $previousConsumption) / $previousConsumption) * 100
+                : 0;
 
             return [
-                'name' => $entity->name,
-                'consumption' => $lastInvoice ? $lastInvoice->total_energy_consumed_kwh : 0,
-                'cost' => $lastInvoice ? $lastInvoice->total_amount : 0,
+                'entity' => $entity,
+                'consumption' => $currentConsumption,
+                'cost' => $lastInvoice->total_amount ?? 0,
+                'trend' => $trend,
+                'equipment_count' => $entity->equipments()->count(),
+                'rooms_count' => is_array($entity->details ?? null) ? ($entity->details['rooms'] ?? null) : null,
+                'monthly_evolution' => $monthlyEvolution,
+                'consumption_by_category' => $consumptionByCategory,
+                'last_invoice' => $lastInvoice,
             ];
-        })->sortByDesc('consumption')->take(5);
+        })->values();
 
-        // Top equipos consumidores (estimado por potencia × uso promedio)
-        $topEquipment = EntityEquipment::whereIn('entity_id', $entities->pluck('id'))
-            ->with(['equipmentType', 'entity'])
-            ->get()
-            ->map(function($eq) {
-                $power = $eq->power_watts_override ?? $eq->equipmentType->default_power_watts;
-                $minutes = $eq->avg_daily_use_minutes_override ?? $eq->equipmentType->default_avg_daily_use_minutes ?? 0;
-                $qty = max(1, $eq->quantity ?? 1);
-                $dailyKwh = ($power / 1000) * ($minutes / 60) * $qty;
-                $monthlyKwh = $dailyKwh * 30;
-
-                return [
-                    'name' => $eq->custom_name ?? $eq->equipmentType->name,
-                    'entity' => $eq->entity->name,
-                    'location' => $eq->location,
-                    'monthly_kwh' => $monthlyKwh,
-                    'power' => $power,
-                ];
-            })
-            ->sortByDesc('monthly_kwh')
-            ->take(10);
-
-        // Recomendaciones activas (no implementadas)
-        $activeRecommendations = Recommendation::whereIn('entity_id', $entities->pluck('id'))
-            ->where('status', 'pending')
-            ->orderBy('estimated_annual_savings_kwh', 'desc')
-            ->take(5)
-            ->get();
-
-        $globalSummary = [
-            'entity_count' => $entities->count(),
-            'total_consumption' => $totalConsumption,
-            'total_cost' => $totalCost,
-            'equipment_count' => $equipmentCount,
-            'consumption_trend' => $consumptionTrend,
-            'cost_trend' => $costTrend,
+        // Entidades bloqueadas (freemium / demo)
+        $blockedEntities = [
+            ['name' => 'Comercio', 'icon' => 'fa-store', 'type' => 'comercio'],
+            ['name' => 'Oficina', 'icon' => 'fa-building', 'type' => 'oficina'],
         ];
 
         return view('dashboard', [
             'user' => $user,
-            'entities' => $entities,
-            'globalSummary' => (object) $globalSummary,
-            'recentInvoices' => $recentInvoices,
-            'consumptionByEntity' => $consumptionByEntity,
-            'topEquipment' => $topEquipment,
-            'activeRecommendations' => $activeRecommendations,
+            'entitiesData' => $entitiesData,
+            'blockedEntities' => $blockedEntities,
         ]);
     }
 }

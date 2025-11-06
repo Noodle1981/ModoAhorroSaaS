@@ -107,4 +107,53 @@ class UsageSnapshotController extends Controller
             ->route('entities.show', $entity)
             ->with('success', 'Ajustes de equipos guardados exitosamente. El análisis se ha actualizado.');
     }
+
+    /**
+     * Muestra un resumen (dashboard) de los snapshots guardados para una factura.
+     */
+    public function show(Invoice $invoice)
+    {
+        $entity = $invoice->contract->supply->entity;
+        $this->authorize('view', $entity);
+
+        $snapshots = EquipmentUsageSnapshot::with(['entityEquipment.equipmentType.equipmentCategory'])
+            ->where('invoice_id', $invoice->id)
+            ->get();
+
+        if ($snapshots->isEmpty()) {
+            return redirect()
+                ->route('snapshots.create', $invoice)
+                ->with('info', 'Aún no hay ajustes guardados para este período. Configúralos ahora.');
+        }
+
+        $totalEstimated = $snapshots->sum('calculated_kwh_period');
+        $real = (float) ($invoice->total_energy_consumed_kwh ?? 0);
+        $percent = $real > 0 ? ($totalEstimated / $real) * 100 : null;
+
+        // Agrupar por ambiente (location) para un mini resumen
+        $byRoom = $snapshots->groupBy(function ($s) {
+            $loc = $s->entityEquipment->location ?? 'Sin ubicación';
+            // Si location viene JSON, intentamos decodificar nombre simple
+            $decoded = json_decode($loc, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                if (is_array($decoded)) {
+                    return $decoded['name'] ?? ($decoded['rooms'][0]['name'] ?? 'Sin ubicación');
+                }
+            }
+            return $loc ?: 'Sin ubicación';
+        })->map(function ($group) {
+            return [
+                'kwh' => $group->sum('calculated_kwh_period'),
+            ];
+        })->sortByDesc('kwh');
+
+        return view('snapshots.show', [
+            'invoice' => $invoice,
+            'entity' => $entity,
+            'snapshots' => $snapshots,
+            'totalEstimated' => $totalEstimated,
+            'percent' => $percent,
+            'byRoom' => $byRoom,
+        ]);
+    }
 }

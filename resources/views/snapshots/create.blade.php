@@ -17,19 +17,7 @@
                 $categories = $equipments->map(fn($e) => optional($e->equipmentType->equipmentCategory)->name)
                     ->filter()->unique()->values();
             @endphp
-            {{-- Información del período de facturación --}}
-            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-info-circle text-blue-400 text-lg"></i>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm text-blue-700">
-                            <strong>Período de Facturación:</strong> 
-                            {{ $invoice->start_date->format('d/m/Y') }} al {{ $invoice->end_date->format('d/m/Y') }} 
-                            ({{ $periodDays }} días)
-                        </p>
-                        </div>
+            {{-- Eliminado panel lateral; se reemplaza por tarjetas arriba --}}
             
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-0">
@@ -102,13 +90,50 @@
                         </div>
 
                         <div class="p-6">
+                            {{-- Tarjetas informativas responsivas --}}
+                            <div class="grid gap-6 md:grid-cols-2 mb-8">
+                                {{-- Tarjeta período de facturación --}}
+                                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-5 flex flex-col">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+                                            <i class="fas fa-calendar-alt"></i>
+                                        </div>
+                                        <h3 class="text-base font-semibold text-gray-800">Período de Facturación</h3>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">
+                                        <span class="font-medium">Desde:</span> {{ $invoice->start_date->format('d/m/Y') }}<br>
+                                        <span class="font-medium">Hasta:</span> {{ $invoice->end_date->format('d/m/Y') }}<br>
+                                        <span class="font-medium">Duración:</span> {{ $periodDays }} días
+                                    </p>
+                                    <div class="mt-auto pt-3 border-t">
+                                        <p class="text-xs text-gray-500">Esta información guía el cálculo del consumo estimado total para comparar contra el real.</p>
+                                    </div>
+                                </div>
+                                {{-- Tarjeta consejos de ajuste --}}
+                                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-5 flex flex-col">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center text-yellow-600">
+                                            <i class="fas fa-lightbulb"></i>
+                                        </div>
+                                        <h3 class="text-base font-semibold text-gray-800">Consejos para un Mejor Ajuste</h3>
+                                    </div>
+                                    <ul class="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                                        <li>Revisa facturas anteriores en meses similares.</li>
+                                        <li>Considera calefacción o refrigeración según temporada.</li>
+                                        <li>Standby: menor potencia pero 24h continuas.</li>
+                                        <li>Objetivo ideal: 80–110% del consumo real.</li>
+                                        <li>Si estás por debajo: puede faltar inventario.</li>
+                                    </ul>
+                                    <div class="mt-auto pt-3 border-t">
+                                        <p class="text-xs text-gray-500">Ajusta minutos de uso hasta acercarte al rango óptimo.</p>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="mb-4">
-                                <h3 class="text-lg font-medium text-gray-900">
+                                <h3 class="text-lg font-semibold text-gray-900">
                                     Inventario de Equipos ({{ $equipments->count() }})
                                 </h3>
-                                <p class="text-sm text-gray-600">
-                                    Agrupado por ambiente, categoría y tipo de uso. Ajusta minutos/día; el total se actualiza en tiempo real.
-                                </p>
+                                <p class="text-sm text-gray-600">Agrupado por ambiente, categoría y tipo de uso. Ajusta minutos/día; el total se actualiza en tiempo real.</p>
                             </div>
 
                             @php
@@ -133,7 +158,7 @@
 
                             @foreach($byRoom as $room => $listByRoom)
                                 @php $roomIndices = $listByRoom->pluck('index')->values()->all(); @endphp
-                                <div class="mt-8 bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+                                <div class="mt-8 bg-white rounded-lg shadow-md overflow-hidden border border-gray-200" x-show="roomHasVisible({{ json_encode($roomIndices) }})" x-cloak>
                                     <!-- Encabezado de la ubicación -->
                                     <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
                                         <div class="flex items-center justify-between text-white">
@@ -143,7 +168,7 @@
                                             </div>
                                             <div class="text-right">
                                                 <div class="text-sm opacity-90">Consumo total del ambiente</div>
-                                                <div class="text-2xl font-bold" x-text="$root.roomKwh({{ json_encode($roomIndices) }}).toFixed(2) + ' kWh'"></div>
+                                                <div class="text-2xl font-bold" x-text="roomKwhFiltered({{ json_encode($roomIndices) }}).toFixed(2) + ' kWh'"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -231,31 +256,41 @@
                                                                     </div>
                                                                 </td>
 
-                                                                <!-- Minutos/día -->
+                                                                <!-- Minutos/día con slider y +/- -->
                                                                 <td class="px-6 py-4">
-                                                                    <div class="flex items-center gap-2">
-                                                                        <input
-                                                                            type="number"
-                                                                            name="equipments[{{ $index }}][avg_daily_use_minutes]"
-                                                                            x-model.number="minutes[{{ $index }}]"
-                                                                            min="0" max="1440" step="1"
-                                                                            class="w-24 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                                                            :class="minutes[{{ $index }}] > 0 ? 'bg-white' : 'bg-gray-50'"
-                                                                            required
-                                                                        >
-                                                                        <span class="text-xs text-gray-500">min</span>
-                                                                    </div>
-                                                                    <div class="text-xs text-gray-400 mt-1" x-show="!compact">
-                                                                        (<span x-text="(minutes[{{ $index }}] / 60).toFixed(1)"></span> hs)
-                                                                    </div>
-                                                                    <!-- Checkbox Standby por período -->
-                                                                    <div class="mt-2 flex items-center gap-2">
-                                                                        <input type="checkbox" id="standby_{{ $index }}"
-                                                                               name="equipments[{{ $index }}][has_standby_mode]"
-                                                                               x-model="hasStandby[{{ $index }}]"
-                                                                               :value="1"
-                                                                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                                                        <label for="standby_{{ $index }}" class="text-xs text-gray-600">Tiene standby este período</label>
+                                                                    <div class="space-y-2">
+                                                                        <div class="flex flex-wrap items-center gap-2">
+                                                                            <button type="button"
+                                                                                    @click="minutes[{{ $index }}] = Math.max(0, Number(minutes[{{ $index }}]||0) - 5); $dispatch('input')"
+                                                                                    class="px-2 py-1 text-xs rounded border hover:bg-gray-50">
+                                                                                –5
+                                                                            </button>
+                                                                            <div class="flex-1 min-w-[180px]">
+                                                                                <input type="range"
+                                                                                       min="0" max="1440" step="5"
+                                                                                       x-model.number="minutes[{{ $index }}]"
+                                                                                       class="w-full accent-blue-600">
+                                                                            </div>
+                                                                            <button type="button"
+                                                                                    @click="minutes[{{ $index }}] = Math.min(1440, Number(minutes[{{ $index }}]||0) + 5); $dispatch('input')"
+                                                                                    class="px-2 py-1 text-xs rounded border hover:bg-gray-50">
+                                                                                +5
+                                                                            </button>
+                                                                            <div class="sm:ml-2 sm:basis-auto basis-full flex items-center gap-1 sm:justify-start justify-end">
+                                                                                <span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs font-medium tabular-nums min-w-[100px] justify-center" x-text="formatMinutes(minutes[{{ $index }}]||0)"></span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <!-- Campo real para backend -->
+                                                                        <input type="hidden" name="equipments[{{ $index }}][avg_daily_use_minutes]" :value="minutes[{{ $index }}]">
+                                                                        <!-- Checkbox Standby por período -->
+                                                                        <div class="pt-1 flex items-center gap-2">
+                                                                            <input type="checkbox" id="standby_{{ $index }}"
+                                                                                   name="equipments[{{ $index }}][has_standby_mode]"
+                                                                                   x-model="hasStandby[{{ $index }}]"
+                                                                                   :value="1"
+                                                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                                                            <label for="standby_{{ $index }}" class="text-xs text-gray-600">Tiene standby este período</label>
+                                                                        </div>
                                                                     </div>
                                                                 </td>
 
@@ -296,35 +331,36 @@
                                     <div class="space-y-4">
                                         @foreach($byRoom as $room => $listByRoom)
                                             @php $roomIndices = $listByRoom->pluck('index')->values()->all(); @endphp
-                                            <div>
+                                            <div x-show="roomHasVisible({{ json_encode($roomIndices) }})" x-cloak>
                                                 <div class="flex items-center justify-between mb-2">
                                                     <div class="flex items-center gap-2">
                                                         <i class="fas fa-door-open text-gray-400"></i>
                                                         <span class="text-sm font-medium text-gray-700">{{ $room }}</span>
                                                     </div>
                                                     <div class="flex items-center gap-3">
-                                                        <span class="text-sm font-semibold text-gray-900" x-text="$root.roomKwh({{ json_encode($roomIndices) }}).toFixed(2) + ' kWh'"></span>
-                                                        <span class="text-xs text-gray-500" x-text="'(' + (($root.roomKwh({{ json_encode($roomIndices) }}) / (totalKwh || 1)) * 100).toFixed(1) + '%)'"></span>
+                                                        <span class="text-sm font-semibold text-gray-900" x-text="roomKwhFiltered({{ json_encode($roomIndices) }}).toFixed(2) + ' kWh'"></span>
+                                                        <span class="text-xs text-gray-500" x-text="'(' + ((roomKwhFiltered({{ json_encode($roomIndices) }}) / (totalKwhFiltered || 1)) * 100).toFixed(1) + '%)'"></span>
                                                     </div>
                                                 </div>
-                                                <div class="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
-                                                    <div 
-                                                        class="h-full rounded-full transition-all duration-500 ease-in-out flex items-center justify-end pr-2"
-                                                        :class="{
-                                                            'bg-gradient-to-r from-red-400 to-red-600': ($root.roomKwh({{ json_encode($roomIndices) }}) / (totalKwh || 1)) * 100 >= 30,
-                                                            'bg-gradient-to-r from-yellow-400 to-yellow-600': ($root.roomKwh({{ json_encode($roomIndices) }}) / (totalKwh || 1)) * 100 >= 15 && ($root.roomKwh({{ json_encode($roomIndices) }}) / (totalKwh || 1)) * 100 < 30,
-                                                            'bg-gradient-to-r from-green-400 to-green-600': ($root.roomKwh({{ json_encode($roomIndices) }}) / (totalKwh || 1)) * 100 >= 5 && ($root.roomKwh({{ json_encode($roomIndices) }}) / (totalKwh || 1)) * 100 < 15,
-                                                            'bg-gradient-to-r from-blue-400 to-blue-600': ($root.roomKwh({{ json_encode($roomIndices) }}) / (totalKwh || 1)) * 100 < 5
-                                                        }"
-                                                        :style="'width: ' + Math.max(2, (($root.roomKwh({{ json_encode($roomIndices) }}) / (totalKwh || 1)) * 100)) + '%'">
-                                                        <span class="text-xs font-semibold text-white" x-show="($root.roomKwh({{ json_encode($roomIndices) }}) / (totalKwh || 1)) * 100 >= 5" x-text="(($root.roomKwh({{ json_encode($roomIndices) }}) / (totalKwh || 1)) * 100).toFixed(1) + '%'"></span>
+                                                <div class="flex items-center gap-2">
+                                                    <div class="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+                                                        <div
+                                                            class="h-full rounded-full transition-all duration-500 ease-in-out"
+                                                            :class="{
+                                                                'bg-gradient-to-r from-red-400 to-red-600': (roomKwhFiltered({{ json_encode($roomIndices) }}) / (totalKwhFiltered || 1)) * 100 >= 30,
+                                                                'bg-gradient-to-r from-yellow-400 to-yellow-600': (roomKwhFiltered({{ json_encode($roomIndices) }}) / (totalKwhFiltered || 1)) * 100 >= 15 && (roomKwhFiltered({{ json_encode($roomIndices) }}) / (totalKwhFiltered || 1)) * 100 < 30,
+                                                                'bg-gradient-to-r from-green-400 to-green-600': (roomKwhFiltered({{ json_encode($roomIndices) }}) / (totalKwhFiltered || 1)) * 100 >= 5 && (roomKwhFiltered({{ json_encode($roomIndices) }}) / (totalKwhFiltered || 1)) * 100 < 15,
+                                                                'bg-gradient-to-r from-blue-400 to-blue-600': (roomKwhFiltered({{ json_encode($roomIndices) }}) / (totalKwhFiltered || 1)) * 100 < 5
+                                                            }"
+                                                            :style="'width: ' + Math.max(2, ((roomKwhFiltered({{ json_encode($roomIndices) }}) / (totalKwhFiltered || 1)) * 100)) + '%'"
+                                                        ></div>
                                                     </div>
+
+                                                    <span class="text-xs font-semibold text-gray-700 tabular-nums" x-text="((roomKwhFiltered({{ json_encode($roomIndices) }}) / (totalKwhFiltered || 1)) * 100).toFixed(1) + '%'"></span>
                                                 </div>
                                             </div>
                                         @endforeach
-                                    </div>
 
-                                    <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                                         <div class="flex items-start gap-3">
                                             <i class="fas fa-lightbulb text-blue-500 text-lg mt-0.5"></i>
                                             <div class="text-sm text-blue-700">
@@ -370,19 +406,7 @@
                 </div>
             </div>
 
-            {{-- Ayuda adicional --}}
-            <div class="mt-6 bg-gray-50 rounded-lg p-4">
-                <h4 class="font-medium text-gray-900 mb-2">
-                    <i class="fas fa-lightbulb text-yellow-500 mr-2"></i> Consejos para un mejor ajuste:
-                </h4>
-                <ul class="text-sm text-gray-600 space-y-1 list-disc list-inside ml-4">
-                    <li>Revisa tus facturas anteriores para ver patrones de consumo estacionales</li>
-                    <li>Considera el uso de equipos de calefacción/refrigeración según la temporada</li>
-                    <li>Equipos en standby consumen menos, pero de forma continua (24 horas)</li>
-                    <li>Un ajuste entre 80-110% indica que tu inventario está completo y bien calibrado</li>
-                    <li>Si no llegas al consumo real, puede que falten equipos en tu inventario</li>
-                </ul>
-            </div>
+            {{-- Panel de consejos movido arriba en tarjeta --}}
         </div>
     </div>
 
@@ -426,6 +450,14 @@
                 get totalKwh() {
                     return this.items.reduce((sum, it) => sum + this.itemKwh({ power: it.power, minutes: this.minutes[it.index], qty: it.qty }), 0);
                 },
+                get totalKwhFiltered() {
+                    // Suma sólo los ítems visibles según los filtros activos
+                    return this.items.reduce((sum, it) => {
+                        const visible = this.showEquipment({ name: it.name || '', room: it.room || '', category: it.category || '', minutes: this.minutes[it.index] });
+                        if (!visible) return sum;
+                        return sum + this.itemKwh({ power: it.power, minutes: this.minutes[it.index], qty: it.qty });
+                    }, 0);
+                },
                 get percent() {
                     if (!this.targetKwh || this.targetKwh <= 0) return 0;
                     return (this.totalKwh / this.targetKwh) * 100;
@@ -440,6 +472,15 @@
 
                 recomputeTotal() {
                     // getter totalKwh recalcula, aquí no necesitamos más
+                },
+
+                formatMinutes(mins) {
+                    const m = Number(mins || 0);
+                    if (m < 60) return m + ' min';
+                    const hrs = Math.floor(m / 60);
+                    const restMins = m % 60;
+                    if (restMins === 0) return hrs + ' hrs';
+                    return hrs + ' hrs ' + restMins + ' min';
                 },
 
                 autoBalance() {
@@ -465,6 +506,19 @@
                     return match && roomOk && catOk && zeroOk;
                 },
 
+                // Mostrar/ocultar por ambiente segun filtros activos
+                roomHasVisible(indices) {
+                    const ids = indices || [];
+                    if (ids.length === 0) return false;
+                    // Mientras inicializa (antes de setInitial), no esconder ambientes
+                    if (this.items.length === 0) return true;
+                    return ids.some(idx => {
+                        const it = this.getItem(idx);
+                        if (!it) return true; // si aún no está inicializado el item, mantener visible
+                        return this.showEquipment({ name: it.name || '', room: it.room || '', category: it.category || '', minutes: this.minutes[idx] });
+                    });
+                },
+
                 // Utilidades extra
                 getItem(index) {
                     return this.items.find(it => it.index === index);
@@ -480,6 +534,15 @@
                     return (indices||[]).reduce((sum, idx) => {
                         const it = this.getItem(idx);
                         if (!it) return sum;
+                        return sum + this.itemKwh({ power: it.power, minutes: this.minutes[idx], qty: it.qty });
+                    }, 0);
+                },
+                roomKwhFiltered(indices) {
+                    return (indices||[]).reduce((sum, idx) => {
+                        const it = this.getItem(idx);
+                        if (!it) return sum;
+                        const visible = this.showEquipment({ name: it.name || '', room: it.room || '', category: it.category || '', minutes: this.minutes[idx] });
+                        if (!visible) return sum;
                         return sum + this.itemKwh({ power: it.power, minutes: this.minutes[idx], qty: it.qty });
                     }, 0);
                 },

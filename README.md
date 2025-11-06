@@ -50,10 +50,27 @@
 - **Ajuste interactivo con Alpine.js**: Cambia minutos de uso y ve impacto en tiempo real
 
 ### 🔧 Snapshots Ajustables (Diferenciador Clave)
+
+**Vista de Edición** (`/invoices/{invoice}/snapshots/create`):
+- Ajuste interactivo de minutos de uso por equipo con slider +/-
+- Formato intuitivo de tiempo: "7 hrs 50 min" (automático para valores ≥ 60 min)
+- Filtrado dinámico por ubicación, categoría y búsqueda en tiempo real
+- Ocultar equipos sin uso (0 min) para enfoque en activos
+- Distribución visual por ambiente basada en filtros aplicados
+- Cálculo instantáneo de impacto en consumo (kWh y %)
+- Alpine.js para reactividad sin recarga de página
+
+**Vista de Resumen** (`/invoices/{invoice}/snapshots`):
+- Dashboard consolidado con 3 métricas clave (real kWh, estimado kWh, equipos activos)
+- Distribución por ambiente con barras de progreso y porcentajes
+- Tabla detallada de equipos con consumo calculado por período
+- Acceso directo a ajustar desde resumen
+
 ```javascript
-// Usuario puede ajustar parámetros por ubicación/categoría
-// y ver cambios INSTANTÁNEOS sin recargar página
-@entangle('adjustedMinutes') → Calcula nuevo consumo → Muestra % actualizado
+// Ejemplo de formato automático de tiempo
+formatMinutes(470) // → "7 hrs 50 min"
+formatMinutes(45)  // → "45 min"
+formatMinutes(180) // → "3 hrs"
 ```
 
 ### 🤖 Motor de Recomendaciones
@@ -97,10 +114,19 @@ Company (Tenant)
 
 **Nivel 2: Dashboard de Entidad (`/entities/{id}`)**
 - Análisis detallado de una propiedad específica
+- Sistema de tarjetas grandes por suministro:
+  - Consumo real vs estimado con % explicado
+  - Gráfico de evolución de últimas 6 facturas
+  - Medidor circular de relación real/estimado
+  - Top 5 equipos por consumo estimado
+  - Distribución por categoría
 - Gestión de suministros, contratos y facturas
 - Inventario de equipos con análisis de consumo
-- Snapshots ajustables para períodos específicos
-- Recomendaciones personalizadas
+- CTA directo: "Ajustar Distribución del Consumo" para período activo
+
+**Nivel 3: Gestión de Snapshots**
+- Editor interactivo (`/invoices/{invoice}/snapshots/create`): Ajuste de minutos por equipo con visualización en tiempo real
+- Resumen consolidado (`/invoices/{invoice}/snapshots`): Dashboard de snapshots guardados con métricas y distribución
 
 **Redirección Inteligente**: Usuarios con 1 sola entidad → Dashboard de entidad directamente
 
@@ -113,14 +139,24 @@ Company (Tenant)
   - [x] CRUD completo: Entities, Supplies, Contracts, Invoices
   - [x] Inventario dinámico de equipos (28 categorías)
   - [x] Dashboard general responsivo
-  - [x] Dashboard de entidad con análisis
+  - [x] Dashboard de entidad con tarjetas grandes por suministro
   
 - ✅ **Análisis Avanzado**
   - [x] Comparación consumo real vs estimado
   - [x] Cálculo de % explicado del consumo
   - [x] Análisis de períodos históricos
-  - [x] Snapshots ajustables con Alpine.js
-  - [x] Agrupación por ubicación/categoría
+  - [x] Medidor circular de relación consumo
+  - [x] Gráficos de evolución (últimas 6 facturas)
+  - [x] Top 5 equipos y distribución por categoría
+  
+- ✅ **Snapshots Ajustables** (Feature Única)
+  - [x] Editor interactivo con slider +/-
+  - [x] Formato automático de tiempo (hrs/min)
+  - [x] Filtrado dinámico por ubicación/categoría/búsqueda
+  - [x] Distribución visual por ambiente (basada en filtros)
+  - [x] Cálculo instantáneo de impacto en kWh
+  - [x] Vista de resumen consolidado con métricas
+  - [x] UX optimizada: layout estable sin "tambaleo"
   
 - ✅ **Servicios de Negocio**
   - [x] `InventoryAnalysisService` - Perfiles de consumo
@@ -239,7 +275,15 @@ User::factory()->create(['email' => 'demo@modoahorro.com', 'password' => bcrypt(
 - **Framework**: Laravel 12.x (PHP 8.2+)
 - **ORM**: Eloquent con relaciones complejas (hasManyThrough, morphMany)
 - **Arquitectura**: Service Layer pattern (InventoryAnalysisService, ReplacementAnalysisService, DigitalTwinService)
+- **Controllers**: RESTful con Resource Controllers (UsageSnapshotController: create, store, show)
 - **Policies**: Authorization granular por modelo
+
+### Frontend
+- **CSS Framework**: Tailwind CSS 4.0 con utilidades personalizadas
+- **Interactividad**: Alpine.js 3.x para reactividad sin build step
+- **UI Components**: Font Awesome 6.4.0, sliders personalizados, medidores circulares
+- **Responsive Design**: Mobile-first con breakpoints sm/md/lg/xl
+- **Build Tool**: Vite 5.x para hot module replacement
 ## 🧪 Testing
 
 ```bash
@@ -277,9 +321,11 @@ María quiere saber por qué su factura de €180/mes es tan alta:
 ### 2. Pequeño Comercio
 Juan tiene local con consumo variable:
 1. Registra su comercio y equipos
-2. Ajusta minutos de uso con snapshots por estación (verano/invierno)
-3. **Resultado**: Identifica que AC industrial consume 60% en verano
-4. **Acción**: Negocia tarifa nocturna y mueve cargas pesadas → Ahorro 30%
+2. Sube facturas y observa discrepancia: consume 800 kWh pero inventario estima 500 kWh
+3. Usa editor de snapshots para ajustar minutos reales de uso por equipo
+4. **Resultado**: Descubre que AC industrial funciona 12 hrs/día (no 8 hrs como creía)
+5. **Vista de resumen**: Confirma que ajuste explica el 95% del consumo real
+6. **Acción**: Negocia tarifa nocturna y optimiza horarios → Ahorro 25%
 
 ### 3. Gestor Energético (Futuro)
 Empresa gestiona 50+ edificios:
