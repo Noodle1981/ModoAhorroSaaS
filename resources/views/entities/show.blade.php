@@ -41,6 +41,47 @@
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
 
+        {{-- BANNER: SNAPSHOTS INVALIDADOS --}}
+        @php
+            $pendingAlerts = \App\Models\SnapshotChangeAlert::where('entity_id', $entity->id)
+                ->where('status', 'pending')
+                ->count();
+            
+            $invalidatedSnapshots = \App\Models\EquipmentUsageSnapshot::whereIn('status', ['invalidated', 'draft'])
+                ->whereHas('equipment', function($q) use ($entity) {
+                    $q->where('entity_id', $entity->id);
+                })
+                ->count();
+        @endphp
+
+        @if($pendingAlerts > 0 || $invalidatedSnapshots > 0)
+            <div class="bg-gradient-to-r from-orange-50 to-yellow-50 border-l-4 border-orange-400 rounded-lg shadow-md p-4 animate-pulse">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-orange-500 text-2xl mt-1"></i>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <h3 class="text-lg font-semibold text-orange-900 mb-1">
+                            ⚠️ Cambios Detectados en Equipos
+                        </h3>
+                        <p class="text-sm text-orange-800 mb-3">
+                            Se detectaron <strong>{{ $pendingAlerts }} {{ Str::plural('cambio', $pendingAlerts) }}</strong> 
+                            que afectan <strong>{{ $invalidatedSnapshots }} {{ Str::plural('período', $invalidatedSnapshots) }} histórico{{ $invalidatedSnapshots > 1 ? 's' : '' }}</strong>. 
+                            <span class="font-semibold">Debes recalcular los consumos para mantener la precisión del análisis.</span>
+                        </p>
+                        <a href="{{ route('snapshots.review-changes', $entity) }}" 
+                           class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold rounded-lg shadow transition">
+                            <i class="fas fa-sync-alt mr-2"></i> Revisar y Recalcular Ahora
+                        </a>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.style.display='none'" 
+                            class="ml-4 text-orange-400 hover:text-orange-600 transition">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        @endif
+
         {{-- SUMINISTROS Y CONTRATOS --}}
         <div class="bg-white rounded-lg shadow-md p-4">
             <div class="flex items-center justify-between mb-3">

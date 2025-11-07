@@ -27,6 +27,7 @@ use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\ReplacementRecommendationController;
 use App\Http\Controllers\SmartAlertController;
 use App\Http\Controllers\MaintenanceController;
+use App\Http\Controllers\SnapshotController;
 
 // Controladores del Panel de Gestor (Desactivados)
 // use App\Http\Controllers\Gestor\DashboardController as GestorDashboardController;
@@ -132,6 +133,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/alerts/{alert}/read', [SmartAlertController::class, 'markAsRead'])->name('alerts.read');
     Route::post('/alerts/{alert}/dismiss', [SmartAlertController::class, 'dismiss'])->name('alerts.dismiss');
     Route::post('/alerts/{alert}/maintenance-complete', [MaintenanceController::class, 'completeFromAlert'])->name('alerts.maintenance-complete');
+
+    // --- SNAPSHOTS: GESTIÓN DE CAMBIOS Y RECÁLCULOS ---
+    Route::get('/entities/{entity}/snapshots/review-changes', [SnapshotController::class, 'reviewChanges'])->name('snapshots.review-changes');
+    Route::post('/snapshots/{snapshot}/recalculate', [SnapshotController::class, 'recalculate'])->name('snapshots.recalculate');
+    Route::post('/entities/{entity}/snapshots/recalculate-period/{date}', [SnapshotController::class, 'recalculatePeriod'])->name('snapshots.recalculate-period');
+    Route::post('/entities/{entity}/snapshots/recalculate-all', [SnapshotController::class, 'recalculateAll'])->name('snapshots.recalculate-all');
+    Route::post('/snapshots/{snapshot}/confirm', [SnapshotController::class, 'confirm'])->name('snapshots.confirm');
+    Route::post('/entities/{entity}/snapshots/confirm-period/{date}', [SnapshotController::class, 'confirmPeriod'])->name('snapshots.confirm-period');
 
 });
 
