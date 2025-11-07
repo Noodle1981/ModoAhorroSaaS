@@ -865,3 +865,116 @@ La integración de **ModoAhorroSaaS + Teraobject IoT** crea un ecosistema comple
 ---
 
 **Próximo paso**: Agendar 30 min con el CEO de Teraobject para mostrar el MVP y discutir partnership. 🚀
+
+
+P## ✅ ARQUITECTURA DE SNAPSHOTS IMPLEMENTADA
+
+### 📊 Resumen de Decisiones de Diseño
+
+Todas las decisiones tomadas basadas en los casos extremos identificados:
+
+1. **Edición durante confirmación de snapshot**
+   - ✅ Cambios de potencia/categoría → Invalidan todo el contexto
+   - ✅ Cambios de tiempo de uso → **FREEZADOS** en vista equipamiento (solo editables en snapshots)
+   - ✅ Observer detecta cambios automáticamente
+
+2. **Equipos nuevos a mitad de período**
+   - ✅ Modal pregunta: "¿Este equipo es nuevo o existía antes?"
+   - ✅ Si existía → Crear snapshots retroactivos + alertas
+   - ✅ Si es nuevo → Prorratear días (implementación futura Fase 2)
+
+3. **Eliminación de equipos**
+   - ✅ Dos opciones:
+     - **Hard Delete**: Nunca existió (error) → Elimina todo
+     - **Soft Delete**: Existió pero ya no está → `deleted_at`, snapshots con `is_equipment_deleted=true`
+   - ✅ Histórico completo en `equipment_history`
+
+4. **Recálculos ilimitados**
+   - ✅ Sin límite (usuario puede editar N veces)
+   - ✅ Estado `recalculated` con contador `recalculation_count`
+   - ✅ Cada recálculo registrado en `snapshot_change_alerts`
+
+5. **Consumo Real vs Estimado**
+   - ✅ Facturas = Real (única fuente de verdad)
+   - ✅ Snapshots = Estimado calculado
+   - ✅ Diferencia = Ajuste manual o equipos faltantes
+
+---
+
+### 🏗️ Componentes Implementados
+
+#### ✅ **Migraciones Ejecutadas**
+
+1. **`entity_equipment` - Campos de lifecycle:**
+   - `activated_at`: Fecha de instalación
+   - `replaced_at`: Fecha de reemplazo
+   - `replaced_by_id`: FK al equipo que reemplazó
+   - `power_last_changed_at`: Última modificación de potencia
+   - `usage_last_changed_at`: Última modificación de uso
+   - `deleted_at`: Soft delete (ya existía)
+
+2. **`equipment_usage_snapshots` - Estados y tracking:**
+   - `status`: `draft`, `confirmed`, `invalidated`, `recalculated`
+   - `invalidated_at`: Timestamp de detección de cambio
+   - `invalidation_reason`: Descripción del cambio
+   - `recalculation_count`: Contador de recálculos
+   - `is_equipment_deleted`: Marca si equipo fue dado de baja
+
+3. **`equipment_history` - Auditoría completa:**
+   - `change_type`: `power_changed`, `usage_changed`, `type_changed`, `activated`, `deleted`, `replaced`
+   - `before_values`: JSON con estado anterior
+   - `after_values`: JSON con estado nuevo
+   - `change_description`: Descripción legible
+   - `changed_by_user_id`: FK al usuario que hizo el cambio
+
+4. **`snapshot_change_alerts` - Alertas de invalidación:**
+   - `alert_type`: Tipo de cambio detectado
+   - `message`: Mensaje para el usuario
+   - `affected_snapshots`: Array JSON de IDs invalidados
+   - `status`: `pending`, `acknowledged`, `resolved`
+
+#### ✅ **Observer Implementado**
+
+**`EntityEquipmentObserver`** detecta automáticamente:
+- ✅ Creación de equipo → Invalidar snapshots confirmados
+- ✅ Cambio de potencia → Actualizar `power_last_changed_at` + invalidar
+- ✅ Cambio de uso → Actualizar `usage_last_changed_at` + invalidar
+- ✅ Cambio de tipo → Invalidar (cambia categoría completa)
+- ✅ Soft delete → Marcar `is_equipment_deleted=true` en snapshots
+- ✅ Registrar TODO en `equipment_history`
+- ✅ Crear `snapshot_change_alerts` para notificar al usuario
+
+---
+
+### 📋 Próximos Pasos (Fase 1B)
+
+1. ✅ Migraciones - COMPLETADO
+2. ✅ Observer - COMPLETADO
+3. ✅ Modelos (`EquipmentHistory`, `SnapshotChangeAlert`) - COMPLETADO
+4. ⏳ **Controlador: SnapshotController**
+   - `reviewChanges()`: Vista de snapshots invalidados
+   - `recalculate()`: Recalcular snapshot individual
+   - `recalculateAll()`: Recalcular múltiples períodos
+5. ⏳ **Vista: `snapshots/review-changes.blade.php`**
+   - Tabla de cambios detectados (before/after)
+   - Botón "Recalcular" (sin opción ignorar)
+   - Histórico de recálculos
+6. ⏳ **Vista: Banner en `entities/show.blade.php`**
+   - Alerta persistente de snapshots invalidados
+   - Link a `/snapshots/review-changes`
+7. ⏳ **Vista: Freezar campo tiempo de uso**
+   - Deshabilitar `avg_daily_use_minutes_override` en vista equipos
+   - Solo editable en snapshots
+
+---
+
+Equipos creados a mitad de período deben prorratear días?
+
+Opción A: Sí, calcular días parciales (más complejo pero preciso)
+¿Snapshots pueden recalcularse N veces o solo una?
+
+Opción A: Ilimitado (usuario puede editar y recalcular cuantas veces quiera)
+
+¿Guardamos histórico de valores anteriores del equipo?
+
+Opción A: Sí, tabla equipment_history con todos los cambios

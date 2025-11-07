@@ -16,7 +16,16 @@ class EntityEquipment extends Model
         'entity_id', 'equipment_type_id', 'quantity', 'custom_name',
         'power_watts_override', 'avg_daily_use_minutes_override',
         'replaced_by_equipment_id', 'is_backup_for_id', 'location',
-        'has_standby_mode'
+        'has_standby_mode', 'activated_at', 'replaced_at', 'replaced_by_id',
+        'power_last_changed_at', 'usage_last_changed_at'
+    ];
+
+    protected $casts = [
+        'activated_at' => 'date',
+        'replaced_at' => 'date',
+        'power_last_changed_at' => 'datetime',
+        'usage_last_changed_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     public function entity()
@@ -37,6 +46,21 @@ class EntityEquipment extends Model
     public function replacementRecommendations()
     {
         return $this->hasMany(ReplacementRecommendation::class);
+    }
+
+    public function replacedBy()
+    {
+        return $this->belongsTo(EntityEquipment::class, 'replaced_by_id');
+    }
+
+    public function historyRecords()
+    {
+        return $this->hasMany(EquipmentHistory::class);
+    }
+
+    public function snapshots()
+    {
+        return $this->hasMany(EquipmentUsageSnapshot::class);
     }
 
     public static function getUniqueLocationsForEntity(Entity $entity): \Illuminate\Support\Collection

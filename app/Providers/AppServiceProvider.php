@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\EntityEquipment;
+use App\Observers\EntityEquipmentObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Registrar observers
+        EntityEquipment::observe(EntityEquipmentObserver::class);
     }
 }
