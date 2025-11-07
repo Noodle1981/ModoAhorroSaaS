@@ -15,15 +15,22 @@ class LocalitiesTableSeeder extends Seeder
         // San Juan has province_id = 18 based on the provided ProvincesTableSeeder
         $sanJuanProvinceId = 18;
 
-        DB::table('localities')->insert([
+        $localities = [
             // Localities for San Juan
-            ['province_id' => $sanJuanProvinceId, 'name' => 'San Juan Capital', 'postal_code' => 'J5400'],
-            ['province_id' => $sanJuanProvinceId, 'name' => 'Rivadavia', 'postal_code' => 'J5401'],
-            ['province_id' => $sanJuanProvinceId, 'name' => 'Santa Lucía', 'postal_code' => 'J5402'],
-            ['province_id' => $sanJuanProvinceId, 'name' => 'Chimbas', 'postal_code' => 'J5403'],
-            ['province_id' => $sanJuanProvinceId, 'name' => 'Rawson', 'postal_code' => 'J5425'],
-            ['province_id' => $sanJuanProvinceId, 'name' => 'Pocito', 'postal_code' => 'J5435'],
-            ['province_id' => $sanJuanProvinceId, 'name' => 'Caucete', 'postal_code' => 'J5871'],
-        ]);
+            ['province_id' => $sanJuanProvinceId, 'name' => 'San Juan Capital', 'postal_code' => 'J5400', 'latitude' => -31.5375, 'longitude' => -68.5364],
+            ['province_id' => $sanJuanProvinceId, 'name' => 'Rivadavia', 'postal_code' => 'J5401', 'latitude' => -31.5336, 'longitude' => -68.5833],
+            ['province_id' => $sanJuanProvinceId, 'name' => 'Santa Lucía', 'postal_code' => 'J5402', 'latitude' => -31.5397, 'longitude' => -68.5069],
+            ['province_id' => $sanJuanProvinceId, 'name' => 'Chimbas', 'postal_code' => 'J5403', 'latitude' => -31.4750, 'longitude' => -68.5397],
+            ['province_id' => $sanJuanProvinceId, 'name' => 'Rawson', 'postal_code' => 'J5425', 'latitude' => -31.5753, 'longitude' => -68.5653],
+            ['province_id' => $sanJuanProvinceId, 'name' => 'Pocito', 'postal_code' => 'J5435', 'latitude' => -31.6833, 'longitude' => -68.5833],
+            ['province_id' => $sanJuanProvinceId, 'name' => 'Caucete', 'postal_code' => 'J5871', 'latitude' => -31.6667, 'longitude' => -68.2833],
+        ];
+
+        foreach ($localities as $locality) {
+            DB::table('localities')->updateOrInsert(
+                ['province_id' => $locality['province_id'], 'name' => $locality['name']],
+                $locality
+            );
+        }
     }
 }

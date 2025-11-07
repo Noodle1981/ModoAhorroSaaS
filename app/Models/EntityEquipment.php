@@ -29,6 +29,16 @@ class EntityEquipment extends Model
         return $this->belongsTo(EquipmentType::class);
     }
 
+    public function usagePattern()
+    {
+        return $this->hasOne(EquipmentUsagePattern::class);
+    }
+
+    public function replacementRecommendations()
+    {
+        return $this->hasMany(ReplacementRecommendation::class);
+    }
+
     public static function getUniqueLocationsForEntity(Entity $entity): \Illuminate\Support\Collection
     {
         $locations_from_db = $entity->equipments()->whereNotNull('location')->distinct()->pluck('location');

@@ -15,7 +15,6 @@ use App\Http\Controllers\SupplyController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\EntityEquipmentController;
-use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\SolarController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UsageSnapshotController; // <-- IMPORT NUEVO AÑADIDO
@@ -24,6 +23,10 @@ use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\SolarHeaterController;
 use App\Http\Controllers\SolarPanelController;
 use App\Http\Controllers\VacationController;
+use App\Http\Controllers\InsightsController;
+use App\Http\Controllers\ReplacementRecommendationController;
+use App\Http\Controllers\SmartAlertController;
+use App\Http\Controllers\MaintenanceController;
 
 // Controladores del Panel de Gestor (Desactivados)
 // use App\Http\Controllers\Gestor\DashboardController as GestorDashboardController;
@@ -66,6 +69,10 @@ Route::middleware(['auth'])->group(function () {
 
     // --- GESTIÓN ENERGÉTICA ---
     Route::resource('entities', EntityController::class);
+    
+    // Insights de Entidad (Análisis IA + ML)
+    Route::get('/entities/{entity}/insights', [InsightsController::class, 'show'])->name('entities.insights');
+    
     Route::resource('entities.supplies', SupplyController::class)->shallow();
     Route::resource('supplies.contracts', ContractController::class)->shallow();
     Route::resource('contracts.invoices', InvoiceController::class)->shallow();
@@ -109,6 +116,22 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/vacations', [VacationController::class, 'store'])->name('vacations.store');
     Route::get('/vacations/{plan}/recommendations', [VacationController::class, 'recommendations'])->name('vacations.recommendations');
     Route::delete('/vacations/{plan}', [VacationController::class, 'destroy'])->name('vacations.destroy');
+
+    // --- RECOMENDACIONES DE REEMPLAZO DE EQUIPOS ---
+    Route::get('/replacement-recommendations', [ReplacementRecommendationController::class, 'index'])->name('replacement-recommendations.index');
+    Route::post('/replacement-recommendations/generate', [ReplacementRecommendationController::class, 'generate'])->name('replacement-recommendations.generate');
+    Route::post('/replacement-recommendations/{recommendation}/accept', [ReplacementRecommendationController::class, 'accept'])->name('replacement-recommendations.accept');
+    Route::post('/replacement-recommendations/{recommendation}/reject', [ReplacementRecommendationController::class, 'reject'])->name('replacement-recommendations.reject');
+    Route::post('/replacement-recommendations/{recommendation}/start-recovery', [ReplacementRecommendationController::class, 'startRecovery'])->name('replacement-recommendations.start-recovery');
+    Route::post('/replacement-recommendations/{recommendation}/complete', [ReplacementRecommendationController::class, 'complete'])->name('replacement-recommendations.complete');
+    Route::get('/replacement-recommendations/{recommendation}/export', [ReplacementRecommendationController::class, 'export'])->name('replacement-recommendations.export');
+    Route::get('/replacement-recommendations-export-all', [ReplacementRecommendationController::class, 'exportAll'])->name('replacement-recommendations.export-all');
+
+    // --- SMART ALERTS ---
+    Route::get('/alerts', [SmartAlertController::class, 'index'])->name('alerts.index');
+    Route::post('/alerts/{alert}/read', [SmartAlertController::class, 'markAsRead'])->name('alerts.read');
+    Route::post('/alerts/{alert}/dismiss', [SmartAlertController::class, 'dismiss'])->name('alerts.dismiss');
+    Route::post('/alerts/{alert}/maintenance-complete', [MaintenanceController::class, 'completeFromAlert'])->name('alerts.maintenance-complete');
 
 });
 

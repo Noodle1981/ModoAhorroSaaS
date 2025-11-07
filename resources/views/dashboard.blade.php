@@ -16,6 +16,39 @@
     </x-slot>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-10">
+        {{-- Panel de Alertas Globales (si hay) --}}
+        @if(isset($recentAlerts) && $recentAlerts->isNotEmpty())
+        <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl shadow-md border border-yellow-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-bell text-yellow-600 mr-2"></i>
+                    Alertas Recientes
+                    <span class="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        {{ $recentAlerts->count() }}
+                    </span>
+                </h3>
+                <a href="#" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    Ver todas →
+                </a>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                @foreach($recentAlerts as $alert)
+                <div class="flex items-start gap-3 p-3 bg-white border border-{{ $alert->color_class }}-200 rounded-lg hover:shadow-md transition">
+                    <i class="fas {{ $alert->icon }} text-{{ $alert->color_class }}-600 mt-1"></i>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-sm text-gray-900 truncate">{{ $alert->title }}</p>
+                        <p class="text-xs text-gray-600 mt-1">{{ Str::limit($alert->description, 60) }}</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <span class="text-xs text-gray-400">{{ $alert->entity->name }}</span>
+                            <span class="text-xs text-gray-400">{{ $alert->created_at->diffForHumans() }}</span>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
         {{-- Estado vacío --}}
         @if($entitiesData->isEmpty())
             <div class="bg-white rounded-xl shadow-md p-12">

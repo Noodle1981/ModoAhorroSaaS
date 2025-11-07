@@ -100,17 +100,17 @@
                         </p>
                     </div>
 
-                    <!-- Card: Placeholder - Reemplazo de Equipos -->
-                    <div class="p-6 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-300 rounded-lg opacity-60">
+                    <!-- Card: Análisis de Reemplazo -->
+                    <a href="{{ route('replacement-recommendations.index') }}" class="block p-6 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg hover:shadow-lg transition-all hover:scale-105">
                         <div class="flex items-center justify-between mb-4">
-                            <i class="fas fa-exchange-alt text-3xl text-gray-400"></i>
-                            <span class="px-2 py-1 text-xs font-semibold bg-gray-300 text-gray-600 rounded-full">Próximamente</span>
+                            <i class="fas fa-exchange-alt text-3xl text-green-600"></i>
+                            <span class="px-2 py-1 text-xs font-semibold bg-green-200 text-green-800 rounded-full">ROI Automático</span>
                         </div>
-                        <h3 class="text-lg font-bold text-gray-500 mb-2">Análisis de Reemplazo</h3>
-                        <p class="text-sm text-gray-500">
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Análisis de Reemplazo</h3>
+                        <p class="text-sm text-gray-600">
                             Identifica equipos ineficientes y calcula el ROI de reemplazarlos.
                         </p>
-                    </div>
+                    </a>
 
                     <!-- Card: Placeholder - Gamificación -->
                     <div class="p-6 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-300 rounded-lg opacity-60">

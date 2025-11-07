@@ -274,9 +274,10 @@ User::factory()->create(['email' => 'demo@modoahorro.com', 'password' => bcrypt(
 ### Backend
 - **Framework**: Laravel 12.x (PHP 8.2+)
 - **ORM**: Eloquent con relaciones complejas (hasManyThrough, morphMany)
-- **Arquitectura**: Service Layer pattern (InventoryAnalysisService, ReplacementAnalysisService, DigitalTwinService)
+- **Arquitectura**: Service Layer pattern (InventoryAnalysisService, ReplacementAnalysisService, DigitalTwinService, WeatherService)
 - **Controllers**: RESTful con Resource Controllers (UsageSnapshotController: create, store, show)
 - **Policies**: Authorization granular por modelo
+- **External APIs**: Open-Meteo (datos climáticos históricos gratuitos)
 
 ### Frontend
 - **CSS Framework**: Tailwind CSS 4.0 con utilidades personalizadas
@@ -284,6 +285,37 @@ User::factory()->create(['email' => 'demo@modoahorro.com', 'password' => bcrypt(
 - **UI Components**: Font Awesome 6.4.0, sliders personalizados, medidores circulares
 - **Responsive Design**: Mobile-first con breakpoints sm/md/lg/xl
 - **Build Tool**: Vite 5.x para hot module replacement
+
+## 🌡️ Integración Climática
+
+La plataforma correlaciona consumo energético con condiciones climáticas mediante **Open-Meteo API**:
+
+### Características
+- 📊 **Datos históricos**: Temperatura desde 1950 hasta hoy
+- 🌍 **Cobertura global**: Modelos de alta resolución para cualquier coordenada
+- 🆓 **Gratuito**: Sin clave API ni límites para uso no comercial
+- 📈 **Grados-día**: Cálculo automático de HDD (heating) y CDD (cooling)
+
+### Uso
+
+```bash
+# Actualizar clima para todas las localidades con coordenadas
+php artisan weather:update --all
+
+# Actualizar clima para una localidad específica
+php artisan weather:update --locality="Santa Lucía"
+
+# Especificar rango de fechas
+php artisan weather:update --locality="Santa Lucía" --start=2024-01-01 --end=2024-12-31
+```
+
+### Integración en Snapshots
+Al ajustar el consumo de equipos por período, la vista muestra:
+- Temperatura promedio, máxima y mínima del período
+- Grados-día de refrigeración/calefacción
+- Sugerencias contextuales basadas en clima (ej: "Período cálido, considera mayor uso de AC")
+
+Esto permite al usuario correlacionar picos de consumo con condiciones climáticas extremas.
 ## 🧪 Testing
 
 ```bash

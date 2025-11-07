@@ -1,81 +1,139 @@
 <x-app-layout>
-    <h1>Editar Equipo del Inventario: {{ $equipment->custom_name ?? $equipment->equipmentType->name }}</h1>
-    
-    <form action="{{ route('equipment.update', $equipment) }}" method="POST">
-        @csrf
-        @method('PUT')
-
-        <!-- Select de Categoría -->
-        <div style="margin-bottom: 15px;">
-            <label for="category_id">1. Categoría</label><br>
-            <select id="category_id" name="category_id" required style="width: 100%; padding: 8px;">
-                <option value="">-- Selecciona una categoría --</option>
-                @foreach ($categories as $category)
-                    <option 
-                        value="{{ $category->id }}" 
-                        data-types="{{ json_encode($category->equipmentTypes) }}"
-                        {{ $equipment->equipmentType->category_id == $category->id ? 'selected' : '' }}
-                    >
-                        {{ $category->name }}
-                    </option>
-                @endforeach
-            </select>
+    <div class="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
+                <i class="fas fa-edit text-blue-600 mr-2"></i>
+                Editar Equipo
+            </h1>
+            <p class="mt-2 text-sm sm:text-base text-gray-600">
+                {{ $equipment->custom_name ?? $equipment->equipmentType->name }}
+            </p>
         </div>
 
-        <!-- Select de Tipo de Equipo (se rellena con JS) -->
-        <div style="margin-bottom: 15px;">
-            <label for="equipment_type_id">2. Tipo de Equipo</label><br>
-            <select id="equipment_type_id" name="equipment_type_id" required style="width: 100%; padding: 8px;">
-                <option value="">-- Primero selecciona una categoría --</option>
-            </select>
-        </div>
-        
-        <!-- =========== CAMPO DE UBICACIÓN CONDICIONAL =========== -->
-        <div id="location-wrapper" style="margin-bottom: 15px;">
-    <label for="location">3. Asigna una Ubicación</label><br>
-    <select id="location" name="location" required style="width: 100%; padding: 8px;">
-        <option value="">-- Selecciona una ubicación --</option>
-        
-        <!-- Usamos la nueva variable $locations que nos pasa el controlador -->
-        @forelse ($locations as $locationName)
-            <option value="{{ $locationName }}" {{ old('location') == $locationName ? 'selected' : '' }}>
-                {{ $locationName }}
-            </option>
-        @empty
-            <option value="" disabled>Primero debes definir las habitaciones en la entidad.</option>
-        @endforelse
-    </select>
-</div>
+        <!-- Form Card -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <form action="{{ route('equipment.update', $equipment) }}" method="POST" class="p-4 sm:p-6">
+                @csrf
+                @method('PUT')
 
-        <!-- Potencia (override) -->
-        <div style="margin-bottom: 15px;">
-            <label for="power_watts_override">4. Potencia (W)</label><br>
-            <input type="number" id="power_watts_override" name="power_watts_override" min="0" value="{{ old('power_watts_override', $equipment->power_watts_override ?? $equipment->equipmentType->default_power_watts) }}" style="width: 100%; padding: 8px;">
-        </div>
+                <div class="space-y-6">
+                    <!-- Select de Categoría -->
+                    <div>
+                        <label for="category_id" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">1</span>
+                            Categoría
+                        </label>
+                        <select id="category_id" name="category_id" required 
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            <option value="">-- Selecciona una categoría --</option>
+                            @foreach ($categories as $category)
+                                <option 
+                                    value="{{ $category->id }}" 
+                                    data-types="{{ json_encode($category->equipmentTypes) }}"
+                                    {{ $equipment->equipmentType->category_id == $category->id ? 'selected' : '' }}
+                                >
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
 
-        <!-- Minutos de uso promedio por día -->
-        <div style="margin-bottom: 15px;">
-            <label for="avg_daily_use_minutes_override">5. Minutos de uso promedio por día</label><br>
-            <input type="number" id="avg_daily_use_minutes_override" name="avg_daily_use_minutes_override" min="0" max="1440" value="{{ old('avg_daily_use_minutes_override', $equipment->avg_daily_use_minutes_override ?? $equipment->equipmentType->default_avg_daily_use_minutes) }}" style="width: 100%; padding: 8px;">
-        </div>
+                    <!-- Select de Tipo de Equipo -->
+                    <div>
+                        <label for="equipment_type_id" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">2</span>
+                            Tipo de Equipo
+                        </label>
+                        <select id="equipment_type_id" name="equipment_type_id" required 
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            <option value="">-- Primero selecciona una categoría --</option>
+                        </select>
+                    </div>
 
-        <!-- Standby -->
-        <div style="margin-bottom: 15px;">
-            <label style="display:inline-flex;align-items:center;gap:8px;">
-                <input type="checkbox" name="has_standby_mode" value="1" {{ old('has_standby_mode', $equipment->has_standby_mode) ? 'checked' : '' }}>
-                <span><strong>Activar cálculo de consumo en Standby</strong></span>
-            </label>
-            <div style="font-size:12px;color:#6b7280;margin-top:4px;">
-                Marca esto solo si este equipo consume algo estando apagado (ej: TV). Si no estás seguro, déjalo desmarcado.
-            </div>
-        </div>
+                    <!-- Campo de Ubicación Condicional -->
+                    <div id="location-wrapper">
+                        <label for="location" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">3</span>
+                            Ubicación
+                        </label>
+                        <select id="location" name="location" required 
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            <option value="">-- Selecciona una ubicación --</option>
+                            @forelse ($locations as $locationName)
+                                <option value="{{ $locationName }}" {{ (old('location', $equipment->location) == $locationName) ? 'selected' : '' }}>
+                                    {{ $locationName }}
+                                </option>
+                            @empty
+                                <option value="" disabled>Primero debes definir las habitaciones en la entidad.</option>
+                            @endforelse
+                        </select>
+                    </div>
 
-        <div style="margin-top: 20px;">
-            <button type="submit" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                Actualizar Equipo
-            </button>
+                    <!-- Grid de Inputs Numéricos (responsive) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                        <!-- Potencia -->
+                        <div>
+                            <label for="power_watts_override" class="block text-sm font-semibold text-gray-700 mb-2">
+                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">4</span>
+                                Potencia (W)
+                            </label>
+                            <div class="relative">
+                                <input type="number" id="power_watts_override" name="power_watts_override" min="0" 
+                                       value="{{ old('power_watts_override', $equipment->power_watts_override ?? $equipment->equipmentType->default_power_watts) }}"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">W</span>
+                            </div>
+                        </div>
+
+                        <!-- Minutos de uso -->
+                        <div>
+                            <label for="avg_daily_use_minutes_override" class="block text-sm font-semibold text-gray-700 mb-2">
+                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">5</span>
+                                Minutos/día
+                            </label>
+                            <div class="relative">
+                                <input type="number" id="avg_daily_use_minutes_override" name="avg_daily_use_minutes_override" 
+                                       min="0" max="1440" 
+                                       value="{{ old('avg_daily_use_minutes_override', $equipment->avg_daily_use_minutes_override ?? $equipment->equipmentType->default_avg_daily_use_minutes) }}"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">min</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Standby -->
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" name="has_standby_mode" value="1" 
+                                   {{ old('has_standby_mode', $equipment->has_standby_mode) ? 'checked' : '' }}
+                                   class="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                            <div class="flex-1">
+                                <span class="block font-semibold text-gray-900">Activar cálculo de consumo en Standby</span>
+                                <span class="block text-xs sm:text-sm text-gray-600 mt-1">
+                                    Marca esto solo si este equipo consume algo estando apagado (ej: TV). Si no estás seguro, déjalo desmarcado.
+                                </span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+                        <button type="submit" 
+                                class="flex-1 sm:flex-initial px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            <i class="fas fa-save mr-2"></i>
+                            Actualizar Equipo
+                        </button>
+                        <a href="{{ route('entities.show', $equipment->entity_id) }}" 
+                           class="flex-1 sm:flex-initial px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg text-center transition-all duration-200">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancelar
+                        </a>
+                    </div>
+                </div>
+            </form>
         </div>
-    </form>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {

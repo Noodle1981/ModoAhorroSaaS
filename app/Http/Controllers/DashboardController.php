@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Invoice;
 use App\Models\EntityEquipment;
 use App\Models\Recommendation;
+use App\Models\SmartAlert;
 
 class DashboardController extends Controller
 {
@@ -113,10 +114,20 @@ class DashboardController extends Controller
             ['name' => 'Oficina', 'icon' => 'fa-building', 'type' => 'oficina'],
         ];
 
+        // Alertas globales (últimas 5 de todas las entidades del usuario)
+        $entityIds = $entities->pluck('id');
+        $recentAlerts = SmartAlert::whereIn('entity_id', $entityIds)
+            ->active()
+            ->with('entity')
+            ->latest()
+            ->limit(5)
+            ->get();
+
         return view('dashboard', [
             'user' => $user,
             'entitiesData' => $entitiesData,
             'blockedEntities' => $blockedEntities,
+            'recentAlerts' => $recentAlerts,
         ]);
     }
 }

@@ -91,7 +91,7 @@
 
                         <div class="p-6">
                             {{-- Tarjetas informativas responsivas --}}
-                            <div class="grid gap-6 md:grid-cols-2 mb-8">
+                            <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
                                 {{-- Tarjeta período de facturación --}}
                                 <div class="bg-white rounded-xl shadow-md border border-gray-200 p-5 flex flex-col">
                                     <div class="flex items-center gap-3 mb-3">
@@ -109,6 +109,58 @@
                                         <p class="text-xs text-gray-500">Esta información guía el cálculo del consumo estimado total para comparar contra el real.</p>
                                     </div>
                                 </div>
+
+                                {{-- Tarjeta de clima del período --}}
+                                @if($weatherData)
+                                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-5 flex flex-col">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+                                            <i class="fas fa-temperature-high"></i>
+                                        </div>
+                                        <h3 class="text-base font-semibold text-gray-800">Clima del Período</h3>
+                                    </div>
+                                    <div class="space-y-2 text-sm text-gray-700">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-gray-600">Temp. promedio:</span>
+                                            <span class="font-semibold text-lg">{{ $weatherData['avg_temp'] }}°C</span>
+                                        </div>
+                                        <div class="flex justify-between items-center text-xs">
+                                            <span class="text-gray-500">Máxima:</span>
+                                            <span class="text-red-600 font-medium">{{ $weatherData['max_temp'] }}°C</span>
+                                        </div>
+                                        <div class="flex justify-between items-center text-xs">
+                                            <span class="text-gray-500">Mínima:</span>
+                                            <span class="text-blue-600 font-medium">{{ $weatherData['min_temp'] }}°C</span>
+                                        </div>
+                                        @if($weatherData['cooling_degree_days'] > 50)
+                                        <div class="mt-2 pt-2 border-t">
+                                            <div class="flex items-start gap-2 bg-orange-50 rounded-lg p-2">
+                                                <i class="fas fa-fan text-orange-500 text-xs mt-0.5"></i>
+                                                <p class="text-xs text-orange-700">
+                                                    Período cálido: {{ round($weatherData['cooling_degree_days']) }} grados-día de refrigeración. Considera mayor uso de AC.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        @elseif($weatherData['heating_degree_days'] > 50)
+                                        <div class="mt-2 pt-2 border-t">
+                                            <div class="flex items-start gap-2 bg-blue-50 rounded-lg p-2">
+                                                <i class="fas fa-fire text-blue-500 text-xs mt-0.5"></i>
+                                                <p class="text-xs text-blue-700">
+                                                    Período frío: {{ round($weatherData['heating_degree_days']) }} grados-día de calefacción. Considera mayor uso de calefacción.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        @endif
+                                    </div>
+                                    <div class="mt-auto pt-3 border-t">
+                                        <p class="text-xs text-gray-500">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            Datos de Open-Meteo para {{ $entity->locality->name }}
+                                        </p>
+                                    </div>
+                                </div>
+                                @endif
+
                                 {{-- Tarjeta consejos de ajuste --}}
                                 <div class="bg-white rounded-xl shadow-md border border-gray-200 p-5 flex flex-col">
                                     <div class="flex items-center gap-3 mb-3">

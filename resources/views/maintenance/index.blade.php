@@ -9,7 +9,56 @@
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        {{-- TAREAS PENDIENTES --}}
+        {{-- TAREAS VENCIDAS --}}
+        @if(isset($overdueTasks) && count($overdueTasks) > 0)
+        <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+            <div class="flex items-center mb-3">
+                <i class="fas fa-times-circle text-red-600 text-xl mr-3"></i>
+                <h3 class="text-lg font-bold text-red-800">
+                    Tienes {{ count($overdueTasks) }} tarea(s) de mantenimiento vencida(s)
+                </h3>
+            </div>
+            <div class="space-y-3">
+                @foreach($overdueTasks as $item)
+                    @php($task=$item['task'])
+                    @php($equipment=$item['equipment'])
+                    <div class="bg-white rounded-lg p-4 border border-red-200 shadow-sm">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-900">
+                                    <i class="fas fa-bolt text-red-500 mr-2"></i>
+                                    {{ $equipment->custom_name ?? $equipment->equipmentType->name }}
+                                </h4>
+                                <p class="text-sm text-gray-600 mt-1">
+                                    <i class="fas fa-map-marker-alt mr-1"></i>
+                                    {{ $equipment->entity->name }}
+                                    @if($equipment->location)
+                                        - {{ $equipment->location }}
+                                    @endif
+                                </p>
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        <i class="fas fa-exclamation mr-1"></i> {{ $task->name ?? $task->task_name }} VENCIDA
+                                    </span>
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                        <i class="fas fa-clock mr-1"></i> Último: {{ $item['lastLog'] ? $item['lastLog']->performed_on_date->format('d/m/Y') : 'Nunca' }}
+                                    </span>
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                                        <i class="fas fa-calendar mr-1"></i> Debió: {{ $item['dueDate']->format('d/m/Y') }}
+                                    </span>
+                                </div>
+                            </div>
+                            <button onclick="openMaintenanceModal({{ $equipment->id }}, {{ $task->id }})" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition whitespace-nowrap">
+                                <i class="fas fa-check mr-2"></i> Registrar Ahora
+                            </button>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        {{-- TAREAS PRÓXIMAS (<=3 días) --}}
         @if(count($pendingTasks) > 0)
         <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
             <div class="flex items-center mb-3">
@@ -19,35 +68,37 @@
                 </h3>
             </div>
             <div class="space-y-3">
-                @foreach($pendingTasks as $pending)
+                @foreach($pendingTasks as $item)
+                    @php($task=$item['task'])
+                    @php($equipment=$item['equipment'])
                     <div class="bg-white rounded-lg p-4 border border-yellow-200 shadow-sm">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                             <div class="flex-1">
                                 <h4 class="font-semibold text-gray-900">
                                     <i class="fas fa-bolt text-orange-500 mr-2"></i>
-                                    {{ $pending['equipment']->custom_name ?? $pending['equipment']->equipmentType->name }}
+                                    {{ $equipment->custom_name ?? $equipment->equipmentType->name }}
                                 </h4>
                                 <p class="text-sm text-gray-600 mt-1">
                                     <i class="fas fa-map-marker-alt mr-1"></i> 
-                                    {{ $pending['equipment']->entity->name }}
-                                    @if($pending['equipment']->location)
-                                        - {{ $pending['equipment']->location }}
+                                    {{ $equipment->entity->name }}
+                                    @if($equipment->location)
+                                        - {{ $equipment->location }}
                                     @endif
                                 </p>
                                 <div class="mt-2 flex flex-wrap gap-2">
                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        <i class="fas fa-wrench mr-1"></i> {{ $pending['task']->task_name }}
+                                        <i class="fas fa-wrench mr-1"></i> {{ $task->name ?? $task->task_name }}
                                     </span>
                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                                        <i class="fas fa-clock mr-1"></i> Último: {{ $pending['last_performed'] }}
+                                        <i class="fas fa-clock mr-1"></i> Último: {{ $item['lastLog'] ? $item['lastLog']->performed_on_date->format('d/m/Y') : 'Nunca' }}
                                     </span>
                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                                        <i class="fas fa-redo mr-1"></i> Cada {{ $pending['task']->recommended_frequency_days }} días
+                                        <i class="fas fa-calendar mr-1"></i> Vence: {{ $item['dueDate']->format('d/m/Y') }} ({{ $item['daysLeft'] }} días)
                                     </span>
                                 </div>
                             </div>
                             <button 
-                                onclick="openMaintenanceModal({{ $pending['equipment']->id }}, {{ $pending['task']->id }})"
+                                onclick="openMaintenanceModal({{ $equipment->id }}, {{ $task->id }})"
                                 class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition whitespace-nowrap">
                                 <i class="fas fa-check mr-2"></i> Registrar Mantenimiento
                             </button>
@@ -65,6 +116,33 @@
                 </p>
             </div>
         </div>
+
+        {{-- TAREAS FUTURAS (<=14 días) --}}
+        @if(isset($upcomingTasks) && count($upcomingTasks) > 0)
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">
+                <i class="fas fa-calendar-alt mr-2 text-indigo-500"></i> Próximas (≤14 días)
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                @foreach($upcomingTasks as $item)
+                    @php($task=$item['task'])
+                    @php($equipment=$item['equipment'])
+                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                        <h4 class="font-semibold text-gray-900 mb-1">
+                            <i class="fas fa-bolt text-indigo-500 mr-2"></i>
+                            {{ $equipment->custom_name ?? $equipment->equipmentType->name }}
+                        </h4>
+                        <p class="text-xs text-gray-500 mb-2">{{ $equipment->entity->name }}</p>
+                        <p class="text-sm text-gray-700"><i class="fas fa-wrench mr-1 text-gray-400"></i>{{ $task->name ?? $task->task_name }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Vence: {{ $item['dueDate']->format('d/m/Y') }} ({{ $item['daysLeft'] }} días)</p>
+                        <button onclick="openMaintenanceModal({{ $equipment->id }}, {{ $task->id }})" class="mt-3 text-xs inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded">
+                            <i class="fas fa-check mr-1"></i> Registrar ahora
+                        </button>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
         @endif
 
         {{-- HISTORIAL DE MANTENIMIENTOS --}}

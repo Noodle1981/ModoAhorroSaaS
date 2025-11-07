@@ -50,6 +50,7 @@ class DatabaseSeeder extends Seeder
         if (env('SEED_SAMPLE_HOUSE', false)) {
             $this->call([
                 SampleHouseCasaSeeder::class,
+                WeatherDataSeeder::class, // Cargar datos climáticos para Santa Lucía
             ]);
         }
     }

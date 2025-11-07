@@ -14,12 +14,18 @@ class MaintenanceLog extends Model
         'maintenance_task_id',
         'performed_on_date',
         'verification_status',
+        'action_type', // tipo específico ejecutado (filter_clean, deep_clean, defrost...)
         'notes',
     ];
     
     protected $casts = [
         'performed_on_date' => 'date',
     ];
+
+    public function scopeOfAction($query, string $action)
+    {
+        return $query->where('action_type', $action);
+    }
 
     public function entityEquipment()
     {

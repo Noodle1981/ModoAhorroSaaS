@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\EntityEquipment;
 use App\Models\EquipmentUsageSnapshot;
+use App\Services\WeatherService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -39,12 +40,24 @@ class UsageSnapshotController extends Controller
         // Calculamos los días del período
         $periodDays = $invoice->start_date->diffInDays($invoice->end_date) + 1;
         
+        // Obtener datos climáticos del período (si existen)
+        $weatherData = null;
+        if ($entity->locality_id) {
+            $weatherService = new WeatherService();
+            $weatherData = $weatherService->getAverageTemperatureForPeriod(
+                $entity->locality,
+                $invoice->start_date->format('Y-m-d'),
+                $invoice->end_date->format('Y-m-d')
+            );
+        }
+        
         return view('snapshots.create', [
             'invoice' => $invoice,
             'entity' => $entity,
             'equipments' => $equipments,
             'existingSnapshots' => $existingSnapshots,
             'periodDays' => $periodDays,
+            'weatherData' => $weatherData,
         ]);
     }
 

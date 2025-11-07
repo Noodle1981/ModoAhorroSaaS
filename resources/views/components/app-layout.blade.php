@@ -48,9 +48,25 @@
                             </div>
                         </div>
 
-                        <!-- User menu -->
+                        <!-- Right side: Alerts + User menu -->
                         <div class="hidden sm:flex sm:items-center sm:ml-6">
                             <div class="flex items-center gap-4">
+                                @php
+                                    $unreadAlerts = 0;
+                                    try {
+                                        $unreadAlerts = \App\Models\SmartAlert::whereHas('entity', function($q){
+                                            $user = \Illuminate\Support\Facades\Auth::user();
+                                            $entityIds = $user?->company?->entities?->pluck('id') ?? collect();
+                                            $q->whereIn('id', $entityIds);
+                                        })->active()->unread()->count();
+                                    } catch (\Throwable $e) { $unreadAlerts = 0; }
+                                @endphp
+                                <a href="{{ route('alerts.index') }}" class="relative inline-flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700">
+                                    <i class="fas fa-bell"></i>
+                                    @if($unreadAlerts > 0)
+                                    <span class="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">{{ $unreadAlerts }}</span>
+                                    @endif
+                                </a>
                                 <span class="text-sm text-gray-700">{{ Auth::user()->name }}</span>
                                 <form method="POST" action="{{ route('logout') }}" class="inline">
                                     @csrf

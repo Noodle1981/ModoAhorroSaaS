@@ -23,6 +23,10 @@
                 </div>
             </div>
             <div class="flex flex-wrap gap-2">
+                <a href="{{ route('entities.insights', $entity) }}" 
+                   class="inline-flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition">
+                    <i class="fas fa-chart-line mr-2"></i> Insights IA
+                </a>
                 <a href="{{ route('entities.equipment.index', $entity) }}" 
                    class="inline-flex items-center px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition">
                     <i class="fas fa-bolt mr-2"></i> Inventario
