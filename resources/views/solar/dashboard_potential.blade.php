@@ -54,6 +54,7 @@
                                 </div>
                             </div>
                             
+                            <div class="flex items-center gap-2">
                             @if($analysis['recommendation'])
                                 <span class="px-3 py-1 rounded-full text-xs font-semibold
                                     {{ $analysis['recommendation'] === 'highly_recommended' ? 'bg-green-100 text-green-800' : '' }}
@@ -73,6 +74,13 @@
                                     @endswitch
                                 </span>
                             @endif
+                            @if(($analysis['simple_source'] ?? '') === 'fallback_details_area')
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800" title="Usando 20% del área del lote como proxy de techo">
+                                    <i class="fas fa-ruler-combined mr-1"></i>
+                                    Estimación por lote: 20% de {{ number_format($analysis['simple_plot_area_m2'] ?? 0, 0) }} m²
+                                </span>
+                            @endif
+                            </div>
                         </div>
                     </div>
 
