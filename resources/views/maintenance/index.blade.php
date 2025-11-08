@@ -4,6 +4,22 @@
             <h2 class="text-2xl font-bold text-gray-800">
                 <i class="fas fa-tools mr-2 text-orange-500"></i> Mantenimiento de Equipos
             </h2>
+            <div class="text-xs text-gray-500 hidden md:block">
+                {{-- Debug de contexto (ayuda a diagnosticar sesión y datos) --}}
+                @php($user = Auth::user())
+                <span class="inline-flex items-center gap-2 px-2 py-1 bg-gray-100 rounded">
+                    <i class="fas fa-user text-gray-400"></i>
+                    {{ $user?->email }} (Empresa #{{ $user?->company_id }})
+                </span>
+                <span class="ml-2 inline-flex items-center gap-2 px-2 py-1 bg-gray-100 rounded">
+                    <i class="fas fa-plug text-gray-400"></i>
+                    Equipos: {{ $userEquipments->count() }}
+                </span>
+                <span class="ml-2 inline-flex items-center gap-2 px-2 py-1 bg-gray-100 rounded">
+                    <i class="fas fa-wrench text-gray-400"></i>
+                    Tareas: {{ $applicableTasks->count() }}
+                </span>
+            </div>
         </div>
     </x-slot>
 

@@ -75,7 +75,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/entities/{entity}/insights', [InsightsController::class, 'show'])->name('entities.insights');
     
     Route::resource('entities.supplies', SupplyController::class)->shallow();
-    Route::resource('supplies.contracts', ContractContract::class)->shallow();
+    Route::resource('supplies.contracts', ContractController::class)->shallow();
     Route::resource('contracts.invoices', InvoiceController::class)->shallow();
     Route::resource('entities.equipment', EntityEquipmentController::class)->shallow();
     
