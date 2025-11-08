@@ -111,42 +111,52 @@
                                 </div>
 
                                 {{-- Tarjeta de clima del período --}}
-                                @if($weatherData)
-                                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-5 flex flex-col">
+                                @if($climateSnapshot)
+                                <div class="bg-white rounded-xl shadow-md border-2 border-{{ $climateSnapshot->getClimateCategoryColor() }}-200 p-5 flex flex-col">
                                     <div class="flex items-center gap-3 mb-3">
-                                        <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-                                            <i class="fas fa-temperature-high"></i>
+                                        <div class="w-10 h-10 rounded-lg bg-{{ $climateSnapshot->getClimateCategoryColor() }}-100 flex items-center justify-center text-{{ $climateSnapshot->getClimateCategoryColor() }}-600">
+                                            <i class="fas fa-cloud-sun"></i>
                                         </div>
-                                        <h3 class="text-base font-semibold text-gray-800">Clima del Período</h3>
+                                        <div>
+                                            <h3 class="text-base font-semibold text-gray-800">Clima del Período</h3>
+                                            <span class="text-xs px-2 py-0.5 rounded-full bg-{{ $climateSnapshot->getClimateCategoryColor() }}-100 text-{{ $climateSnapshot->getClimateCategoryColor() }}-700 font-medium">
+                                                {{ $climateSnapshot->getClimateCategoryLabel() }}
+                                            </span>
+                                        </div>
                                     </div>
                                     <div class="space-y-2 text-sm text-gray-700">
                                         <div class="flex justify-between items-center">
                                             <span class="text-gray-600">Temp. promedio:</span>
-                                            <span class="font-semibold text-lg">{{ $weatherData['avg_temp'] }}°C</span>
+                                            <span class="font-semibold text-lg">{{ $climateSnapshot->avg_temperature_c }}°C</span>
                                         </div>
                                         <div class="flex justify-between items-center text-xs">
                                             <span class="text-gray-500">Máxima:</span>
-                                            <span class="text-red-600 font-medium">{{ $weatherData['max_temp'] }}°C</span>
+                                            <span class="text-red-600 font-medium">{{ $climateSnapshot->max_temperature_c }}°C</span>
                                         </div>
                                         <div class="flex justify-between items-center text-xs">
                                             <span class="text-gray-500">Mínima:</span>
-                                            <span class="text-blue-600 font-medium">{{ $weatherData['min_temp'] }}°C</span>
+                                            <span class="text-blue-600 font-medium">{{ $climateSnapshot->min_temperature_c }}°C</span>
                                         </div>
-                                        @if($weatherData['cooling_degree_days'] > 50)
+                                        
+                                        @if($climateSnapshot->days_above_30c > 0)
                                         <div class="mt-2 pt-2 border-t">
                                             <div class="flex items-start gap-2 bg-orange-50 rounded-lg p-2">
-                                                <i class="fas fa-fan text-orange-500 text-xs mt-0.5"></i>
+                                                <i class="fas fa-fire text-orange-500 text-xs mt-0.5"></i>
                                                 <p class="text-xs text-orange-700">
-                                                    Período cálido: {{ round($weatherData['cooling_degree_days']) }} grados-día de refrigeración. Considera mayor uso de AC.
+                                                    <strong>{{ $climateSnapshot->days_above_30c }} días</strong> con >30°C. 
+                                                    CDD: {{ number_format($climateSnapshot->total_cooling_degree_days, 0) }}
                                                 </p>
                                             </div>
                                         </div>
-                                        @elseif($weatherData['heating_degree_days'] > 50)
+                                        @endif
+                                        
+                                        @if($climateSnapshot->days_below_15c > 0)
                                         <div class="mt-2 pt-2 border-t">
                                             <div class="flex items-start gap-2 bg-blue-50 rounded-lg p-2">
-                                                <i class="fas fa-fire text-blue-500 text-xs mt-0.5"></i>
+                                                <i class="fas fa-snowflake text-blue-500 text-xs mt-0.5"></i>
                                                 <p class="text-xs text-blue-700">
-                                                    Período frío: {{ round($weatherData['heating_degree_days']) }} grados-día de calefacción. Considera mayor uso de calefacción.
+                                                    <strong>{{ $climateSnapshot->days_below_15c }} días</strong> con <15°C. 
+                                                    HDD: {{ number_format($climateSnapshot->total_heating_degree_days, 0) }}
                                                 </p>
                                             </div>
                                         </div>
@@ -156,6 +166,49 @@
                                         <p class="text-xs text-gray-500">
                                             <i class="fas fa-info-circle mr-1"></i>
                                             Datos de Open-Meteo para {{ $entity->locality->name }}
+                                        </p>
+                                    </div>
+                                </div>
+                                @endif
+
+                                {{-- Tarjeta períodos similares --}}
+                                @if($climateSnapshot && $similarPeriods->isNotEmpty())
+                                <div class="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-md border-2 border-purple-200 p-5 flex flex-col">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
+                                            <i class="fas fa-history"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-base font-semibold text-gray-800">Períodos Similares</h3>
+                                            <span class="text-xs text-purple-700">Clima parecido a este mes</span>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        @foreach($similarPeriods->take(3) as $similar)
+                                            @php
+                                                $similarInvoice = $similar->invoices->first();
+                                            @endphp
+                                            @if($similarInvoice)
+                                            <div class="bg-white/60 rounded-lg p-2 text-xs">
+                                                <div class="flex justify-between items-center">
+                                                    <div>
+                                                        <span class="font-medium text-gray-800">
+                                                            {{ $similar->period_start->format('M Y') }}
+                                                        </span>
+                                                        <span class="text-gray-500 ml-1">({{ $similar->avg_temperature_c }}°C)</span>
+                                                    </div>
+                                                    <span class="font-semibold text-purple-600">
+                                                        {{ number_format($similarInvoice->total_energy_consumed_kwh, 0) }} kWh
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                    <div class="mt-auto pt-3 border-t border-purple-200">
+                                        <p class="text-xs text-gray-600">
+                                            <i class="fas fa-lightbulb mr-1 text-yellow-500"></i>
+                                            Usa estos valores como referencia para ajustar el uso de equipos
                                         </p>
                                     </div>
                                 </div>

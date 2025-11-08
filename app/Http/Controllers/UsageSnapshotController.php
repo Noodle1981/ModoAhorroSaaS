@@ -40,15 +40,30 @@ class UsageSnapshotController extends Controller
         // Calculamos los días del período
         $periodDays = $invoice->start_date->diffInDays($invoice->end_date) + 1;
         
-        // Obtener datos climáticos del período (si existen)
-        $weatherData = null;
-        if ($entity->locality_id) {
+        // Obtener Climate Snapshot del período
+        $climateSnapshot = $invoice->climateSnapshot;
+        
+        // Si no existe, intentar crearlo
+        if (!$climateSnapshot && $entity->locality_id) {
             $weatherService = new WeatherService();
-            $weatherData = $weatherService->getAverageTemperatureForPeriod(
-                $entity->locality,
-                $invoice->start_date->format('Y-m-d'),
-                $invoice->end_date->format('Y-m-d')
-            );
+            try {
+                $climateSnapshot = $weatherService->createClimateSnapshot(
+                    $entity,
+                    $invoice->start_date,
+                    $invoice->end_date
+                );
+                $invoice->climate_snapshot_id = $climateSnapshot->id;
+                $invoice->saveQuietly();
+            } catch (\Exception $e) {
+                \Log::warning("No se pudo crear ClimateSnapshot para Invoice #{$invoice->id}: {$e->getMessage()}");
+            }
+        }
+        
+        // Buscar períodos similares para comparación
+        $similarPeriods = collect();
+        if ($climateSnapshot) {
+            $weatherService = $weatherService ?? new WeatherService();
+            $similarPeriods = $weatherService->findSimilarPeriods($climateSnapshot, 5);
         }
         
         return view('snapshots.create', [
@@ -57,7 +72,8 @@ class UsageSnapshotController extends Controller
             'equipments' => $equipments,
             'existingSnapshots' => $existingSnapshots,
             'periodDays' => $periodDays,
-            'weatherData' => $weatherData,
+            'climateSnapshot' => $climateSnapshot,
+            'similarPeriods' => $similarPeriods,
         ]);
     }
 
