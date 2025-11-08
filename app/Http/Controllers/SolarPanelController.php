@@ -24,7 +24,9 @@ class SolarPanelController extends Controller
         $company = auth()->user()->company;
 
         $entities = $company->entities()
-            ->with(['locality.province', 'invoices', 'equipments.equipmentType'])
+            // Nota: 'invoices' en Entity NO es una relación Eloquent real (retorna Builder),
+            // por lo tanto no se puede eager load con with(). Se consulta dentro del servicio.
+            ->with(['locality.province', 'equipments.equipmentType'])
             ->get();
 
         $analyses = [];
