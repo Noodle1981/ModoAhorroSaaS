@@ -28,6 +28,39 @@ class EntityEquipment extends Model
         'deleted_at' => 'datetime',
     ];
 
+    /**
+     * Accessor para location: decodifica JSON y devuelve solo el nombre
+     */
+    public function getLocationAttribute($value)
+    {
+        if (empty($value)) {
+            return 'Sin ubicación';
+        }
+
+        $decoded = json_decode($value, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            // Si tiene estructura con 'name'
+            if (isset($decoded['name'])) {
+                return $decoded['name'];
+            }
+            // Si tiene estructura con 'rooms'
+            if (isset($decoded['rooms']) && is_array($decoded['rooms']) && !empty($decoded['rooms'][0]['name'])) {
+                return $decoded['rooms'][0]['name'];
+            }
+        }
+
+        // Si no es JSON válido, devolver el valor original
+        return $value;
+    }
+
+    /**
+     * Accessor para obtener el valor RAW de location (sin decodificar)
+     */
+    public function getRawLocationAttribute()
+    {
+        return $this->attributes['location'] ?? null;
+    }
+
     public function entity()
     {
         return $this->belongsTo(Entity::class);
