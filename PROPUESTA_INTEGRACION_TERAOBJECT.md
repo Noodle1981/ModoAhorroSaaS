@@ -951,30 +951,168 @@ Todas las decisiones tomadas basadas en los casos extremos identificados:
 1. ✅ Migraciones - COMPLETADO
 2. ✅ Observer - COMPLETADO
 3. ✅ Modelos (`EquipmentHistory`, `SnapshotChangeAlert`) - COMPLETADO
-4. ⏳ **Controlador: SnapshotController**
-   - `reviewChanges()`: Vista de snapshots invalidados
-   - `recalculate()`: Recalcular snapshot individual
-   - `recalculateAll()`: Recalcular múltiples períodos
-5. ⏳ **Vista: `snapshots/review-changes.blade.php`**
-   - Tabla de cambios detectados (before/after)
-   - Botón "Recalcular" (sin opción ignorar)
-   - Histórico de recálculos
-6. ⏳ **Vista: Banner en `entities/show.blade.php`**
-   - Alerta persistente de snapshots invalidados
-   - Link a `/snapshots/review-changes`
-7. ⏳ **Vista: Freezar campo tiempo de uso**
-   - Deshabilitar `avg_daily_use_minutes_override` en vista equipos
-   - Solo editable en snapshots
+4. ✅ **Controlador: SnapshotController** - COMPLETADO
+   - `reviewChanges()`: Vista de snapshots invalidados ✅
+   - `recalculate()`: Recalcular snapshot individual ✅
+   - `recalculateAll()`: Recalcular múltiples períodos ✅
+   - Prorrateo automático de días según `activated_at` y `deleted_at` ✅
+5. ✅ **Vista: `snapshots/review-changes.blade.php`** - COMPLETADO
+   - Tabla de cambios detectados (before/after) ✅
+   - Botón "Recalcular" (sin opción ignorar) ✅
+   - Histórico de recálculos recientes (30 días) ✅
+6. ✅ **Vista: Banner en `entities/show.blade.php`** - COMPLETADO
+   - Alerta persistente naranja animada ✅
+   - Link a `/snapshots/review-changes` ✅
+   - Contador de alertas y períodos afectados ✅
+7. ✅ **Vista: Freezar campo tiempo de uso** - COMPLETADO
+   - Campo `avg_daily_use_minutes_override` deshabilitado en edit ✅
+   - Tooltip explicativo ✅
+   - Solo editable en snapshots por período ✅
+8. ✅ **Fecha de Activación** - COMPLETADO
+   - Campo `activated_at` en formulario create ✅
+   - Validación `before_or_equal:today` ✅
+   - Default `now()` si no se especifica ✅
+9. ✅ **Eliminación Diferenciada** - COMPLETADO
+   - Dropdown con 2 opciones: Dar de Baja / Eliminar Permanente ✅
+   - `destroy()` (soft delete) mantiene histórico ✅
+   - `forceDestroy()` (hard delete) elimina TODO ✅
+   - Confirmaciones diferenciadas con impacto explicado ✅
+
+---
+
+## 🎉 **FASE 1 COMPLETADA AL 100%**
+
+### ✅ Todo lo Implementado
+
+#### 🗄️ **Base de Datos**
+- ✅ 4 migraciones ejecutadas exitosamente
+- ✅ Campos lifecycle: `activated_at`, `replaced_at`, `replaced_by_id`, `power_last_changed_at`, `usage_last_changed_at`
+- ✅ Estados snapshots: `draft`, `confirmed`, `invalidated`, `recalculated`
+- ✅ Tracking completo: `invalidated_at`, `invalidation_reason`, `recalculation_count`, `is_equipment_deleted`
+- ✅ Tabla `equipment_history`: Auditoría completa con before/after en JSON
+- ✅ Tabla `snapshot_change_alerts`: Sistema de notificaciones
+
+#### 🔍 **Sistema de Detección Automática**
+- ✅ `EntityEquipmentObserver` registrado en `AppServiceProvider`
+- ✅ Detecta cambios en potencia, uso, tipo de equipo
+- ✅ Invalida snapshots confirmados automáticamente
+- ✅ Registra TODO en `equipment_history`
+- ✅ Crea `snapshot_change_alerts` para notificar al usuario
+- ✅ Maneja soft delete y hard delete diferenciados
+
+#### 🎮 **Controladores y Lógica de Negocio**
+- ✅ `SnapshotController`: 6 métodos implementados
+  - `reviewChanges()`: Vista de alertas y cambios
+  - `recalculate()`: Recálculo individual
+  - `recalculatePeriod()`: Recálculo por mes
+  - `recalculateAll()`: Recálculo masivo
+  - `confirm()`: Confirmar snapshot individual
+  - `confirmPeriod()`: Confirmar período completo
+- ✅ **Prorrateo automático de días**:
+  - Si equipo activado a mitad de mes → Calcula días proporcionales
+  - Si equipo dado de baja a mitad de mes → Calcula días hasta baja
+- ✅ `EntityEquipmentController`: Métodos extendidos
+  - `store()`: Captura `activated_at` (default hoy)
+  - `destroy()`: Soft delete (mantiene histórico)
+  - `forceDestroy()`: Hard delete (elimina todo)
+
+#### 🖼️ **Interfaz de Usuario**
+- ✅ **Vista `snapshots/review-changes.blade.php`**:
+  - Alertas pendientes con mensajes personalizados
+  - Tabla de snapshots invalidados agrupados por período
+  - Columnas: Equipo, Estado Actual, Razón, Consumo Anterior, Recálculos
+  - Botones: Recalcular Período, Recalcular Todo
+  - Histórico de recálculos recientes (últimos 30 días)
+- ✅ **Banner en `entities/show.blade.php`**:
+  - Fondo naranja-amarillo con animación pulse
+  - Contador de alertas y períodos afectados
+  - Botón destacado "Revisar y Recalcular Ahora"
+  - Botón cerrar (X) para ocultar temporalmente
+- ✅ **Formulario `equipment/create.blade.php`**:
+  - Campo `activated_at` con date picker
+  - Box verde destacado con explicación
+  - Validación: No puede ser fecha futura
+- ✅ **Formulario `equipment/edit.blade.php`**:
+  - Campo `avg_daily_use_minutes_override` **DESHABILITADO**
+  - Icono candado + tooltip explicativo
+  - Mensaje: "Solo ajustable en snapshots por período"
+- ✅ **Lista `equipment/index.blade.php`**:
+  - Dropdown para eliminar con 2 opciones
+  - Opción 1: "Dar de Baja" (soft delete) con ícono archive
+  - Opción 2: "Eliminar Permanentemente" (hard delete) con ícono trash
+  - Confirmaciones diferenciadas con bullets de impacto
+
+#### 🔗 **Rutas**
+- ✅ `snapshots.review-changes` → GET `/entities/{entity}/snapshots/review-changes`
+- ✅ `snapshots.recalculate` → POST `/snapshots/{snapshot}/recalculate`
+- ✅ `snapshots.recalculate-period` → POST `/entities/{entity}/snapshots/recalculate-period/{date}`
+- ✅ `snapshots.recalculate-all` → POST `/entities/{entity}/snapshots/recalculate-all`
+- ✅ `snapshots.confirm` → POST `/snapshots/{snapshot}/confirm`
+- ✅ `snapshots.confirm-period` → POST `/entities/{entity}/snapshots/confirm-period/{date}`
+- ✅ `equipment.force-destroy` → DELETE `/equipment/{equipment}/force`
+
+---
+
+### 🚀 **Flujo Completo de Uso**
+
+1. **Usuario crea equipo nuevo**:
+   - Rellena formulario con fecha de instalación
+   - Sistema guarda `activated_at`
+   - Si hay snapshots confirmados pasados → Observer los invalida
+
+2. **Usuario modifica potencia de equipo**:
+   - Observer detecta cambio en `power_watts_override`
+   - Actualiza `power_last_changed_at`
+   - Registra cambio en `equipment_history` (before/after)
+   - Invalida todos los snapshots confirmados afectados
+   - Crea `SnapshotChangeAlert` con mensaje personalizado
+
+3. **Usuario ve dashboard de entidad**:
+   - Banner naranja animado aparece: "⚠️ Cambios Detectados"
+   - Muestra: "2 cambios afectan 6 períodos históricos"
+   - Click en "Revisar y Recalcular Ahora"
+
+4. **Vista `/snapshots/review-changes`**:
+   - Tabla muestra todos los períodos invalidados
+   - Por cada período: equipos afectados con before/after
+   - Opciones:
+     - Recalcular período individual
+     - Recalcular TODO de una vez
+   - Al recalcular:
+     - Sistema usa valores ACTUALES del equipo
+     - Calcula días proporcionales si `activated_at` está a mitad de período
+     - Incrementa `recalculation_count`
+     - Cambia estado a `recalculated`
+     - Marca alertas como `resolved`
+
+5. **Usuario quiere eliminar equipo**:
+   - Click en botón rojo "Eliminar"
+   - Dropdown muestra 2 opciones:
+     - **Dar de Baja**: Ya no lo uso, pero existió → Soft delete
+     - **Eliminar Permanente**: Nunca existió (error) → Hard delete
+   - Confirmación específica según opción elegida
+   - Observer registra en `equipment_history`
 
 ---
 
 Equipos creados a mitad de período deben prorratear días?
 
-Opción A: Sí, calcular días parciales (más complejo pero preciso)
+✅ **Opción A IMPLEMENTADA**: Sí, calcular días parciales (más complejo pero preciso)
+- Método `calculateDaysInPeriod()` en `SnapshotController`
+- Considera `activated_at` y `deleted_at`
+- Ejemplo: Equipo activado el 15/03 en período 01/03-31/03 → 17 días (15-31)
+
 ¿Snapshots pueden recalcularse N veces o solo una?
 
-Opción A: Ilimitado (usuario puede editar y recalcular cuantas veces quiera)
+✅ **Opción A IMPLEMENTADA**: Ilimitado (usuario puede editar y recalcular cuantas veces quiera)
+- Campo `recalculation_count` incrementa en cada recálculo
+- No hay límite máximo
+- Histórico completo en `equipment_history`
 
 ¿Guardamos histórico de valores anteriores del equipo?
 
-Opción A: Sí, tabla equipment_history con todos los cambios
+✅ **Opción A IMPLEMENTADA**: Sí, tabla equipment_history con todos los cambios
+- Columnas `before_values` y `after_values` (JSON)
+- `change_type`: power_changed, usage_changed, type_changed, etc.
+- `change_description`: Texto legible generado automáticamente
+- `changed_by_user_id`: FK al usuario que hizo el cambio
