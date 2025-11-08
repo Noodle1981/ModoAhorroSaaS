@@ -11,6 +11,7 @@ class SolarPotentialAnalysisService
     public const FACTOR_DE_AREA_UTIL = 0.60; // 60% área realmente utilizable
     public const POTENCIA_PANEL_PROMEDIO_WP = 500; // 500 Wp por panel
     public const AREA_PANEL_PROMEDIO_M2 = 2.2; // 2.2 m² por panel
+    public const FALLBACK_ROOF_RATIO_FROM_PLOT = 0.20; // 20% del terreno como proxy de techo (asunción conservadora)
     /**
      * Radiación solar promedio por provincia en Argentina (kWh/m²/día)
      * Fuente: Atlas Solar Argentino - Secretaría de Energía
@@ -137,12 +138,22 @@ class SolarPotentialAnalysisService
 
         // Estimación simple basada en área total declarada (sin considerar orientación detallada)
         $totalDeclaredArea = max(0.0, (float)($entity->roof_area_m2 ?? 0) + (float)($entity->ground_area_m2 ?? 0));
+        // Si no hay datos de techo/terreno, intentar inferir desde detalles del lote (area_m2)
+        if ($totalDeclaredArea <= 0 && is_array($entity->details ?? null)) {
+            $plotArea = (float) ($entity->details['area_m2'] ?? 0);
+            if ($plotArea > 0) {
+                $totalDeclaredArea = round($plotArea * self::FALLBACK_ROOF_RATIO_FROM_PLOT, 1);
+                $result['simple_source'] = 'fallback_details_area';
+                $result['simple_plot_area_m2'] = $plotArea;
+            }
+        }
         if ($totalDeclaredArea > 0) {
             $simple = $this->estimateSimplePotential($totalDeclaredArea);
             $result['simple_area_util_m2'] = $simple['area_util_m2'];
             $result['simple_paneles_decimal'] = $simple['paneles_posibles_decimal'];
             $result['simple_paneles'] = $simple['paneles_instalables'];
             $result['simple_potencia_kwp'] = $simple['potencia_total_kwp'];
+            $result['simple_total_area_input_m2'] = $totalDeclaredArea;
         }
 
         if ($result['total_usable_m2'] < 10) {

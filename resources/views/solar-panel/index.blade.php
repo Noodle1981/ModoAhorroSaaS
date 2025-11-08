@@ -102,6 +102,25 @@
                                         <i class="fas fa-cog mr-2"></i>
                                         Ingresar Datos del Techo
                                     </a>
+                                    @if(($analysis['simple_paneles'] ?? 0) > 0)
+                                        <div class="mt-6 mx-auto max-w-2xl text-left bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+                                            <h5 class="font-semibold text-yellow-900 mb-1">
+                                                Estimación base por m² (sin datos de techo)
+                                            </h5>
+                                            <p class="text-sm text-yellow-800 mb-2">
+                                                Para orientarte, usando una regla simple estimamos <strong>{{ number_format($analysis['simple_potencia_kwp'], 2) }} kWp</strong>
+                                                con <strong>{{ $analysis['simple_paneles'] }} paneles</strong> en <strong>{{ number_format($analysis['simple_area_util_m2'], 1) }} m² útiles</strong>.
+                                            </p>
+                                            @if(($analysis['simple_source'] ?? '') === 'fallback_details_area')
+                                                <p class="text-xs text-yellow-700">
+                                                    Tomamos como base el área del lote ({{ number_format($analysis['simple_plot_area_m2'] ?? 0, 0) }} m²) y asumimos un {{ \App\Services\SolarPotentialAnalysisService::FALLBACK_ROOF_RATIO_FROM_PLOT * 100 }}% de superficie de techo para esta estimación.
+                                                </p>
+                                            @endif
+                                            <p class="text-xs text-yellow-700 mt-1">
+                                                Esta es una referencia rápida. El presupuesto final depende de orientación, sombras y obstáculos.
+                                            </p>
+                                        </div>
+                                    @endif
                                 </div>
                             @elseif($analysis['recommendation'] === 'insufficient_space')
                                 <div class="text-center py-8">
