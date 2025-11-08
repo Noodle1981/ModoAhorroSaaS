@@ -50,7 +50,15 @@ class EntityEquipmentController extends Controller
     public function store(StoreEntityEquipmentRequest $request, Entity $entity)
     {
         $this->authorize('create', [EntityEquipment::class, $entity]);
-        $entity->equipments()->create($request->validated());
+        
+        $data = $request->validated();
+        
+        // Si no se especificó fecha de activación, usar hoy por defecto
+        if (!isset($data['activated_at'])) {
+            $data['activated_at'] = now()->toDateString();
+        }
+        
+        $entity->equipments()->create($data);
 
         return redirect()->route('entities.equipment.index', $entity)
                          ->with('success', '¡Equipo añadido con éxito!');
@@ -99,15 +107,43 @@ class EntityEquipmentController extends Controller
     }
 
     /**
-     * (DESTROY) Elimina un equipo del inventario.
+     * (DESTROY) Elimina un equipo del inventario (SOFT DELETE por defecto).
+     * Mantiene el histórico de snapshots.
      */
     public function destroy(EntityEquipment $equipment)
     {
         $this->authorize('delete', $equipment);
         $entity = $equipment->entity;
+        
+        // Soft delete (marca como deleted_at, Observer se encarga del resto)
         $equipment->delete();
 
         return redirect()->route('entities.equipment.index', $entity)
-                         ->with('success', '¡Equipo eliminado con éxito!');
+                         ->with('success', '✅ Equipo dado de baja. Se mantiene el histórico de consumo.');
+    }
+
+    /**
+     * HARD DELETE: Eliminar permanentemente (solo si fue un error de carga).
+     * ELIMINA todos los snapshots asociados.
+     */
+    public function forceDestroy(EntityEquipment $equipment)
+    {
+        $this->authorize('delete', $equipment);
+        $entity = $equipment->entity;
+        
+        $equipmentName = $equipment->custom_name ?? $equipment->equipmentType->name;
+        
+        // Contar snapshots afectados
+        $snapshotsCount = $equipment->snapshots()->count();
+        
+        // Force delete (elimina físicamente, Observer se encarga del resto)
+        $equipment->forceDelete();
+
+        return redirect()->route('entities.equipment.index', $entity)
+                         ->with('warning', sprintf(
+                             '⚠️ Equipo "%s" eliminado permanentemente. Se eliminaron %d snapshot(s) históricos.',
+                             $equipmentName,
+                             $snapshotsCount
+                         ));
     }
 }

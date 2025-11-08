@@ -54,6 +54,7 @@ class StoreEntityEquipmentRequest extends FormRequest
             'avg_daily_use_minutes_override' => ['nullable', 'integer', 'min:0', 'max:1440'],
 
             'has_standby_mode' => ['nullable', 'boolean'],
+            'activated_at' => ['nullable', 'date', 'before_or_equal:today'],
         ];
     }
 }

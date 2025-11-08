@@ -84,6 +84,24 @@
                             <input type="text" id="custom_name" name="custom_name" value="{{ old('custom_name') }}" style="width: 100%; margin-top: 0.25rem; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.5rem;" placeholder="Ej: Heladera del quincho">
                         </div>
 
+                        <!-- 4b. Fecha de Instalación/Activación -->
+                        <div style="background-color: #f0fdf4; border: 1px solid #86efac; border-radius: 0.5rem; padding: 1rem;">
+                            <label for="activated_at" style="display: block; font-weight: 600; color: #065f46; margin-bottom: 0.5rem;">
+                                <i class="fas fa-calendar-check" style="margin-right: 0.5rem;"></i>
+                                ¿Cuándo instalaste este equipo?
+                            </label>
+                            <input type="date" 
+                                   id="activated_at" 
+                                   name="activated_at" 
+                                   value="{{ old('activated_at', now()->toDateString()) }}" 
+                                   max="{{ now()->toDateString() }}"
+                                   style="width: 100%; border: 1px solid #86efac; border-radius: 0.375rem; padding: 0.5rem;">
+                            <p style="font-size: 0.75rem; color: #047857; margin-top: 0.5rem;">
+                                <strong>💡 Importante:</strong> Si el equipo ya existía antes de hoy, selecciona la fecha aproximada de instalación. 
+                                Esto nos permite calcular correctamente el consumo histórico.
+                            </p>
+                        </div>
+
                         <!-- 5. Potencia -->
                         <div>
                             <label for="power_watts_override">5. Potencia (en Watts)</label>

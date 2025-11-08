@@ -253,17 +253,62 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                                     </svg>
                                                 </a>
-                                                <form action="{{ route('equipment.destroy', $equipment) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este equipo?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" 
+                                                
+                                                <!-- Dropdown para eliminar -->
+                                                <div x-data="{ open: false }" class="relative inline-block">
+                                                    <button @click="open = !open" 
+                                                            type="button"
                                                             class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-semibold rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-150 shadow-md transform hover:scale-105"
                                                             title="Eliminar">
                                                         <svg class="w-4 h-4" style="height: 16px; width: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                                         </svg>
+                                                        <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                                        </svg>
                                                     </button>
-                                                </form>
+                                                    
+                                                    <!-- Dropdown menu -->
+                                                    <div x-show="open" 
+                                                         @click.away="open = false"
+                                                         x-transition
+                                                         class="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl border border-gray-200 z-50"
+                                                         style="display: none;">
+                                                        <div class="p-3 border-b border-gray-200">
+                                                            <p class="text-xs font-semibold text-gray-700">¿Cómo quieres eliminarlo?</p>
+                                                        </div>
+                                                        
+                                                        <!-- Dar de Baja (Soft Delete) -->
+                                                        <form action="{{ route('equipment.destroy', $equipment) }}" method="POST" 
+                                                              onsubmit="return confirm('¿Dar de baja este equipo?\n\n✅ Se mantendrá el histórico de consumo\n✅ Aparecerá marcado como \'eliminado\' en reportes pasados\n✅ Se recalcularán los períodos afectados');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="w-full text-left px-4 py-3 hover:bg-orange-50 transition flex items-start gap-3">
+                                                                <i class="fas fa-archive text-orange-600 mt-0.5"></i>
+                                                                <div>
+                                                                    <p class="text-sm font-semibold text-gray-900">Dar de Baja</p>
+                                                                    <p class="text-xs text-gray-600">Ya no está en uso, pero existió antes. Se mantiene el histórico.</p>
+                                                                </div>
+                                                            </button>
+                                                        </form>
+                                                        
+                                                        <div class="border-t border-gray-200"></div>
+                                                        
+                                                        <!-- Eliminar Permanentemente (Hard Delete) -->
+                                                        <form action="{{ route('equipment.force-destroy', $equipment) }}" method="POST" 
+                                                              onsubmit="return confirm('⚠️ ELIMINAR PERMANENTEMENTE\n\n❌ Se eliminará TODO el histórico de consumo\n❌ Los reportes pasados perderán este equipo\n❌ Esta acción NO se puede deshacer\n\n¿Estás ABSOLUTAMENTE seguro?\nSolo úsalo si agregaste este equipo por error.');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="w-full text-left px-4 py-3 hover:bg-red-50 transition flex items-start gap-3">
+                                                                <i class="fas fa-trash-alt text-red-600 mt-0.5"></i>
+                                                                <div>
+                                                                    <p class="text-sm font-semibold text-red-900">Eliminar Permanentemente</p>
+                                                                    <p class="text-xs text-red-600">Nunca existió (error de carga). Elimina TODO el histórico.</p>
+                                                                </div>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
