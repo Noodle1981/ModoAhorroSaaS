@@ -82,7 +82,7 @@ class SampleHouseCasaSeeder extends Seeder
                 ['name' => 'Tubo LED 18W', 'minutes' => 600, 'qty' => 1], // 10 hs
             ],
             'Living' => [
-                ['name' => 'TV LED 55"', 'minutes' => 480, 'qty' => 1], // 8 hs
+                ['name' => 'TV LED 32"', 'minutes' => 480, 'qty' => 1], // 8 hs - ÚNICO TV
                 ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1],
                 ['name' => 'Ventilador de Techo', 'minutes' => 180, 'qty' => 1], // 3 hs
                 ['name' => 'Router WiFi', 'minutes' => 1440, 'qty' => 1], // 24 hs
@@ -105,10 +105,10 @@ class SampleHouseCasaSeeder extends Seeder
                 ['name' => 'TV LED 43"', 'minutes' => 120, 'qty' => 1],
             ],
             'Habitación Omar' => [
-                ['name' => 'PC de Escritorio (Gaming)', 'minutes' => 600, 'qty' => 1],
-                ['name' => 'Monitor LED 27"', 'minutes' => 600, 'qty' => 2],
-                ['name' => 'Tira LED 5 metros', 'minutes' => 600, 'qty' => 1],
-                ['name' => 'Ventilador de Pie', 'minutes' => 300, 'qty' => 1], // 5 hs
+                ['name' => 'PC de Escritorio (Gaming)', 'minutes' => 180, 'qty' => 1], // 3 hs/día real
+                ['name' => 'Monitor LED 27"', 'minutes' => 180, 'qty' => 2], // Mismo tiempo que PC
+                ['name' => 'Tira LED 5 metros', 'minutes' => 180, 'qty' => 1], // 3 hs
+                ['name' => 'Aire Acondicionado Portátil', 'minutes' => 60, 'qty' => 1], // 1 h/día promedio anual
                 ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1],
                 ['name' => 'Lámpara de Escritorio LED', 'minutes' => 240, 'qty' => 1], // velador 4 hs
             ],
