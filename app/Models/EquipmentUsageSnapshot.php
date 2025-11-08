@@ -30,6 +30,8 @@ class EquipmentUsageSnapshot extends Model
         'invalidation_reason',
         'recalculation_count',
         'is_equipment_deleted',
+        // Frecuencia del período
+        'is_daily_use', 'usage_days_per_week', 'usage_weekdays', 'minutes_per_session', 'frequency_source'
     ];
 
     protected $casts = [
@@ -39,6 +41,8 @@ class EquipmentUsageSnapshot extends Model
         'has_standby_mode' => 'boolean',
         'invalidated_at' => 'datetime',
         'is_equipment_deleted' => 'boolean',
+        'is_daily_use' => 'boolean',
+        'usage_weekdays' => 'array',
     ];
 
     /**

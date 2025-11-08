@@ -117,6 +117,44 @@
 
                         <!-- 7. Tiempo de Uso (Adaptativo) -->
                         <div id="usage-time-wrapper">
+                            <!-- NUEVA SECCIÓN: Frecuencia de Uso -->
+                            <fieldset style="border:1px solid #e5e7eb; padding:1rem; border-radius:0.5rem; margin-bottom:1rem; background-color:#f9fafb;">
+                                <legend style="font-weight:600; padding:0 0.5rem;">Frecuencia de Uso</legend>
+                                <label style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+                                    <input type="hidden" name="is_daily_use" value="0">
+                                    <input type="checkbox" name="is_daily_use" id="is_daily_use" value="1" checked style="border-radius:0.25rem;">
+                                    <span>✅ Uso diario (todos los días)</span>
+                                </label>
+                                <div id="non-daily-frequency" style="display:none; gap:0.75rem; flex-wrap:wrap;">
+                                    <div style="flex:1; min-width:200px;">
+                                        <label for="usage_days_per_week" style="font-size:0.875rem; font-weight:500;">Días por semana</label>
+                                        <input type="number" id="usage_days_per_week" name="usage_days_per_week" min="0" max="7" value="{{ old('usage_days_per_week') }}" style="width:100%; margin-top:0.25rem; border:1px solid #d1d5db; border-radius:0.375rem; padding:0.5rem;">
+                                    </div>
+                                    <div style="flex:1; min-width:200px;">
+                                        <label for="minutes_per_session" style="font-size:0.875rem; font-weight:500;">Minutos por sesión/ciclo</label>
+                                        <input type="number" id="minutes_per_session" name="minutes_per_session" min="0" max="1440" value="{{ old('minutes_per_session') }}" style="width:100%; margin-top:0.25rem; border:1px solid #d1d5db; border-radius:0.375rem; padding:0.5rem;" placeholder="Ej: 120 (2 horas)">
+                                        <small style="font-size:0.75rem; color:#6b7280; display:block; margin-top:0.25rem;">Duración de un ciclo típico (ej: un lavado, una sesión de uso)</small>
+                                    </div>
+                                    <div style="flex:100%; margin-top:0.5rem;">
+                                        <span style="font-size:0.875rem; font-weight:600;">Días específicos:</span>
+                                        <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem;">
+                                            @php($weekMap = [1=>'Lun',2=>'Mar',3=>'Mié',4=>'Jue',5=>'Vie',6=>'Sáb',7=>'Dom'])
+                                            @foreach ($weekMap as $dNum => $dLabel)
+                                                <label style="display:inline-flex; align-items:center; gap:0.25rem; padding:0.25rem 0.5rem; border:1px solid #d1d5db; border-radius:0.375rem; cursor:pointer;">
+                                                    <input type="checkbox" name="usage_weekdays[]" value="{{ $dNum }}" {{ in_array($dNum, old('usage_weekdays', [])) ? 'checked' : '' }} style="border-radius:0.25rem;">
+                                                    <span style="font-size:0.875rem;">{{ $dLabel }}</span>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                        <p style="font-size:0.75rem; color:#6b7280; margin-top:0.5rem;">💡 Si marcas días, el contador se ajustará automáticamente.</p>
+                                    </div>
+                                    <div id="derived-daily-minutes" style="flex:100%; font-size:0.875rem; color:#065f46; background-color:#d1fae5; padding:0.5rem; border-radius:0.375rem; margin-top:0.5rem; display:none;">
+                                        📊 Promedio diario derivado: <strong><span id="derived-daily-value">0</span> min/día</strong>
+                                    </div>
+                                </div>
+                            </fieldset>
+                            <!-- FIN: Frecuencia de Uso -->
+                            
                             <div id="hours-input-wrapper" style="display: none;">
                                 <label for="avg_daily_use_hours_override">7. Horas de Uso Promedio por Día (Editable)</label>
                                 <input type="number" step="0.1" id="avg_daily_use_hours_override" name="avg_daily_use_hours_override" value="{{ old('avg_daily_use_hours_override') }}" min="0" max="24" style="width: 100%; margin-top: 0.25rem; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.5rem;" placeholder="Valor sugerido, puedes cambiarlo">
@@ -165,6 +203,15 @@
             const minutesInputWrapper = document.getElementById('minutes-input-wrapper');
             const minutesInput = document.getElementById('avg_daily_use_minutes_override');
             const portableBadge = document.getElementById('portable-badge');
+            
+            // Frecuencia de uso
+            const isDailyCheckbox = document.getElementById('is_daily_use');
+            const nonDailyWrapper = document.getElementById('non-daily-frequency');
+            const usageDaysInput = document.getElementById('usage_days_per_week');
+            const minutesPerSessionInput = document.getElementById('minutes_per_session');
+            const derivedDailyBox = document.getElementById('derived-daily-minutes');
+            const derivedDailyValue = document.getElementById('derived-daily-value');
+            const weekdayCheckboxes = document.querySelectorAll('input[name="usage_weekdays[]"]');
 
             let allTypes = {};
 
@@ -288,6 +335,51 @@
                     }, 100);
                 }
             }
+        });
+    </script>
+                    }, 100);
+                }
+            }
+
+            // ========== FRECUENCIA DE USO ==========
+            function updateFrequencyVisibility() {
+                if (isDailyCheckbox.checked) {
+                    nonDailyWrapper.style.display = 'none';
+                } else {
+                    nonDailyWrapper.style.display = 'flex';
+                }
+                computeDerivedDaily();
+            }
+
+            function computeDerivedDaily() {
+                if (isDailyCheckbox.checked) {
+                    derivedDailyBox.style.display = 'none';
+                    return;
+                }
+                let days = usageDaysInput.value ? parseInt(usageDaysInput.value, 10) : 0;
+                // Si hay weekdays marcados, priorizar count
+                let weekdayCount = 0;
+                weekdayCheckboxes.forEach(cb => { if (cb.checked) weekdayCount++; });
+                if (weekdayCount > 0) {
+                    days = weekdayCount;
+                    usageDaysInput.value = days; // sincronizar contador
+                }
+                let sessionMin = minutesPerSessionInput.value ? parseInt(minutesPerSessionInput.value, 10) : 0;
+                if (days > 0 && sessionMin > 0) {
+                    const derived = Math.round((days * sessionMin) / 7);
+                    derivedDailyValue.textContent = derived;
+                    derivedDailyBox.style.display = 'block';
+                } else {
+                    derivedDailyBox.style.display = 'none';
+                }
+            }
+
+            isDailyCheckbox.addEventListener('change', updateFrequencyVisibility);
+            usageDaysInput.addEventListener('input', computeDerivedDaily);
+            minutesPerSessionInput.addEventListener('input', computeDerivedDaily);
+            weekdayCheckboxes.forEach(cb => cb.addEventListener('change', computeDerivedDaily));
+
+            updateFrequencyVisibility();
         });
     </script>
 </x-app-layout>

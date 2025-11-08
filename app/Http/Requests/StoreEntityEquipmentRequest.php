@@ -25,6 +25,27 @@ class StoreEntityEquipmentRequest extends FormRequest
                 'avg_daily_use_minutes_override' => $this->avg_daily_use_hours_override * 60,
             ]);
         }
+
+        // Normalizar frecuencia
+        $isDaily = $this->boolean('is_daily_use');
+        $this->merge(['is_daily_use' => $isDaily]);
+        
+        if ($isDaily) {
+            $this->merge([
+                'usage_days_per_week' => 7,
+                'usage_weekdays' => [1,2,3,4,5,6,7],
+            ]);
+        } else {
+            if (is_array($this->usage_weekdays) && !empty($this->usage_weekdays)) {
+                $this->merge([
+                    'usage_days_per_week' => count($this->usage_weekdays)
+                ]);
+            }
+            if ($this->has('minutes_per_session') && $this->minutes_per_session !== null && $this->usage_days_per_week) {
+                $derived = (int)$this->minutes_per_session * (int)$this->usage_days_per_week / 7;
+                $this->merge(['avg_daily_use_minutes_override' => (int)round($derived)]);
+            }
+        }
         
         // Si el checkbox no vino en el request, aplicamos el default por categoría (si existe)
         $equipmentType = EquipmentType::with('equipmentCategory')->find($this->input('equipment_type_id'));
@@ -34,6 +55,7 @@ class StoreEntityEquipmentRequest extends FormRequest
         $this->merge([
             // Si el usuario lo envió, usamos su valor booleano; si no, usamos el default por categoría
             'has_standby_mode' => $incomingHasStandby ? $this->boolean('has_standby_mode') : $supportsStandbyByCategory,
+            'minutes_per_session' => $this->minutes_per_session ?? null,
         ]);
     }
 
@@ -54,6 +76,12 @@ class StoreEntityEquipmentRequest extends FormRequest
             'avg_daily_use_minutes_override' => ['nullable', 'integer', 'min:0', 'max:1440'],
 
             'has_standby_mode' => ['nullable', 'boolean'],
+            // Frecuencia
+            'is_daily_use' => ['nullable', 'boolean'],
+            'usage_days_per_week' => ['nullable', 'integer', 'min:0', 'max:7'],
+            'usage_weekdays' => ['nullable', 'array'],
+            'usage_weekdays.*' => ['integer', 'min:1', 'max:7'],
+            'minutes_per_session' => ['nullable', 'integer', 'min:0', 'max:1440'],
             'activated_at' => ['nullable', 'date', 'before_or_equal:today'],
         ];
     }

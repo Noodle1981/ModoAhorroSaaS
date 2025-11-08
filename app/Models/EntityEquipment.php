@@ -17,7 +17,10 @@ class EntityEquipment extends Model
         'power_watts_override', 'avg_daily_use_minutes_override',
         'replaced_by_equipment_id', 'is_backup_for_id', 'location',
         'has_standby_mode', 'activated_at', 'replaced_at', 'replaced_by_id',
-        'power_last_changed_at', 'usage_last_changed_at'
+        'power_last_changed_at', 'usage_last_changed_at',
+        // Frecuencia de uso
+        'is_daily_use', 'usage_days_per_week', 'usage_weekdays', 'minutes_per_session',
+        'optimization_profile'
     ];
 
     protected $casts = [
@@ -26,6 +29,9 @@ class EntityEquipment extends Model
         'power_last_changed_at' => 'datetime',
         'usage_last_changed_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'is_daily_use' => 'boolean',
+        'usage_weekdays' => 'array',
+        'optimization_profile' => 'array',
     ];
 
     /**

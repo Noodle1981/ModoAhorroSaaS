@@ -91,6 +91,30 @@ class InventoryAnalysisService
             // --- CÁLCULO ACTIVO ---
             $powerWatts = $equipment->power_watts_override ?? $equipment->equipmentType->default_power_watts ?? 0;
             $avgDailyUseMinutes = $equipment->avg_daily_use_minutes_override ?? $equipment->equipmentType->default_avg_daily_use_minutes ?? 0;
+
+            // Derivar minutos diarios según frecuencia (si existen campos nuevos)
+            if (isset($equipment->is_daily_use) || isset($equipment->usage_days_per_week)) {
+                if ($equipment->is_daily_use) {
+                    // Si es diario y existe minutes_per_session, usar eso; sino el avg existente
+                    if (!empty($equipment->minutes_per_session)) {
+                        $avgDailyUseMinutes = $equipment->minutes_per_session;
+                    }
+                } else {
+                    $days = (int)($equipment->usage_days_per_week ?? 0);
+                    if ($days > 0) {
+                        if (!empty($equipment->minutes_per_session)) {
+                            // Derivar promedio diario: (días * minutos_sesión) / 7
+                            $avgDailyUseMinutes = (int)round(($equipment->minutes_per_session * $days) / 7);
+                        } else {
+                            // Si no hay minutes_per_session pero sí avg_daily ya lo usa, mantenerlo
+                            // (el usuario quizás lo ajustó manualmente sin setear el patrón)
+                        }
+                    } else {
+                        // Sin días declarados => 0 consumo activo
+                        $avgDailyUseMinutes = 0;
+                    }
+                }
+            }
             
             $consumoNominalKW = $powerWatts / 1000;
             $horasDeUsoDiario = $avgDailyUseMinutes / 60;

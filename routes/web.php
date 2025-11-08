@@ -94,6 +94,9 @@ Route::middleware(['auth'])->group(function () {
 
     // --- ANÁLISIS E INTELIGENCIA ---
     Route::get('/recommendations', [RecommendationController::class, 'index'])->name('recommendations.index');
+    // Optimización de Horarios (nuevo módulo)
+    Route::get('/schedule-optimization', [\App\Http\Controllers\ScheduleOptimizationController::class, 'index'])->name('schedule-optimization.index');
+    Route::post('/schedule-optimization/apply', [\App\Http\Controllers\ScheduleOptimizationController::class, 'apply'])->name('schedule-optimization.apply');
     Route::get('/entities/{entity}/report/improvements', [ReportController::class, 'improvements'])->name('entities.reports.improvements');
     Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
     Route::post('/maintenance', [MaintenanceController::class, 'store'])->name('maintenance.store');

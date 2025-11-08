@@ -55,9 +55,16 @@ class EntityEquipmentObserver
             $equipment->power_last_changed_at = now();
         }
 
-        // Cambio de uso diario
-        if ($equipment->isDirty('avg_daily_use_minutes_override')) {
-            $criticalChanges[] = 'usage_changed';
+        // Cambio de frecuencia / uso
+        $frequencyFields = [
+            'avg_daily_use_minutes_override', 'is_daily_use', 'usage_days_per_week', 'usage_weekdays', 'minutes_per_session'
+        ];
+        $frequencyDirty = false;
+        foreach ($frequencyFields as $f) {
+            if ($equipment->isDirty($f)) { $frequencyDirty = true; break; }
+        }
+        if ($frequencyDirty) {
+            $criticalChanges[] = 'frequency_changed';
             $equipment->usage_last_changed_at = now();
         }
 
@@ -78,7 +85,7 @@ class EntityEquipmentObserver
     public function updated(EntityEquipment $equipment): void
     {
         // Si hubo cambios críticos, invalidar snapshots
-        if ($equipment->wasChanged(['power_watts_override', 'avg_daily_use_minutes_override', 'equipment_type_id'])) {
+        if ($equipment->wasChanged(['power_watts_override', 'avg_daily_use_minutes_override', 'equipment_type_id', 'is_daily_use', 'usage_days_per_week', 'usage_weekdays', 'minutes_per_session'])) {
             $changeType = $this->determineChangeType($equipment);
             $this->invalidateExistingSnapshots($equipment, $changeType);
         }
@@ -192,8 +199,8 @@ class EntityEquipmentObserver
         if ($equipment->wasChanged('power_watts_override')) {
             return 'power_changed';
         }
-        if ($equipment->wasChanged('avg_daily_use_minutes_override')) {
-            return 'usage_changed';
+        if ($equipment->wasChanged(['avg_daily_use_minutes_override','is_daily_use','usage_days_per_week','usage_weekdays','minutes_per_session'])) {
+            return 'frequency_changed';
         }
         if ($equipment->wasChanged('equipment_type_id')) {
             return 'type_changed';
@@ -209,8 +216,11 @@ class EntityEquipmentObserver
             $parts[] = sprintf('Potencia: %dW → %dW', $before['power_watts_override'] ?? 0, $after['power_watts_override'] ?? 0);
         }
 
-        if (in_array('usage_changed', $changeTypes)) {
-            $parts[] = sprintf('Uso: %d min/día → %d min/día', $before['avg_daily_use_minutes_override'] ?? 0, $after['avg_daily_use_minutes_override'] ?? 0);
+        if (in_array('frequency_changed', $changeTypes)) {
+            $parts[] = sprintf('Frecuencia/Uso: %d min/día → %d min/día', $before['avg_daily_use_minutes_override'] ?? 0, $after['avg_daily_use_minutes_override'] ?? 0);
+            if (($before['usage_days_per_week'] ?? null) !== ($after['usage_days_per_week'] ?? null)) {
+                $parts[] = sprintf('Días/semana: %s → %s', $before['usage_days_per_week'] ?? '-', $after['usage_days_per_week'] ?? '-');
+            }
         }
 
         if (in_array('type_changed', $changeTypes)) {
@@ -226,7 +236,7 @@ class EntityEquipmentObserver
 
         return match ($changeType) {
             'power_changed' => "La potencia de '{$equipmentName}' fue modificada",
-            'usage_changed' => "El tiempo de uso de '{$equipmentName}' fue modificado",
+            'frequency_changed' => "La frecuencia/uso de '{$equipmentName}' fue modificada",
             'type_changed' => "El tipo de '{$equipmentName}' fue cambiado",
             'equipment_added' => "Se agregó el equipo '{$equipmentName}'",
             'equipment_deleted' => "El equipo '{$equipmentName}' fue dado de baja",
@@ -240,7 +250,7 @@ class EntityEquipmentObserver
 
         return match ($changeType) {
             'power_changed' => "⚠️ Cambiaste la potencia de '{$equipmentName}'. Se invalidaron {$affectedCount} períodos históricos. Debes recalcularlos.",
-            'usage_changed' => "⚠️ Modificaste el tiempo de uso de '{$equipmentName}'. Se invalidaron {$affectedCount} períodos históricos. Debes recalcularlos.",
+            'frequency_changed' => "⚠️ Modificaste la frecuencia/uso de '{$equipmentName}'. Se invalidaron {$affectedCount} períodos históricos. Debes recalcularlos.",
             'type_changed' => "⚠️ Cambiaste el tipo de '{$equipmentName}'. Se invalidaron {$affectedCount} períodos históricos. Debes recalcularlos.",
             'equipment_added' => "✅ Agregaste '{$equipmentName}'. Hay {$affectedCount} períodos históricos que debes recalcular para incluir este equipo.",
             'equipment_deleted' => "❌ Diste de baja '{$equipmentName}'. Hay {$affectedCount} períodos históricos que debes recalcular.",

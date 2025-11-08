@@ -164,7 +164,13 @@ class SampleHouseCasaSeeder extends Seeder
                 ['name' => 'Heladera con Freezer (Cíclica)', 'minutes' => 1440, 'qty' => 1],
             ],
             'Lavadero' => [
-                ['name' => 'Lavarropas Automático 8kg', 'minutes' => 120, 'qty' => 1],
+                // Lavarropas: 2 ciclos de ~120 min por semana (NO diario) => promedio diario derivado ~34 min
+                ['name' => 'Lavarropas Automático 8kg', 'minutes' => null, 'qty' => 1, 'frequency' => [
+                    'is_daily_use' => false,
+                    'usage_days_per_week' => 2,
+                    'usage_weekdays' => [3,6], // Miércoles(3), Sábado(6) como ejemplo
+                    'minutes_per_session' => 120, // 2 horas por ciclo
+                ]],
             ],
             'Portátiles' => [
                 // Celulares - carga promedio 1-2 horas por día
@@ -193,7 +199,7 @@ class SampleHouseCasaSeeder extends Seeder
                 $name = $et->name;
                 $isTv = str_contains(strtolower($name), 'tv');
 
-                EntityEquipment::create([
+                $payload = [
                     'entity_id' => $entity->id,
                     'equipment_type_id' => $et->id,
                     'quantity' => $item['qty'] ?? 1,
@@ -203,7 +209,23 @@ class SampleHouseCasaSeeder extends Seeder
                     'location' => $room,
                     // Solo TV en standby por defecto; el resto false
                     'has_standby_mode' => $isTv ? true : false,
-                ]);
+                ];
+
+                // Si el item tiene configuración de frecuencia, agregarla
+                if (isset($item['frequency'])) {
+                    $freq = $item['frequency'];
+                    $payload['is_daily_use'] = $freq['is_daily_use'];
+                    $payload['usage_days_per_week'] = $freq['usage_days_per_week'];
+                    $payload['usage_weekdays'] = $freq['usage_weekdays'];
+                    $payload['minutes_per_session'] = $freq['minutes_per_session'];
+                    // Derivar promedio diario si no se definió explícitamente
+                    if ($payload['avg_daily_use_minutes_override'] === null && !$payload['is_daily_use']) {
+                        $derived = ($payload['minutes_per_session'] * $payload['usage_days_per_week']) / 7;
+                        $payload['avg_daily_use_minutes_override'] = (int)round($derived);
+                    }
+                }
+
+                EntityEquipment::create($payload);
             }
         }
 

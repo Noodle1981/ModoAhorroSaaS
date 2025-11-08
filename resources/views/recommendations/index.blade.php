@@ -88,17 +88,17 @@
                         </p>
                     </a>
 
-                    <!-- Card: Placeholder - Análisis de Horarios -->
-                    <div class="p-6 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-300 rounded-lg opacity-60">
+                    <!-- Card: Optimización de Horarios (ACTIVO) -->
+                    <a href="{{ route('schedule-optimization.index') }}" class="block p-6 bg-gradient-to-br from-gray-50 to-blue-50 border border-blue-200 rounded-lg hover:shadow-lg transition-all hover:scale-105">
                         <div class="flex items-center justify-between mb-4">
-                            <i class="fas fa-clock text-3xl text-gray-400"></i>
-                            <span class="px-2 py-1 text-xs font-semibold bg-gray-300 text-gray-600 rounded-full">Próximamente</span>
+                            <i class="fas fa-clock text-3xl text-blue-600"></i>
+                            <span class="px-2 py-1 text-xs font-semibold bg-blue-200 text-blue-800 rounded-full">Hábitos</span>
                         </div>
-                        <h3 class="text-lg font-bold text-gray-500 mb-2">Optimización de Horarios</h3>
-                        <p class="text-sm text-gray-500">
-                            Recomendaciones para usar equipos en horarios de menor costo energético.
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Optimización de Horarios</h3>
+                        <p class="text-sm text-gray-600">
+                            Descubrí cuándo conviene usar tu lavarropas para reducir consumo y pagar menos (fin de semana y tarifa reducida).
                         </p>
-                    </div>
+                    </a>
 
                     <!-- Card: Análisis de Reemplazo -->
                     <a href="{{ route('replacement-recommendations.index') }}" class="block p-6 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg hover:shadow-lg transition-all hover:scale-105">

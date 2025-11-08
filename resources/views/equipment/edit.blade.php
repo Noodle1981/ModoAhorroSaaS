@@ -118,27 +118,68 @@
                         </div>
                     </div>
 
-                    <!-- Minutos de uso (DESHABILITADO) -->
+                    <!-- Minutos de uso (AUTO-CALCULADO) -->
                     <div>
                         <label for="avg_daily_use_minutes_override" class="block text-sm font-semibold text-gray-700 mb-2">
                             <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">7</span>
                             Minutos/día
-                            <span class="ml-2 text-xs font-normal text-gray-500">(solo ajustable en snapshots por período)</span>
+                            <span class="ml-2 text-xs font-normal text-gray-500">(se calcula automáticamente según frecuencia)</span>
                         </label>
                             <div class="relative">
-                                <input type="number" id="avg_daily_use_minutes_override" name="avg_daily_use_minutes_override" 
+                                <input type="hidden" id="avg_daily_use_minutes_override" name="avg_daily_use_minutes_override" 
+                                       value="{{ old('avg_daily_use_minutes_override', $equipment->avg_daily_use_minutes_override ?? $equipment->equipmentType->default_avg_daily_use_minutes) }}">
+                                <input type="number" id="avg_daily_use_minutes_display" 
                                        min="0" max="1440" 
                                        value="{{ old('avg_daily_use_minutes_override', $equipment->avg_daily_use_minutes_override ?? $equipment->equipmentType->default_avg_daily_use_minutes) }}"
-                                       disabled
-                                       title="El tiempo de uso solo se puede ajustar en los snapshots de cada período para mantener la precisión histórica"
+                                       readonly
+                                       title="Este valor se calcula automáticamente según la frecuencia de uso configurada"
                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed">
                                 <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">min</span>
-                                <i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                                <i class="fas fa-calculator absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
                             </div>
                             <p class="mt-1 text-xs text-gray-500">
                                 <i class="fas fa-info-circle mr-1"></i>
-                                El tiempo de uso se ajusta por período en las facturas para mantener el histórico preciso.
+                                Se calcula automáticamente según la frecuencia de uso configurada abajo.
                             </p>
+
+                        <!-- Frecuencia de Uso -->
+                        <fieldset class="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <legend class="text-sm font-semibold text-gray-700 px-2">Frecuencia de Uso</legend>
+                            <label class="flex items-center gap-2 text-sm mt-2">
+                                <input type="hidden" name="is_daily_use" value="0">
+                                <input type="checkbox" name="is_daily_use" id="is_daily_use" value="1" {{ old('is_daily_use', $equipment->is_daily_use ?? true) ? 'checked' : '' }} class="rounded border-gray-300">
+                                <span>✅ Uso diario (todos los días)</span>
+                            </label>
+                            <div id="non-daily-frequency" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4" style="display:none;">
+                                <div>
+                                    <label for="usage_days_per_week" class="block text-xs font-medium text-gray-600 mb-1">Días por semana</label>
+                                    <input type="number" name="usage_days_per_week" id="usage_days_per_week" min="0" max="7" value="{{ old('usage_days_per_week', $equipment->usage_days_per_week) }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                                </div>
+                                <div>
+                                    <label for="minutes_per_session" class="block text-xs font-medium text-gray-600 mb-1">Minutos por sesión/ciclo</label>
+                                    <input type="number" name="minutes_per_session" id="minutes_per_session" min="0" max="1440" value="{{ old('minutes_per_session', $equipment->minutes_per_session) }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Ej: 120" />
+                                    <small class="text-[10px] text-gray-500 block mt-1">Duración de un ciclo (ej: lavado completo)</small>
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <span class="block text-xs font-semibold text-gray-600 mb-1">Días específicos:</span>
+                                    <div class="flex flex-wrap gap-2">
+                                        @php($weekMap = [1=>'Lun',2=>'Mar',3=>'Mié',4=>'Jue',5=>'Vie',6=>'Sáb',7=>'Dom'])
+                                        @foreach ($weekMap as $dNum => $dLabel)
+                                            <label class="flex items-center gap-1 text-xs px-2 py-1 border border-gray-300 rounded cursor-pointer hover:bg-blue-50">
+                                                <input type="checkbox" name="usage_weekdays[]" value="{{ $dNum }}" 
+                                                    {{ in_array($dNum, old('usage_weekdays', $equipment->usage_weekdays ?? [])) ? 'checked' : '' }}
+                                                    class="rounded border-gray-300 weekday-checkbox" />
+                                                <span>{{ $dLabel }}</span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                    <p class="mt-1 text-[10px] text-gray-500">💡 Si seleccionas días, recalcularemos días/semana automáticamente.</p>
+                                </div>
+                                <div id="derived-daily-minutes" class="sm:col-span-2 text-[11px] text-green-700 font-medium bg-green-50 px-3 py-2 rounded" style="display:none;">
+                                    📊 Promedio diario derivado: <strong><span id="derived-daily-value">0</span> min/día</strong>
+                                </div>
+                            </div>
+                        </fieldset>
                         </div>
                     </div>
 
@@ -239,6 +280,57 @@
             });
 
             typeSelect.addEventListener('change', toggleLocation);
+
+            // Frecuencia
+            const isDailyCheckbox = document.getElementById('is_daily_use');
+            const nonDailyWrapper = document.getElementById('non-daily-frequency');
+            const usageDaysInput = document.getElementById('usage_days_per_week');
+            const minutesPerSessionInput = document.getElementById('minutes_per_session');
+            const weekdayCheckboxes = document.querySelectorAll('.weekday-checkbox');
+            const derivedDailyBox = document.getElementById('derived-daily-minutes');
+            const derivedDailyValue = document.getElementById('derived-daily-value');
+            const avgDailyHidden = document.getElementById('avg_daily_use_minutes_override');
+            const avgDailyDisplay = document.getElementById('avg_daily_use_minutes_display');
+            
+            function updateFrequencyVisibility(){
+                if(isDailyCheckbox.checked){
+                    nonDailyWrapper.style.display='none';
+                }else{
+                    nonDailyWrapper.style.display='';
+                }
+                computeDerivedDaily();
+            }
+            
+            function computeDerivedDaily(){
+                if(isDailyCheckbox.checked){
+                    derivedDailyBox.style.display='none';
+                    return;
+                }
+                let days=usageDaysInput.value?parseInt(usageDaysInput.value,10):0;
+                let weekdayCount=0;
+                weekdayCheckboxes.forEach(cb=>{if(cb.checked)weekdayCount++;});
+                if(weekdayCount>0){
+                    days=weekdayCount;
+                    usageDaysInput.value=days;
+                }
+                let sessionMin=minutesPerSessionInput.value?parseInt(minutesPerSessionInput.value,10):0;
+                if(days>0&&sessionMin>0){
+                    const derived=Math.round((days*sessionMin)/7);
+                    derivedDailyValue.textContent=derived;
+                    derivedDailyBox.style.display='';
+                    // Sincronizar con campo hidden y display
+                    avgDailyHidden.value=derived;
+                    avgDailyDisplay.value=derived;
+                }else{
+                    derivedDailyBox.style.display='none';
+                }
+            }
+            
+            isDailyCheckbox.addEventListener('change',updateFrequencyVisibility);
+            usageDaysInput&&usageDaysInput.addEventListener('input',computeDerivedDaily);
+            minutesPerSessionInput&&minutesPerSessionInput.addEventListener('input',computeDerivedDaily);
+            weekdayCheckboxes.forEach(cb=>cb.addEventListener('change',computeDerivedDaily));
+            updateFrequencyVisibility();
         });
     </script>
 </x-app-layout>
