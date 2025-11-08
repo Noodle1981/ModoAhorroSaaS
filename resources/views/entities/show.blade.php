@@ -47,14 +47,16 @@
                 ->where('status', 'pending')
                 ->count();
             
-            $invalidatedSnapshots = \App\Models\EquipmentUsageSnapshot::whereIn('status', ['invalidated', 'draft'])
+            // Solo contar snapshots INVALIDADOS (no draft)
+            // Si nunca se confirmó nada, no mostrar banner
+            $invalidatedSnapshots = \App\Models\EquipmentUsageSnapshot::where('status', 'invalidated')
                 ->whereHas('equipment', function($q) use ($entity) {
                     $q->where('entity_id', $entity->id);
                 })
                 ->count();
         @endphp
 
-        @if($pendingAlerts > 0 || $invalidatedSnapshots > 0)
+        @if($pendingAlerts > 0 && $invalidatedSnapshots > 0)
             <div class="bg-gradient-to-r from-orange-50 to-yellow-50 border-l-4 border-orange-400 rounded-lg shadow-md p-4 animate-pulse">
                 <div class="flex items-start">
                     <div class="flex-shrink-0">

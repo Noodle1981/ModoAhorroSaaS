@@ -34,8 +34,8 @@ class SnapshotController extends Controller
             ->get()
             ->groupBy('snapshot_date');
 
-        // Historial de recálculos recientes
-        $recentRecalculations = EquipmentUsageSnapshot::where('status', 'recalculated')
+        // Historial de recálculos recientes (snapshots con al menos 1 recálculo)
+        $recentRecalculations = EquipmentUsageSnapshot::where('recalculation_count', '>', 0)
             ->whereHas('equipment', function($q) use ($entity) {
                 $q->where('entity_id', $entity->id);
             })
@@ -78,7 +78,7 @@ class SnapshotController extends Controller
             'avg_daily_use_minutes' => $usage,
             'calculated_daily_kwh' => round($dailyKwh, 4),
             'calculated_period_kwh' => round($periodKwh, 4),
-            'status' => 'recalculated',
+            'status' => 'confirmed', // Confirmar automáticamente tras recalcular
             'recalculation_count' => $snapshot->recalculation_count + 1,
             'invalidated_at' => null,
             'invalidation_reason' => null,
@@ -138,7 +138,7 @@ class SnapshotController extends Controller
                 'avg_daily_use_minutes' => $usage,
                 'calculated_daily_kwh' => round($dailyKwh, 4),
                 'calculated_period_kwh' => round($periodKwh, 4),
-                'status' => 'recalculated',
+                'status' => 'confirmed', // Confirmar automáticamente tras recalcular
                 'recalculation_count' => $snapshot->recalculation_count + 1,
                 'invalidated_at' => null,
                 'invalidation_reason' => null,
@@ -195,7 +195,7 @@ class SnapshotController extends Controller
                 'avg_daily_use_minutes' => $usage,
                 'calculated_daily_kwh' => round($dailyKwh, 4),
                 'calculated_period_kwh' => round($periodKwh, 4),
-                'status' => 'recalculated',
+                'status' => 'confirmed', // Confirmar automáticamente tras recalcular
                 'recalculation_count' => $snapshot->recalculation_count + 1,
                 'invalidated_at' => null,
                 'invalidation_reason' => null,

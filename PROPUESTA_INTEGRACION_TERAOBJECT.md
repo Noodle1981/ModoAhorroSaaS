@@ -1082,7 +1082,7 @@ Todas las decisiones tomadas basadas en los casos extremos identificados:
      - Sistema usa valores ACTUALES del equipo
      - Calcula días proporcionales si `activated_at` está a mitad de período
      - Incrementa `recalculation_count`
-     - Cambia estado a `recalculated`
+     - Cambia estado a `confirmed` (automáticamente confirma el ajuste)
      - Marca alertas como `resolved`
 
 5. **Usuario quiere eliminar equipo**:

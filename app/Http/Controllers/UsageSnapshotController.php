@@ -72,7 +72,7 @@ class UsageSnapshotController extends Controller
         // Validamos los datos
         $request->validate([
             'equipments' => 'required|array',
-            'equipments.*.entity_equipment_id' => 'required|exists:entity_equipments,id',
+            'equipments.*.entity_equipment_id' => 'required|exists:entity_equipment,id',
             'equipments.*.avg_daily_use_minutes' => 'required|numeric|min:0|max:1440',
             'equipments.*.has_standby_mode' => 'nullable|boolean',
         ]);
