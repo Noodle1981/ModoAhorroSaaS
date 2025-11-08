@@ -38,7 +38,7 @@
                                 </p>
                                 <div class="mt-2 flex flex-wrap gap-2">
                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        <i class="fas fa-exclamation mr-1"></i> {{ $task->name ?? $task->task_name }} VENCIDA
+                                        <i class="fas fa-exclamation mr-1"></i> {{ $task->name }} VENCIDA
                                     </span>
                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                                         <i class="fas fa-clock mr-1"></i> Último: {{ $item['lastLog'] ? $item['lastLog']->performed_on_date->format('d/m/Y') : 'Nunca' }}
@@ -87,7 +87,7 @@
                                 </p>
                                 <div class="mt-2 flex flex-wrap gap-2">
                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        <i class="fas fa-wrench mr-1"></i> {{ $task->name ?? $task->task_name }}
+                                        <i class="fas fa-wrench mr-1"></i> {{ $task->name }}
                                     </span>
                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                                         <i class="fas fa-clock mr-1"></i> Último: {{ $item['lastLog'] ? $item['lastLog']->performed_on_date->format('d/m/Y') : 'Nunca' }}
@@ -133,7 +133,7 @@
                             {{ $equipment->custom_name ?? $equipment->equipmentType->name }}
                         </h4>
                         <p class="text-xs text-gray-500 mb-2">{{ $equipment->entity->name }}</p>
-                        <p class="text-sm text-gray-700"><i class="fas fa-wrench mr-1 text-gray-400"></i>{{ $task->name ?? $task->task_name }}</p>
+                        <p class="text-sm text-gray-700"><i class="fas fa-wrench mr-1 text-gray-400"></i>{{ $task->name }}</p>
                         <p class="text-xs text-gray-500 mt-1">Vence: {{ $item['dueDate']->format('d/m/Y') }} ({{ $item['daysLeft'] }} días)</p>
                         <button onclick="openMaintenanceModal({{ $equipment->id }}, {{ $task->id }})" class="mt-3 text-xs inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded">
                             <i class="fas fa-check mr-1"></i> Registrar ahora
@@ -180,7 +180,7 @@
                                     </td>
                                     <td class="px-4 py-3 text-sm text-gray-600 hidden md:table-cell">
                                         <i class="fas fa-wrench text-blue-500 mr-1"></i>
-                                        {{ $log->maintenanceTask->task_name }}
+                                        {{ $log->maintenanceTask->name }}
                                     </td>
                                     <td class="px-4 py-3 text-sm text-gray-600 hidden lg:table-cell">
                                         <span class="line-clamp-2">{{ $log->notes ?? 'Sin notas' }}</span>
@@ -238,7 +238,7 @@
                                     <div class="flex items-center justify-between text-sm">
                                         <span class="text-gray-700">
                                             <i class="fas fa-wrench text-blue-500 mr-1 text-xs"></i>
-                                            {{ $task->task_name }}
+                                            {{ $task->name }}
                                         </span>
                                         <button 
                                             onclick="openMaintenanceModal({{ $equipment->id }}, {{ $task->id }})"

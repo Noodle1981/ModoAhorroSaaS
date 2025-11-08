@@ -30,7 +30,7 @@ class DatabaseSeeder extends Seeder
             
             // --- Catálogos Opcionales pero Útiles ---
             MarketEquipmentCatalogTableSeeder::class, // Para que el sistema pueda hacer recomendaciones de reemplazo.
-            MaintenanceTasksTableSeeder::class,     // Para que el sistema pueda sugerir mantenimientos.
+            DefaultMaintenanceTasksSeeder::class,     // Para que el sistema pueda sugerir mantenimientos.
             RecommendationsTableSeeder::class,      // Catálogo de textos de recomendaciones.
             CarbonIntensityFactorsTableSeeder::class, // Para el cálculo de huella de carbono.
             AppSettingsSeeder::class,               // Configuraciones globales.

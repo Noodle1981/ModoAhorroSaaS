@@ -4,31 +4,66 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Models\Company;
 use App\Models\Entity;
 use App\Models\Locality;
 use App\Models\EquipmentType;
 use App\Models\EntityEquipment;
+use App\Models\User;
+use App\Models\Plan;
+use App\Models\Subscription;
 
 class SampleHouseCasaSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1) Resolver compañía y localidad
-        $company = Company::first();
-        if (!$company) {
-            $this->command->warn('No existe Company. Ejecuta CompaniesTableSeeder primero.');
-            return;
+        // 1) Crear/obtener compañía de prueba
+        $company = Company::updateOrCreate(
+            ['tax_id' => '30-12345678-9'],
+            [
+                'name' => 'Casa Demo - Familia Pérez',
+                'address' => 'Carlos Gardel Casa 27 B° Enoe Bravo',
+                'phone' => '264-123-4567',
+            ]
+        );
+
+        // 1b) Crear usuario de prueba asociado a esta compañía
+        $user = User::updateOrCreate(
+            ['email' => 'demo@modoahorro.com'],
+            [
+                'company_id' => $company->id,
+                'name' => 'Usuario Demo',
+                'password' => Hash::make('password'),
+                'role' => 'admin',
+            ]
+        );
+
+        // 1c) Asignar plan si no tiene
+        if (!$company->subscription) {
+            $plan = Plan::where('name', 'Gratuito')->first();
+            if ($plan) {
+                Subscription::create([
+                    'company_id' => $company->id,
+                    'plan_id' => $plan->id,
+                    'status' => 'active',
+                    'starts_at' => now(),
+                ]);
+            }
         }
 
+        $this->command->info("✅ Usuario demo creado: demo@modoahorro.com / password");
+        $this->command->info("✅ Usuario demo creado: demo@modoahorro.com / password");
+
+        // 2) Resolver localidad
         $locality = Locality::where('name', 'Santa Lucía')->first();
         if (!$locality) {
             $this->command->warn('No existe la Localidad "Santa Lucía". Ejecuta LocalitiesTableSeeder primero.');
             return;
         }
 
-        // 2) Crear/actualizar la Entidad
+        // 3) Crear/actualizar la Entidad
         $details = [
             'rooms' => array_map(function ($idx, $name) {
                 return ['id' => $idx + 1, 'name' => $name];
@@ -55,7 +90,7 @@ class SampleHouseCasaSeeder extends Seeder
             ]
         );
 
-        // 3) Helper para obtener o crear tipos
+        // 4) Helper para obtener o crear tipos
         $type = function (string $name, int $categoryId = 8, int $power = null, int $minutes = null) {
             $et = EquipmentType::where('name', $name)->first();
             if ($et) return $et;
