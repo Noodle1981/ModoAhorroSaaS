@@ -241,51 +241,43 @@
             <h3 class="text-lg font-bold text-gray-800 mb-4">
                 <i class="fas fa-list-check mr-2 text-purple-500"></i> Todos los Equipos y Tareas Aplicables
             </h3>
-
-            @if($userEquipments->count() > 0)
+            {{-- BLOQUE SIMPLIFICADO PARA EVITAR ERROR DE SINTAXIS --}}
+            @if($userEquipments->count() === 0)
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-plug text-6xl text-gray-300 mb-3"></i>
+                    <p>No tienes equipos registrados.</p>
+                    <a href="{{ route('dashboard') }}" class="text-blue-600 hover:text-blue-700 font-semibold text-sm mt-2 inline-block">Ir al Dashboard para agregar equipos</a>
+                </div>
+            @else
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     @foreach($userEquipments as $equipment)
-                        @php
-                            $tasksForEquipment = $applicableTasks->where('equipment_type_id', $equipment->equipment_type_id);
-                        @endphp
+                        @php($tasksForEquipment = $applicableTasks->where('equipment_type_id', $equipment->equipment_type_id))
                         @if($tasksForEquipment->count() > 0)
-                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                            <h4 class="font-semibold text-gray-900 mb-2">
-                                <i class="fas fa-bolt text-orange-500 mr-2"></i>
-                                {{ $equipment->custom_name ?? $equipment->equipmentType->name }}
-                            </h4>
-                            <p class="text-xs text-gray-500 mb-3">
-                                {{ $equipment->entity->name }}
-                                @if($equipment->location)
-                                    - {{ $equipment->location }}
-                                @endif
-                            </p>
-                            <div class="space-y-2">
+                            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                                <h4 class="font-semibold text-gray-900 mb-2">
+                                    <i class="fas fa-bolt text-orange-500 mr-2"></i>
+                                    {{ $equipment->custom_name ?? $equipment->equipmentType->name }}
+                                </h4>
+                                <p class="text-xs text-gray-500 mb-3">
+                                    {{ $equipment->entity->name }}
+                                    @if(!empty($equipment->location) && $equipment->location !== 'Sin ubicación')
+                                        - {{ $equipment->location }}
+                                    @endif
+                                </p>
                                 @foreach($tasksForEquipment as $task)
-                                    <div class="flex items-center justify-between text-sm">
-                                        <span class="text-gray-700">
-                                            <i class="fas fa-wrench text-blue-500 mr-1 text-xs"></i>
+                                    <div class="flex items-center justify-between text-sm py-1 border-b last:border-b-0">
+                                        <span class="text-gray-700 flex items-center gap-1">
+                                            <i class="fas fa-wrench text-blue-500 text-xs"></i>
                                             {{ $task->name }}
                                         </span>
-                                        <button 
-                                            onclick="openMaintenanceModal({{ $equipment->id }}, {{ $task->id }})"
-                                            class="text-green-600 hover:text-green-700 font-medium text-xs">
+                                        <button onclick="openMaintenanceModal({{ $equipment->id }}, {{ $task->id }})" class="text-green-600 hover:text-green-700 font-medium text-xs">
                                             <i class="fas fa-plus"></i>
                                         </button>
                                     </div>
                                 @endforeach
                             </div>
-                        </div>
                         @endif
                     @endforeach
-                </div>
-            @else
-                <div class="text-center py-8 text-gray-500">
-                    <i class="fas fa-plug text-6xl text-gray-300 mb-3"></i>
-                    <p>No tienes equipos registrados.</p>
-                    <a href="{{ route('dashboard') }}" class="text-blue-600 hover:text-blue-700 font-semibold text-sm mt-2 inline-block">
-                        Ir al Dashboard para agregar equipos
-                    </a>
                 </div>
             @endif
         </div>
