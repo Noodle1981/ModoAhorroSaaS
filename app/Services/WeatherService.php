@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\DailyWeatherLog;
 use App\Models\Locality;
+use App\Models\Entity;
+use App\Models\ClimateSnapshot;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -177,5 +179,134 @@ class WeatherService
             'heating_degree_days' => round($stats->total_hdd, 1),
             'days_count' => $stats->days_count,
         ];
+    }
+
+    /**
+     * Crea o actualiza un ClimateSnapshot para un período de factura
+     * 
+     * @param Entity $entity
+     * @param Carbon $periodStart
+     * @param Carbon $periodEnd
+     * @return ClimateSnapshot
+     */
+    public function createClimateSnapshot(Entity $entity, Carbon $periodStart, Carbon $periodEnd): ClimateSnapshot
+    {
+        $locality = $entity->locality;
+        
+        if (!$locality) {
+            throw new \Exception("Entity {$entity->name} no tiene localidad asignada.");
+        }
+
+        // Intentar obtener datos de DailyWeatherLog
+        $weatherStats = $this->getAverageTemperatureForPeriod(
+            $locality,
+            $periodStart->format('Y-m-d'),
+            $periodEnd->format('Y-m-d')
+        );
+
+        // Si no hay datos, usar estimación
+        if (!$weatherStats) {
+            Log::warning("No hay datos climáticos para {$locality->name} en período {$periodStart} - {$periodEnd}, usando estimación");
+            $weatherStats = $this->estimateWeatherForPeriod($periodStart, $periodEnd);
+        }
+
+        // Calcular días de calor/frío
+        $totalDays = $periodStart->diffInDays($periodEnd) + 1;
+        $daysAbove30 = DailyWeatherLog::where('locality_id', $locality->id)
+            ->whereBetween('date', [$periodStart, $periodEnd])
+            ->where('max_temp_celsius', '>', 30)
+            ->count();
+            
+        $daysBelow15 = DailyWeatherLog::where('locality_id', $locality->id)
+            ->whereBetween('date', [$periodStart, $periodEnd])
+            ->where('min_temp_celsius', '<', 15)
+            ->count();
+
+        // Categorizar clima
+        $category = $this->categorizeClimate($weatherStats['avg_temp']);
+
+        return ClimateSnapshot::updateOrCreate(
+            [
+                'entity_id' => $entity->id,
+                'period_start' => $periodStart,
+                'period_end' => $periodEnd,
+            ],
+            [
+                'avg_temperature_c' => $weatherStats['avg_temp'],
+                'min_temperature_c' => $weatherStats['min_temp'],
+                'max_temperature_c' => $weatherStats['max_temp'],
+                'days_above_30c' => $daysAbove30,
+                'days_below_15c' => $daysBelow15,
+                'total_cooling_degree_days' => $weatherStats['cooling_degree_days'],
+                'total_heating_degree_days' => $weatherStats['heating_degree_days'],
+                'avg_humidity_percent' => rand(30, 60), // TODO: Agregar humedad a DailyWeatherLog
+                'climate_category' => $category,
+                'data_source' => $weatherStats ? 'api' : 'estimated',
+            ]
+        );
+    }
+
+    /**
+     * Estima datos climáticos cuando no hay registros reales
+     * Basado en promedios históricos de San Juan
+     */
+    private function estimateWeatherForPeriod(Carbon $periodStart, Carbon $periodEnd): array
+    {
+        $month = $periodStart->month;
+        
+        // Temperaturas típicas de San Juan por mes
+        $tempRanges = [
+            1 => ['avg' => 28, 'min' => 20, 'max' => 36],
+            2 => ['avg' => 27, 'min' => 19, 'max' => 35],
+            3 => ['avg' => 24, 'min' => 16, 'max' => 32],
+            4 => ['avg' => 19, 'min' => 11, 'max' => 27],
+            5 => ['avg' => 14, 'min' => 7, 'max' => 21],
+            6 => ['avg' => 11, 'min' => 4, 'max' => 18],
+            7 => ['avg' => 10, 'min' => 3, 'max' => 17],
+            8 => ['avg' => 13, 'min' => 5, 'max' => 21],
+            9 => ['avg' => 17, 'min' => 9, 'max' => 25],
+            10 => ['avg' => 21, 'min' => 13, 'max' => 29],
+            11 => ['avg' => 25, 'min' => 17, 'max' => 33],
+            12 => ['avg' => 27, 'min' => 19, 'max' => 35],
+        ];
+
+        $temps = $tempRanges[$month];
+        $totalDays = $periodStart->diffInDays($periodEnd) + 1;
+
+        return [
+            'avg_temp' => $temps['avg'],
+            'min_temp' => $temps['min'],
+            'max_temp' => $temps['max'],
+            'cooling_degree_days' => max(0, ($temps['avg'] - 24) * $totalDays),
+            'heating_degree_days' => max(0, (18 - $temps['avg']) * $totalDays),
+        ];
+    }
+
+    /**
+     * Categoriza el clima según temperatura promedio
+     */
+    private function categorizeClimate(float $avgTemp): string
+    {
+        return match(true) {
+            $avgTemp > 30 => 'muy_caluroso',
+            $avgTemp > 25 => 'caluroso',
+            $avgTemp > 18 => 'templado',
+            $avgTemp > 12 => 'fresco',
+            default => 'frio',
+        };
+    }
+
+    /**
+     * Busca períodos con clima similar
+     */
+    public function findSimilarPeriods(ClimateSnapshot $snapshot, int $limit = 5): \Illuminate\Support\Collection
+    {
+        return ClimateSnapshot::where('entity_id', $snapshot->entity_id)
+            ->where('id', '!=', $snapshot->id)
+            ->similarClimate($snapshot->avg_temperature_c, 3)
+            ->with('invoices')
+            ->orderBy('period_start', 'desc')
+            ->limit($limit)
+            ->get();
     }
 }

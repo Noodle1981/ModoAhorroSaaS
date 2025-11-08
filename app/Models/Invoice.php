@@ -10,7 +10,7 @@ class Invoice extends Model
     use HasFactory;
 
     protected $fillable = [
-        'contract_id', 'invoice_number', 'invoice_date', 'start_date', 'end_date',
+        'contract_id', 'climate_snapshot_id', 'invoice_number', 'invoice_date', 'start_date', 'end_date',
         'energy_consumed_p1_kwh', 'energy_consumed_p2_kwh', 'energy_consumed_p3_kwh', 'total_energy_consumed_kwh',
         'cost_for_energy', 'cost_for_power', 'taxes', 'other_charges', 'total_amount',
         'total_energy_injected_kwh', 'surplus_compensation_amount',
@@ -26,5 +26,10 @@ class Invoice extends Model
     public function contract()
     {
         return $this->belongsTo(Contract::class);
+    }
+
+    public function climateSnapshot()
+    {
+        return $this->belongsTo(ClimateSnapshot::class);
     }
 }
