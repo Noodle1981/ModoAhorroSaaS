@@ -24,4 +24,9 @@ class SolarInstallation extends Model
     {
         return $this->belongsTo(Entity::class);
     }
+
+    public function solarProductionReadings()
+    {
+        return $this->hasMany(SolarProductionReading::class);
+    }
 }
