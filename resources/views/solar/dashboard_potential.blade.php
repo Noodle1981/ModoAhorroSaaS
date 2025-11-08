@@ -88,7 +88,7 @@
                                     <i class="fas fa-bolt text-blue-600"></i>
                                 </div>
                                 <p class="text-2xl font-bold text-blue-900">
-                                    {{ number_format($analysis['installable_kwp'], 2) }} kWp
+                                    {{ number_format($analysis['total_kwp'], 2) }} kWp
                                 </p>
                                 @if(isset($analysis['roof_kwp']) && isset($analysis['ground_kwp']) && $analysis['roof_kwp'] > 0 && $analysis['ground_kwp'] > 0)
                                     <p class="text-xs text-blue-600 mt-1">
@@ -185,7 +185,7 @@
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                             <div class="text-center p-3 bg-gray-50 rounded-lg">
                                 <p class="text-xs text-gray-600 mb-1">Potencia</p>
-                                <p class="text-lg font-bold text-gray-900">{{ number_format($analysis['installable_kwp'], 2) }} kWp</p>
+                                <p class="text-lg font-bold text-gray-900">{{ number_format($analysis['total_kwp'], 2) }} kWp</p>
                             </div>
                             <div class="text-center p-3 bg-gray-50 rounded-lg">
                                 <p class="text-xs text-gray-600 mb-1">Generación Verano</p>

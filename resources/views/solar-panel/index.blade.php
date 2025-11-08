@@ -107,7 +107,7 @@
                                 <div class="text-center py-8">
                                     <i class="fas fa-compress-alt text-orange-300 text-5xl mb-4"></i>
                                     <p class="text-gray-600 mb-2">
-                                        El espacio disponible ({{ number_format($analysis['usable_area_m2'], 1) }} m²) es insuficiente para una instalación solar estándar.
+                                        El espacio disponible ({{ number_format($analysis['total_usable_m2'], 1) }} m²) es insuficiente para una instalación solar estándar.
                                     </p>
                                     <p class="text-sm text-gray-500">
                                         Se recomienda al menos 10 m² de área útil para una instalación viable.
@@ -124,7 +124,7 @@
                                             <i class="fas fa-ruler-combined text-blue-600"></i>
                                         </div>
                                         <p class="text-2xl font-bold text-blue-900">
-                                            {{ number_format($analysis['usable_area_m2'], 1) }} m²
+                                            {{ number_format($analysis['total_usable_m2'], 1) }} m²
                                         </p>
                                         @if(isset($analysis['roof_usable_m2']) && isset($analysis['ground_usable_m2']))
                                             <p class="text-xs text-blue-600 mt-1">
@@ -152,7 +152,7 @@
                                             <i class="fas fa-bolt text-green-600"></i>
                                         </div>
                                         <p class="text-2xl font-bold text-green-900">
-                                            {{ number_format($analysis['installable_kwp'], 2) }} kWp
+                                            {{ number_format($analysis['total_kwp'], 2) }} kWp
                                         </p>
                                         @if(isset($analysis['roof_kwp']) && isset($analysis['ground_kwp']) && $analysis['roof_kwp'] > 0 && $analysis['ground_kwp'] > 0)
                                             <p class="text-xs text-green-600 mt-1">
@@ -203,6 +203,26 @@
                                     </div>
 
                                 </div>
+
+                                <!-- Estimación base por m² (MVP) -->
+                                @if(($analysis['simple_paneles'] ?? 0) > 0)
+                                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 rounded">
+                                    <div class="flex items-start">
+                                        <i class="fas fa-calculator text-yellow-600 text-xl mr-3 mt-1"></i>
+                                        <div>
+                                            <h5 class="font-semibold text-yellow-900 mb-1">Estimación base por m²</h5>
+                                            <p class="text-sm text-yellow-800 mb-2">
+                                                Con una regla simple (60% de área útil y paneles de 500Wp ~2.2 m²), estimamos una potencia de
+                                                <strong>{{ number_format($analysis['simple_potencia_kwp'], 2) }} kWp</strong> usando aproximadamente
+                                                <strong>{{ $analysis['simple_paneles'] }} paneles</strong> en <strong>{{ number_format($analysis['simple_area_util_m2'], 1) }} m² útiles</strong>.
+                                            </p>
+                                            <p class="text-xs text-yellow-700">
+                                                Es una aproximación inicial. El presupuesto final puede variar según orientación, sombras y estructura.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endif
 
                                 <!-- VARIACIÓN ESTACIONAL -->
                                 <div class="bg-gradient-to-r from-orange-50 to-blue-50 rounded-lg p-4 mb-6">

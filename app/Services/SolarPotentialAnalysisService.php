@@ -7,6 +7,10 @@ use Illuminate\Support\Collection;
 
 class SolarPotentialAnalysisService
 {
+    // Estimación simple por m² (MVP)
+    public const FACTOR_DE_AREA_UTIL = 0.60; // 60% área realmente utilizable
+    public const POTENCIA_PANEL_PROMEDIO_WP = 500; // 500 Wp por panel
+    public const AREA_PANEL_PROMEDIO_M2 = 2.2; // 2.2 m² por panel
     /**
      * Radiación solar promedio por provincia en Argentina (kWh/m²/día)
      * Fuente: Atlas Solar Argentino - Secretaría de Energía
@@ -83,6 +87,11 @@ class SolarPotentialAnalysisService
             'roof_kwp' => 0,
             'ground_kwp' => 0,
             'total_kwp' => 0,
+            // Estimación simple por m² (MVP)
+            'simple_area_util_m2' => 0,
+            'simple_paneles_decimal' => 0.0,
+            'simple_paneles' => 0,
+            'simple_potencia_kwp' => 0.0,
             'solar_radiation' => null,
             'generation_summer_kwh_month' => 0,
             'generation_winter_kwh_month' => 0,
@@ -125,6 +134,16 @@ class SolarPotentialAnalysisService
         // 3. Totales
         $result['total_usable_m2'] = $result['roof_usable_m2'] + $result['ground_usable_m2'];
         $result['total_kwp'] = $result['roof_kwp'] + $result['ground_kwp'];
+
+        // Estimación simple basada en área total declarada (sin considerar orientación detallada)
+        $totalDeclaredArea = max(0.0, (float)($entity->roof_area_m2 ?? 0) + (float)($entity->ground_area_m2 ?? 0));
+        if ($totalDeclaredArea > 0) {
+            $simple = $this->estimateSimplePotential($totalDeclaredArea);
+            $result['simple_area_util_m2'] = $simple['area_util_m2'];
+            $result['simple_paneles_decimal'] = $simple['paneles_posibles_decimal'];
+            $result['simple_paneles'] = $simple['paneles_instalables'];
+            $result['simple_potencia_kwp'] = $simple['potencia_total_kwp'];
+        }
 
         if ($result['total_usable_m2'] < 10) {
             $result['recommendation'] = 'insufficient_space';
@@ -509,7 +528,7 @@ class SolarPotentialAnalysisService
             return 'need_roof_data';
         }
 
-        if ($analysis['usable_area_m2'] < 10) {
+        if (($analysis['total_usable_m2'] ?? 0) < 10) {
             return 'insufficient_space';
         }
 
@@ -526,5 +545,25 @@ class SolarPotentialAnalysisService
         }
 
         return 'partial_coverage';
+    }
+
+    /**
+     * Estimación base de potencial solar por m² declarados (MVP)
+     * Devuelve: área útil, paneles posibles (decimal), paneles instalables (entero), potencia total kWp
+     */
+    public function estimateSimplePotential(float $metrosCuadradosTotales): array
+    {
+        $areaUtil = $metrosCuadradosTotales * self::FACTOR_DE_AREA_UTIL;
+        $panelesDec = $areaUtil / self::AREA_PANEL_PROMEDIO_M2;
+        $panelesInstalables = (int) floor($panelesDec);
+        $potenciaWp = $panelesInstalables * self::POTENCIA_PANEL_PROMEDIO_WP;
+        $potenciaKwp = round($potenciaWp / 1000, 2);
+
+        return [
+            'area_util_m2' => round($areaUtil, 1),
+            'paneles_posibles_decimal' => round($panelesDec, 2),
+            'paneles_instalables' => $panelesInstalables,
+            'potencia_total_kwp' => $potenciaKwp,
+        ];
     }
 }
