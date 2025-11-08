@@ -331,14 +331,14 @@
 
             <!-- Acciones -->
             <div class="flex justify-between">
-                <a href="{{ route('solar-panel.index') }}" 
+                <a href="{{ route('solar.index') }}" 
                    class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition">
                     <i class="fas fa-arrow-left mr-2"></i>
                     Volver al Análisis
                 </a>
 
                 <div class="space-x-3">
-                    <a href="{{ route('solar-panel.configure', $entity) }}" 
+                    <a href="{{ route('solar.configure', $entity) }}" 
                        class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                         <i class="fas fa-cog mr-2"></i>
                         Ajustar Configuración

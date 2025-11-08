@@ -86,6 +86,12 @@ class SmartAlert extends Model
             'climate_alert' => 'fa-cloud-sun',
             'cost_spike' => 'fa-dollar-sign',
             'baseline_deviation' => 'fa-chart-line',
+            'standby_pending' => 'fa-plug',
+            'standby_recommendation_available' => 'fa-lightbulb',
+            'standby_new_equipment' => 'fa-plug-circle-plus',
+            'usage_pending' => 'fa-calendar-check',
+            'usage_recommendation_available' => 'fa-calendar-plus',
+            'usage_new_equipment' => 'fa-calendar-day',
             default => 'fa-bell',
         };
     }

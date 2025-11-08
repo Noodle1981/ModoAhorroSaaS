@@ -27,7 +27,7 @@
                         {{ $recentAlerts->count() }}
                     </span>
                 </h3>
-                <a href="#" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                <a href="{{ route('alerts.index') }}" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
                     Ver todas →
                 </a>
             </div>
@@ -42,6 +42,31 @@
                             <span class="text-xs text-gray-400">{{ $alert->entity->name }}</span>
                             <span class="text-xs text-gray-400">{{ $alert->created_at->diffForHumans() }}</span>
                         </div>
+                        @if($alert->type === 'standby_pending')
+                            <a href="{{ route('standby.index') }}" class="mt-2 inline-block px-3 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700">
+                                <i class="fas fa-plug mr-1"></i> Configurar Standby
+                            </a>
+                        @elseif($alert->type === 'standby_recommendation_available')
+                            <a href="{{ route('standby.index') }}#recomendaciones" class="mt-2 inline-block px-3 py-1 text-xs rounded bg-yellow-600 text-white hover:bg-yellow-700">
+                                <i class="fas fa-lightbulb mr-1"></i> Ver Recomendaciones Standby
+                            </a>
+                        @elseif($alert->type === 'standby_new_equipment')
+                            <a href="{{ route('standby.index') }}#gestionar-equipos" class="mt-2 inline-block px-3 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">
+                                <i class="fas fa-plug-circle-plus mr-1"></i> Revisar Nuevo Equipo
+                            </a>
+                        @elseif($alert->type === 'usage_pending')
+                            <a href="{{ route('usage.index') }}" class="mt-2 inline-block px-3 py-1 text-xs rounded bg-purple-600 text-white hover:bg-purple-700">
+                                <i class="fas fa-calendar-check mr-1"></i> Configurar Uso
+                            </a>
+                        @elseif($alert->type === 'usage_recommendation_available')
+                            <a href="{{ route('usage.index') }}#recs" class="mt-2 inline-block px-3 py-1 text-xs rounded bg-purple-500 text-white hover:bg-purple-600">
+                                <i class="fas fa-calendar-plus mr-1"></i> Ver Recomendaciones Uso
+                            </a>
+                        @elseif($alert->type === 'usage_new_equipment')
+                            <a href="{{ route('usage.index') }}" class="mt-2 inline-block px-3 py-1 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700">
+                                <i class="fas fa-calendar-day mr-1"></i> Definir Uso Equipo
+                            </a>
+                        @endif
                     </div>
                 </div>
                 @endforeach

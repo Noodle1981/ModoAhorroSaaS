@@ -154,7 +154,7 @@
                             Analiza el potencial de instalación solar en tus otras propiedades
                         </p>
                     </div>
-                    <a href="{{ route('solar-panel.index') }}" 
+                    <a href="{{ route('solar.index') }}" 
                        class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-md">
                         <i class="fas fa-search mr-2"></i>
                         Analizar Potencial

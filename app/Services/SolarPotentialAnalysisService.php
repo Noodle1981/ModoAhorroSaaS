@@ -418,12 +418,14 @@ class SolarPotentialAnalysisService
     protected function getAnnualConsumption(Entity $entity): float
     {
         // Desde facturas reales
-        $invoices = $entity->invoices()
-            ->where('period_start', '>=', now()->subYear())
-            ->get();
+        $lastInvoice = $entity->invoices()
+            ->orderByDesc('period_start')
+            ->first();
 
-        if ($invoices->isNotEmpty()) {
-            return $invoices->sum('consumption_kwh');
+        if ($lastInvoice) {
+            // Si hay una factura, usar consumo mensual y estimar anual
+            $monthlyKwh = $lastInvoice->consumption_kwh;
+            return round($monthlyKwh * 12, 0);
         }
 
         // Desde inventario de equipos
@@ -516,6 +518,15 @@ class SolarPotentialAnalysisService
      */
     protected function getAveragePricePerKwh(Entity $entity): float
     {
+        $lastInvoice = $entity->invoices()
+            ->orderByDesc('period_start')
+            ->first();
+
+        if ($lastInvoice && $lastInvoice->consumption_kwh > 0) {
+            return $lastInvoice->total_amount / $lastInvoice->consumption_kwh;
+        }
+
+        // Si no hay factura, usar promedio de los últimos 6 meses
         $recentInvoices = $entity->invoices()
             ->where('period_start', '>=', now()->subMonths(6))
             ->get();

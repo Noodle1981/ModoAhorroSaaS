@@ -39,6 +39,40 @@ class EntityEquipmentObserver
 
         // Si hay snapshots confirmados, invalidarlos
         $this->invalidateExistingSnapshots($equipment, 'equipment_added');
+
+        // Generar alerta para confirmar standby del nuevo equipo si la configuración ya fue confirmada previamente
+        $confirmedAt = session('standby_confirmed_at');
+        if ($confirmedAt) {
+            \App\Models\SmartAlert::create([
+                'entity_id' => $equipment->entity_id,
+                'invoice_id' => null,
+                'type' => 'standby_new_equipment',
+                'severity' => 'info',
+                'title' => 'Nuevo equipo agregado',
+                'description' => sprintf('Revisá si "%s" debe tener standby activo y actualizá tus recomendaciones.', $equipment->custom_name ?? $equipment->equipmentType->name),
+                'data' => [
+                    'entity_equipment_id' => $equipment->id,
+                    'category' => $equipment->equipmentType?->equipmentCategory?->name,
+                ],
+            ]);
+        }
+
+        // Generar alerta para frecuencia de uso si ya fue confirmada previamente
+        $usageConfirmedAt = session('usage_confirmed_at');
+        if ($usageConfirmedAt) {
+            \App\Models\SmartAlert::create([
+                'entity_id' => $equipment->entity_id,
+                'invoice_id' => null,
+                'type' => 'usage_new_equipment',
+                'severity' => 'info',
+                'title' => 'Nuevo equipo: definí su uso',
+                'description' => sprintf('Indicá cuántos días por semana usás "%s" para mejorar la precisión.', $equipment->custom_name ?? $equipment->equipmentType->name),
+                'data' => [
+                    'entity_equipment_id' => $equipment->id,
+                    'category' => $equipment->equipmentType?->equipmentCategory?->name,
+                ],
+            ]);
+        }
     }
 
     /**

@@ -32,4 +32,12 @@ class Invoice extends Model
     {
         return $this->belongsTo(ClimateSnapshot::class);
     }
+
+    /**
+     * Snapshots de uso de equipos asociados a esta factura.
+     */
+    public function equipmentUsageSnapshots()
+    {
+        return $this->hasMany(EquipmentUsageSnapshot::class);
+    }
 }

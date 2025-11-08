@@ -68,6 +68,31 @@
                             <p class="text-sm text-gray-700 mt-1">{{ $alert->description }}</p>
                             <p class="text-xs text-gray-500 mt-1">{{ $alert->entity?->name ?? 'Sin entidad' }}</p>
                             <div class="mt-3 flex items-center gap-2">
+                                @if($alert->type === 'standby_pending')
+                                    <a href="{{ route('standby.index') }}" class="px-3 py-1.5 text-xs rounded bg-green-600 text-white hover:bg-green-700">
+                                        <i class="fas fa-plug mr-1"></i> Ir a Standby
+                                    </a>
+                                @elseif($alert->type === 'standby_recommendation_available')
+                                    <a href="{{ route('standby.index') }}#recomendaciones" class="px-3 py-1.5 text-xs rounded bg-yellow-600 text-white hover:bg-yellow-700">
+                                        <i class="fas fa-lightbulb mr-1"></i> Ver recomendaciones
+                                    </a>
+                                @elseif($alert->type === 'standby_new_equipment')
+                                    <a href="{{ route('standby.index') }}#gestionar-equipos" class="px-3 py-1.5 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">
+                                        <i class="fas fa-plug mr-1"></i> Revisar equipo nuevo
+                                    </a>
+                                @elseif($alert->type === 'usage_pending')
+                                    <a href="{{ route('usage.index') }}" class="px-3 py-1.5 text-xs rounded bg-purple-600 text-white hover:bg-purple-700">
+                                        <i class="fas fa-calendar-check mr-1"></i> Configurar uso
+                                    </a>
+                                @elseif($alert->type === 'usage_recommendation_available')
+                                    <a href="{{ route('usage.index') }}#recs" class="px-3 py-1.5 text-xs rounded bg-purple-500 text-white hover:bg-purple-600">
+                                        <i class="fas fa-calendar-plus mr-1"></i> Ver recomendaciones uso
+                                    </a>
+                                @elseif($alert->type === 'usage_new_equipment')
+                                    <a href="{{ route('usage.index') }}" class="px-3 py-1.5 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700">
+                                        <i class="fas fa-calendar-day mr-1"></i> Definir uso equipo
+                                    </a>
+                                @endif
                                 @if(!$alert->is_read)
                                     <form method="POST" action="{{ route('alerts.read', $alert) }}">
                                         @csrf

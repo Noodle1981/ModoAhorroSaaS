@@ -121,6 +121,13 @@ class EquipmentTypesTableSeeder extends Seeder
                 ['name' => 'PlayStation 4', 'is_portable' => true, 'power' => 150, 'minutes' => 180, 'standby' => 4],
                 ['name' => 'Xbox Series X', 'is_portable' => true, 'power' => 180, 'minutes' => 180, 'standby' => 5],
                 ['name' => 'Nintendo Switch', 'is_portable' => true, 'power' => 40, 'minutes' => 120, 'standby' => 1],
+                
+                // Informática (movido desde categoría 8 - Otros)
+                ['name' => 'PC de Escritorio (Oficina)', 'is_portable' => false, 'power' => 150, 'minutes' => 480, 'standby' => 3],
+                ['name' => 'PC de Escritorio (Gaming)', 'is_portable' => false, 'power' => 400, 'minutes' => 300, 'standby' => 5],
+                ['name' => 'PC All-in-One', 'is_portable' => false, 'power' => 100, 'minutes' => 480, 'standby' => 2],
+                ['name' => 'Monitor LED 24"', 'is_portable' => false, 'power' => 25, 'minutes' => 480, 'standby' => 0.5],
+                ['name' => 'Monitor LED 27"', 'is_portable' => false, 'power' => 35, 'minutes' => 480, 'standby' => 0.5],
             ],
             
             // ========== ILUMINACIÓN (category_id 6) ==========
@@ -138,14 +145,9 @@ class EquipmentTypesTableSeeder extends Seeder
             
             // ========== OTROS (category_id 8) ==========
             8 => [
-                // Informática
-                ['name' => 'PC de Escritorio (Oficina)', 'is_portable' => false, 'power' => 150, 'minutes' => 480, 'standby' => 3],
-                ['name' => 'PC de Escritorio (Gaming)', 'is_portable' => false, 'power' => 400, 'minutes' => 300, 'standby' => 5],
-                ['name' => 'PC All-in-One', 'is_portable' => false, 'power' => 100, 'minutes' => 480, 'standby' => 2],
+                // Informática de red (Router, módem quedan aquí)
                 ['name' => 'Notebook 14"', 'is_portable' => true, 'power' => 45, 'minutes' => 360, 'standby' => 1],
                 ['name' => 'Notebook 15" (Gaming)', 'is_portable' => true, 'power' => 180, 'minutes' => 240, 'standby' => 2],
-                ['name' => 'Monitor LED 24"', 'is_portable' => false, 'power' => 25, 'minutes' => 480, 'standby' => 0.5],
-                ['name' => 'Monitor LED 27"', 'is_portable' => false, 'power' => 35, 'minutes' => 480, 'standby' => 0.5],
                 ['name' => 'Impresora Láser', 'is_portable' => false, 'power' => 400, 'minutes' => 15, 'standby' => 5],
                 ['name' => 'Impresora de Inyección', 'is_portable' => false, 'power' => 15, 'minutes' => 10, 'standby' => 2],
                 ['name' => 'Impresora Multifunción', 'is_portable' => false, 'power' => 30, 'minutes' => 15, 'standby' => 3],

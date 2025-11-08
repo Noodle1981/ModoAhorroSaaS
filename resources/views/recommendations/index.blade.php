@@ -17,15 +17,73 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                     <!-- Card: Gestión de Standby -->
+                    @php $standbyConfirmed = session('standby_confirmed_at'); @endphp
                     <a href="{{ route('standby.index') }}" class="block p-6 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg hover:shadow-lg transition-all hover:scale-105">
                         <div class="flex items-center justify-between mb-4">
                             <i class="fas fa-power-off text-3xl text-purple-600"></i>
-                            <span class="px-2 py-1 text-xs font-semibold bg-purple-200 text-purple-800 rounded-full">Consumo Fantasma</span>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-1 text-xs font-semibold bg-purple-200 text-purple-800 rounded-full">Consumo Fantasma</span>
+                                @if($standbyConfirmed)
+                                    <span class="px-2 py-1 text-[10px] font-semibold bg-green-100 text-green-700 rounded-full" title="Confirmado el {{ \Carbon\Carbon::parse($standbyConfirmed)->format('d/m/Y H:i') }}">
+                                        <i class="fas fa-lock mr-1"></i> Confirmado
+                                    </span>
+                                @else
+                                    <span class="px-2 py-1 text-[10px] font-semibold bg-yellow-100 text-yellow-700 rounded-full" title="Pendiente de confirmación">
+                                        <i class="fas fa-exclamation mr-1"></i> Pendiente
+                                    </span>
+                                @endif
+                            </div>
                         </div>
                         <h3 class="text-lg font-bold text-gray-800 mb-2">Gestión de Standby</h3>
                         <p class="text-sm text-gray-600">
                             Controla qué equipos calculan consumo en modo de espera. Reduce el consumo fantasma.
                         </p>
+                        @if(!$standbyConfirmed)
+                            <p class="mt-2 text-[11px] text-yellow-700 flex items-center gap-1">
+                                <i class="fas fa-info-circle"></i>
+                                Confirmá tu configuración antes de aplicar recomendaciones masivas.
+                            </p>
+                        @else
+                            <p class="mt-2 text-[11px] text-green-700 flex items-center gap-1">
+                                <i class="fas fa-check-circle"></i>
+                                Configuración confirmada: podés revisar y aplicar recomendaciones.
+                            </p>
+                        @endif
+                    </a>
+
+                    <!-- Card: Gestión de Uso (Días/Semana) -->
+                    @php $usageConfirmed = session('usage_confirmed_at'); @endphp
+                    <a href="{{ route('usage.index') }}" class="block p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 border border-indigo-200 rounded-lg hover:shadow-lg transition-all hover:scale-105">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fas fa-calendar-week text-3xl text-indigo-600"></i>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-1 text-xs font-semibold bg-indigo-200 text-indigo-800 rounded-full">Frecuencia de Uso</span>
+                                @if($usageConfirmed)
+                                    <span class="px-2 py-1 text-[10px] font-semibold bg-green-100 text-green-700 rounded-full" title="Confirmado el {{ \Carbon\Carbon::parse($usageConfirmed)->format('d/m/Y H:i') }}">
+                                        <i class="fas fa-lock mr-1"></i> Confirmado
+                                    </span>
+                                @else
+                                    <span class="px-2 py-1 text-[10px] font-semibold bg-yellow-100 text-yellow-700 rounded-full" title="Pendiente de confirmación">
+                                        <i class="fas fa-exclamation mr-1"></i> Pendiente
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Gestión de Uso</h3>
+                        <p class="text-sm text-gray-600">
+                            Definí cuántos días por semana usás cada equipo para mejorar la precisión de los cálculos del período.
+                        </p>
+                        @if(!$usageConfirmed)
+                            <p class="mt-2 text-[11px] text-yellow-700 flex items-center gap-1">
+                                <i class="fas fa-info-circle"></i>
+                                Primero confirmá la frecuencia de uso para habilitar ajustes y recomendaciones.
+                            </p>
+                        @else
+                            <p class="mt-2 text-[11px] text-green-700 flex items-center gap-1">
+                                <i class="fas fa-check-circle"></i>
+                                Frecuencia confirmada: los cálculos ya usan días efectivos.
+                            </p>
+                        @endif
                     </a>
 
                     <!-- Card: Mantenimiento Preventivo -->
@@ -61,18 +119,6 @@
                         <h3 class="text-lg font-bold text-gray-800 mb-2">Calefón Solar</h3>
                         <p class="text-sm text-gray-600">
                             Reemplazá tu calefón eléctrico/gas por uno solar y ahorrá hasta 70% en agua caliente.
-                        </p>
-                    </a>
-
-                    <!-- Card: Paneles Solares -->
-                    <a href="{{ route('solar-panel.index') }}" class="block p-6 bg-gradient-to-br from-cyan-50 to-cyan-100 border border-cyan-200 rounded-lg hover:shadow-lg transition-all hover:scale-105">
-                        <div class="flex items-center justify-between mb-4">
-                            <i class="fas fa-solar-panel text-3xl text-cyan-600"></i>
-                            <span class="px-2 py-1 text-xs font-semibold bg-cyan-200 text-cyan-800 rounded-full">Generación</span>
-                        </div>
-                        <h3 class="text-lg font-bold text-gray-800 mb-2">Paneles Solares</h3>
-                        <p class="text-sm text-gray-600">
-                            Calculá el potencial de generación solar en tu techo y conocé la viabilidad.
                         </p>
                     </a>
 

@@ -8,12 +8,63 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
+                <!-- Tarjetas de acciones principales -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Card: Gestionar Equipos con Standby -->
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-lg font-semibold text-gray-800">Gestionar Equipos con Standby</h3>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-200 text-blue-800">Paso 1</span>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-4">Revisa y ajusta qué equipos de tu inventario tienen standby activo.</p>
+                        <a href="#gestionar-equipos" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow text-sm">
+                            <i class="fas fa-cogs mr-2"></i> Ir a gestionar
+                        </a>
+                    </div>
+
+                    <!-- Card: Otras Recomendaciones de Standby -->
+                    <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-6">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-lg font-semibold text-gray-800">Otras Recomendaciones de Standby</h3>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-200 text-yellow-800">Paso 2</span>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-4">Activa standby en todos los equipos salvo los de uso continuo (24h). Esto se reflejará en el último período pendiente de ajuste.</p>
+
+                        @if(!$confirmedAt)
+                            <div class="text-sm text-yellow-800 bg-yellow-200/60 border border-yellow-300 rounded p-2 mb-3">
+                                Primero confirmá tu configuración actual en "Gestionar".
+                            </div>
+                            <button class="px-4 py-2 bg-gray-400 text-white rounded cursor-not-allowed text-sm" disabled>
+                                <i class="fas fa-magic mr-2"></i> Aplicar recomendaciones
+                            </button>
+                        @else
+                            <div id="recomendaciones"></div>
+                            <form method="POST" action="{{ route('standby.apply-recommendations') }}">
+                                @csrf
+                                <button type="submit" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded shadow text-sm">
+                                    <i class="fas fa-magic mr-2"></i> Aplicar recomendaciones
+                                </button>
+                            </form>
+                            <p class="text-xs text-gray-600 mt-2">Confirmado: {{ \Carbon\Carbon::parse($confirmedAt)->format('d/m/Y H:i') }}</p>
+                            @if($lastPendingInvoice)
+                                <p class="text-xs text-gray-600 mt-1">Último período pendiente: {{ $lastPendingInvoice->start_date->format('d/m') }} - {{ $lastPendingInvoice->end_date->format('d/m/Y') }}</p>
+                            @endif
+                            <p class="text-xs text-yellow-700 mt-2">Podés ver recomendaciones detalladas antes de aplicar cambios masivos usando el botón "Ver recomendaciones" arriba.</p>
+                        @endif
+                    </div>
+                </div>
+
             <!-- Mensaje de éxito -->
             @if (session('success'))
                 <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
                     {{ session('success') }}
                 </div>
             @endif
+                @if (session('warning'))
+                    <div class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded relative">
+                        {{ session('warning') }}
+                    </div>
+                @endif
 
             <!-- Sección 1: Categorías de Equipos -->
             <div class="bg-white shadow-sm sm:rounded-lg p-6">
@@ -46,7 +97,7 @@
             </div>
 
             <!-- Sección 2: Tus Equipos -->
-            <div class="bg-white shadow-sm sm:rounded-lg p-6" x-data="standbyManager()">
+            <div id="gestionar-equipos" class="bg-white shadow-sm sm:rounded-lg p-6" x-data="standbyManager()">
                 <h3 class="text-lg font-semibold mb-4">Gestión de Equipos Propios</h3>
                 <p class="text-sm text-gray-600 mb-4">
                     Activa o desactiva el cálculo de standby para tus equipos existentes. Agrupados por categoría.
@@ -141,6 +192,20 @@
                             class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
                             Limpiar Selección
                         </button>
+                    </form>
+
+                    <!-- Confirmación de configuración -->
+                    <form method="POST" action="{{ route('standby.confirm') }}" class="mt-4">
+                        @csrf
+                        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow text-sm">
+                            <i class="fas fa-check mr-2"></i> Confirmar configuración
+                        </button>
+                        @if($confirmedAt)
+                            <span class="ml-3 text-xs text-gray-600">Última confirmación: {{ \Carbon\Carbon::parse($confirmedAt)->diffForHumans() }}</span>
+                            <a href="{{ route('standby.index') }}#recomendaciones" class="ml-4 inline-flex items-center px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs">
+                                <i class="fas fa-lightbulb mr-1"></i> Ver recomendaciones
+                            </a>
+                        @endif
                     </form>
                 @endif
             </div>

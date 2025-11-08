@@ -258,7 +258,7 @@
                 <p class="mb-6 text-blue-100">
                     Con energía solar podrías estar ahorrando <strong>${{ number_format($totalSavingsPotential / 12, 0, ',', '.') }} por mes</strong>
                 </p>
-                <a href="{{ route('solar-panel.index') }}" 
+                <a href="{{ route('solar.index') }}" 
                    class="inline-flex items-center px-8 py-3 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition shadow-lg font-semibold">
                     <i class="fas fa-calculator mr-2"></i>
                     Ver Análisis Completo

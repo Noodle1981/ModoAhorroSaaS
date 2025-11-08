@@ -90,6 +90,78 @@
                         </div>
 
                         <div class="p-6">
+                            <!-- Panel de Recomendaciones de Standby -->
+                            <div x-data="standbyRecs({ invoiceId: {{ $invoice->id }} })" class="mb-8 border border-yellow-300 rounded-lg bg-yellow-50 p-4">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                                        <i class="fas fa-plug text-yellow-600"></i>
+                                        Recomendaciones de Standby
+                                    </h3>
+                                    <template x-if="state === 'ready'">
+                                        <button @click="apply()" class="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded shadow">
+                                            Aplicar Sugerencias
+                                        </button>
+                                    </template>
+                                </div>
+                                <template x-if="state === 'idle'">
+                                    <div class="mt-3">
+                                        <p class="text-sm text-gray-700 mb-3">Podés calcular sugerencias para desactivar standby de equipos con impacto marginal en este período.</p>
+                                        <button @click="fetchRecs()" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded shadow text-sm">
+                                            Calcular Recomendaciones
+                                        </button>
+                                    </div>
+                                </template>
+                                <template x-if="state === 'loading'">
+                                    <div class="mt-3 text-sm text-gray-600 flex items-center gap-2">
+                                        <i class="fas fa-spinner animate-spin"></i> Calculando...
+                                    </div>
+                                </template>
+                                <template x-if="state === 'already'">
+                                    <div class="mt-3 text-sm text-gray-700 bg-green-100 border border-green-300 p-3 rounded">
+                                        Este período ya fue ajustado. No se generan recomendaciones.
+                                    </div>
+                                </template>
+                                <template x-if="state === 'ready'">
+                                    <div class="mt-4 overflow-x-auto">
+                                        <table class="min-w-full text-xs">
+                                            <thead>
+                                                <tr class="bg-yellow-200 text-yellow-900">
+                                                    <th class="px-2 py-1 text-left">Equipo</th>
+                                                    <th class="px-2 py-1">Cat.</th>
+                                                    <th class="px-2 py-1">Standby kWh</th>
+                                                    <th class="px-2 py-1">Activo kWh</th>
+                                                    <th class="px-2 py-1">Actual</th>
+                                                    <th class="px-2 py-1">Sugerido</th>
+                                                    <th class="px-2 py-1">Motivo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <template x-for="row in recs" :key="row.id">
+                                                    <tr :class="row.current_has_standby && !row.suggested_has_standby ? 'bg-red-50' : 'bg-white'" class="border-b">
+                                                        <td class="px-2 py-1" x-text="row.name"></td>
+                                                        <td class="px-2 py-1" x-text="row.category || '-' "></td>
+                                                        <td class="px-2 py-1 text-right" x-text="row.standby_kwh_period.toFixed(3)"></td>
+                                                        <td class="px-2 py-1 text-right" x-text="row.active_kwh_period.toFixed(2)"></td>
+                                                        <td class="px-2 py-1 text-center">
+                                                            <span :class="row.current_has_standby ? 'text-green-700' : 'text-gray-500'" x-text="row.current_has_standby ? 'Sí' : 'No'"></span>
+                                                        </td>
+                                                        <td class="px-2 py-1 text-center">
+                                                            <span :class="row.suggested_has_standby ? 'text-green-700 font-medium' : 'text-red-700 font-semibold'" x-text="row.suggested_has_standby ? 'Sí' : 'No'"></span>
+                                                        </td>
+                                                        <td class="px-2 py-1" x-text="row.reason"></td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                        <p class="text-[11px] text-gray-500 mt-2">Las sugerencias solo modifican los checkboxes antes de guardar este período; no cambian tus equipos globalmente.</p>
+                                    </div>
+                                </template>
+                                <template x-if="state === 'applied'">
+                                    <div class="mt-3 text-sm text-blue-700 bg-blue-100 border border-blue-300 p-3 rounded">
+                                        Sugerencias aplicadas. Revisá y guardá los ajustes del período.
+                                    </div>
+                                </template>
+                            </div>
                             {{-- Tarjetas informativas responsivas --}}
                             <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
                                 {{-- Tarjeta período de facturación --}}
@@ -314,7 +386,7 @@
                                                                 $qty = $item['qty'];
                                                                 $categoryName = $item['category'];
                                                             @endphp
-                                                            <tr class="hover:bg-gray-50 transition"
+                                                            <tr class="hover:bg-gray-50 transition" data-equipment-id="{{ $equipment->id }}"
                                                                 x-show="showEquipment({ name: '{{ addslashes($equipment->custom_name ?? $equipment->equipmentType->name) }}', room: '{{ addslashes($room) }}', category: '{{ addslashes($categoryName) }}', minutes: minutes[{{ $index }}] })"
                                                                 :class="sortByImpact ? '' : ''"
                                                                 :style="sortByImpact ? 'order:' + (-1 * Math.round(itemKwh({ power: {{ $power }}, minutes: minutes[{{ $index }}], qty: {{ $qty }} })*1000)) : ''">
@@ -350,6 +422,15 @@
                                                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                                                             <i class="far fa-clock mr-1"></i>
                                                                             <span x-text="$root.computeUsageType(minutes[{{ $index }}], hasStandby[{{ $index }}])"></span>
+                                                                        </span>
+                                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-700">
+                                                                            <i class="fas fa-calendar-week mr-1"></i>
+                                                                            {{ $item['hasStandby'] ? '' : '' }}
+                                                                            @php
+                                                                                $isDaily = (bool)($equipment->is_daily_use ?? false);
+                                                                                $dpw = $equipment->usage_days_per_week;
+                                                                            @endphp
+                                                                            {{ $isDaily ? 'Uso: diario' : ('Uso: '.($dpw ? $dpw.'/sem' : 's/def.')) }}
                                                                         </span>
                                                                     </div>
                                                                 </td>
@@ -388,13 +469,36 @@
                                                                         <!-- Campo real para backend -->
                                                                         <input type="hidden" name="equipments[{{ $index }}][avg_daily_use_minutes]" :value="minutes[{{ $index }}]">
                                                                         <!-- Checkbox Standby por período -->
-                                                                        <div class="pt-1 flex items-center gap-2">
-                                                                            <input type="checkbox" id="standby_{{ $index }}"
+                                                                        <div class="pt-1 flex flex-col gap-1" x-data>
+                                                                            <input type="checkbox" id="standby_{{ $index }}" data-standby-checkbox
                                                                                    name="equipments[{{ $index }}][has_standby_mode]"
                                                                                    x-model="hasStandby[{{ $index }}]"
                                                                                    :value="1"
-                                                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                                                            <label for="standby_{{ $index }}" class="text-xs text-gray-600">Tiene standby este período</label>
+                                                                                   disabled
+                                                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 opacity-60 cursor-not-allowed">
+                                                                            <label for="standby_{{ $index }}" class="text-xs text-gray-600 flex items-center gap-1">
+                                                                                <span>Standby global</span>
+                                                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 text-[10px] font-medium" title="Se modifica solo en Centro de Gestión de Standby">
+                                                                                    <i class="fas fa-lock mr-1"></i> Solo lectura
+                                                                                </span>
+                                                                            </label>
+                                                                            @php
+                                                                                $isDaily = (bool)($equipment->is_daily_use ?? false);
+                                                                                $dpw = $equipment->usage_days_per_week;
+                                                                                $weekdays = is_array($equipment->usage_weekdays ?? null) ? $equipment->usage_weekdays : [];
+                                                                                $wdMap = [1=>'Lu',2=>'Ma',3=>'Mi',4=>'Ju',5=>'Vi',6=>'Sa',7=>'Do'];
+                                                                                $wdList = collect($weekdays)->map(fn($n) => $wdMap[$n] ?? $n)->implode(', ');
+                                                                                $freqText = $isDaily ? 'Diario (7/7)' : ($dpw ? ($dpw.' días/sem') : ($wdList ? ('Días: '.$wdList) : 'Sin definir'));
+                                                                            @endphp
+                                                                            <div class="text-[11px] text-gray-600 flex items-center gap-1">
+                                                                                <i class="fas fa-calendar-week text-gray-400"></i>
+                                                                                <span class="font-medium">Frecuencia:</span>
+                                                                                <span>{{ $freqText }}</span>
+                                                                                <span class="inline-flex items-center px-1 py-0.5 rounded bg-gray-100 text-gray-500 text-[10px] font-medium ml-1">
+                                                                                    <i class="fas fa-lock mr-1"></i> Solo lectura
+                                                                                </span>
+                                                                                <a href="{{ route('usage.index') }}" class="ml-2 text-[10px] text-blue-700 hover:underline" title="Editar en Gestión de Uso" target="_blank">gestionar uso</a>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </td>
@@ -502,7 +606,8 @@
                                 <div class="ml-3">
                                     <p class="text-sm text-yellow-700">
                                         <strong>Objetivo:</strong> Ajusta las horas para que el total estimado se acerque al consumo real ({{ number_format($invoice->total_energy_consumed_kwh, 2) }} kWh).
-                                        Un buen ajuste está entre 80-110% del consumo real.
+                                        Un buen ajuste está entre 80-110% del consumo real. El estado de <span class="font-semibold">standby</span> es informativo aquí y se gestiona de forma centralizada.
+                                        Para cambiarlo, visitá el <a href="{{ route('standby.index') }}" class="underline font-medium text-yellow-800 hover:text-yellow-900">Centro de Gestión de Standby</a>.
                                     </p>
                                 </div>
                             </div>
@@ -651,6 +756,56 @@
                         return sum + this.itemKwh({ power: it.power, minutes: this.minutes[idx], qty: it.qty });
                     }, 0);
                 },
+            }
+        }
+
+        // Componente para recomendaciones de standby per-invoice
+        function standbyRecs({ invoiceId }) {
+            return {
+                state: 'idle', // idle | loading | ready | applied | already
+                recs: [],
+                fetchRecs() {
+                    this.state = 'loading';
+                    fetch(`/standby/recommendations/${invoiceId}`)
+                        .then(r => r.json())
+                        .then(json => {
+                            if (json.status === 'already_adjusted') {
+                                this.state = 'already';
+                                return;
+                            }
+                            this.recs = json.equipments || [];
+                            this.state = 'ready';
+                        })
+                        .catch(() => {
+                            this.state = 'idle';
+                            alert('Error al obtener recomendaciones de standby');
+                        });
+                },
+                apply() {
+                    // Marca/desmarca checkboxes en función de sugerencias
+                    this.recs.forEach(r => {
+                        const cb = document.querySelector(`input[type=checkbox][name=\"equipments[${r.id}]\"]`);
+                    });
+                    // Los checkboxes reales están dentro del formulario con name equipments[index][has_standby_mode]
+                    // Necesitamos mapear por data-id (agregamos atributo en cada bloque de equipo)
+                    this.recs.forEach(r => {
+                        const wrapper = document.querySelector(`[data-equipment-id='${r.id}']`);
+                        if (!wrapper) return;
+                        const standbyInput = wrapper.querySelector("input[type='checkbox'][data-standby-checkbox]");
+                        if (!standbyInput) return;
+                        // Si la sugerencia dice false y actualmente está marcado → desmarcar
+                        if (!r.suggested_has_standby && standbyInput.checked) {
+                            standbyInput.checked = false;
+                            standbyInput.dispatchEvent(new Event('change'));
+                        }
+                        // Si la sugerencia dice true y no está marcado → marcar
+                        if (r.suggested_has_standby && !standbyInput.checked) {
+                            standbyInput.checked = true;
+                            standbyInput.dispatchEvent(new Event('change'));
+                        }
+                    });
+                    this.state = 'applied';
+                }
             }
         }
     </script>

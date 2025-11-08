@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Entity;
+use App\Models\SolarInstallation;
 use App\Services\SolarPotentialAnalysisService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class SolarPanelController extends Controller
 {
@@ -17,108 +20,100 @@ class SolarPanelController extends Controller
     }
 
     /**
-     * Muestra análisis de potencial solar para todas las entidades
+     * Muestra dashboard de instalaciones solares REALES (usuario CON paneles instalados)
      */
     public function index()
     {
-        $company = auth()->user()->company;
+        $user = auth()->user();
+        $company = $user->company;
 
-        $entities = $company->entities()
-            // Nota: 'invoices' en Entity NO es una relación Eloquent real (retorna Builder),
-            // por lo tanto no se puede eager load con with(). Se consulta dentro del servicio.
-            ->with(['locality.province', 'equipments.equipmentType'])
-            ->get();
+        // Obtener instalaciones reales
+        $installations = SolarInstallation::whereHas('entity', function ($query) use ($user) {
+            $query->where('company_id', $user->company_id);
+        })->with('entity')->get();
 
-        $analyses = [];
-        foreach ($entities as $entity) {
-            $analyses[$entity->id] = $this->solarService->analyzePotential($entity);
+        // Si no tiene instalaciones → redirigir a /solar
+        if ($installations->isEmpty()) {
+            return redirect()->route('solar.dashboard')
+                ->with('info', 'Aún no tienes paneles solares instalados. Podés calcular el potencial de ahorro aquí.');
         }
 
-        return view('solar-panel.index', [
-            'entities' => $entities,
-            'analyses' => $analyses,
-        ]);
+        // Procesar datos de producción
+        $solarData = $installations->map(function ($installation) {
+            $kpis = [
+                'today' => round($installation->solarProductionReadings()->whereDate('reading_timestamp', today())->sum('produced_kwh'), 2),
+                'this_month' => round($installation->solarProductionReadings()->whereYear('reading_timestamp', now()->year)->whereMonth('reading_timestamp', now()->month)->sum('produced_kwh'), 2),
+                'total' => round($installation->solarProductionReadings()->sum('produced_kwh'), 2),
+            ];
+
+            $chartReadings = $installation->solarProductionReadings()
+                ->where('reading_timestamp', '>=', Carbon::now()->subDays(30))
+                ->select(
+                    DB::raw('DATE(reading_timestamp) as date'),
+                    DB::raw('SUM(produced_kwh) as total_kwh')
+                )
+                ->groupBy('date')
+                ->orderBy('date', 'asc')
+                ->get();
+            
+            $chartData = [
+                'labels' => $chartReadings->pluck('date')->map(fn ($date) => Carbon::parse($date)->format('d/m')),
+                'data' => $chartReadings->pluck('total_kwh'),
+            ];
+
+            return (object) [
+                'installation' => $installation,
+                'kpis' => (object) $kpis,
+                'chartData' => (object) $chartData,
+            ];
+        });
+
+        return view('solar-panel.index', compact('solarData'));
     }
 
     /**
-     * Formulario para configurar datos del techo
+     * Formulario para registrar/configurar una instalación real
      */
     public function configure(Entity $entity)
     {
         Gate::authorize('update', $entity);
 
+        $installation = SolarInstallation::where('entity_id', $entity->id)->first();
+
         return view('solar-panel.configure', [
             'entity' => $entity,
+            'installation' => $installation,
         ]);
     }
 
     /**
-     * Guarda configuración del techo y terreno
+     * Guarda o actualiza la configuración de instalación real
      */
     public function storeConfig(Request $request, Entity $entity)
     {
         Gate::authorize('update', $entity);
 
         $validated = $request->validate([
-            // Techo
-            'roof_area_m2' => 'nullable|numeric|min:0|max:10000',
-            'roof_obstacles_percent' => 'nullable|integer|min:0|max:100',
-            'has_shading' => 'boolean',
-            'shading_hours_daily' => 'nullable|integer|min:0|max:12',
-            'shading_source' => 'nullable|string|max:255',
+            'installed_kwp' => 'required|numeric|min:0.1|max:1000',
+            'panel_brand' => 'nullable|string|max:100',
+            'panel_model' => 'nullable|string|max:100',
+            'inverter_brand' => 'nullable|string|max:100',
+            'inverter_model' => 'nullable|string|max:100',
+            'installation_date' => 'nullable|date',
             'roof_orientation' => 'nullable|in:N,S,E,O,NE,NO,SE,SO',
             'roof_slope_degrees' => 'nullable|integer|min:0|max:90',
-            // Terreno
-            'ground_area_m2' => 'nullable|numeric|min:0|max:10000',
-            'ground_location' => 'nullable|in:front,back,side',
-            'ground_has_trees' => 'boolean',
-            'ground_shade_percent' => 'nullable|integer|min:0|max:100',
-            'ground_notes' => 'nullable|string|max:500',
-            // General
-            'solar_panel_interest' => 'boolean',
-            'solar_panel_notes' => 'nullable|string|max:500',
+            'api_url' => 'nullable|url|max:500',
+            'api_token' => 'nullable|string|max:500',
+            'notes' => 'nullable|string|max:1000',
         ]);
 
-        $entity->update($validated);
+        SolarInstallation::updateOrCreate(
+            ['entity_id' => $entity->id],
+            $validated
+        );
 
         return redirect()
             ->route('solar-panel.index')
-            ->with('success', 'Configuración actualizada correctamente.');
-    }
-
-    /**
-     * Vista de simulación de escenarios
-     */
-    public function simulate(Entity $entity)
-    {
-        Gate::authorize('view', $entity);
-
-        if (!$entity->roof_area_m2 && !$entity->ground_area_m2) {
-            return redirect()
-                ->route('solar-panel.configure', $entity)
-                ->with('warning', 'Primero debes configurar los datos de espacio disponible.');
-        }
-
-        // Analizar escenarios: 25%, 50%, 75%, 100% del área disponible
-        $fullAnalysis = $this->solarService->analyzePotential($entity);
-        
-        $scenarios = [];
-        foreach ([0.25, 0.5, 0.75, 1.0] as $factor) {
-            // Crear entidad temporal con áreas reducidas
-            $tempEntity = $entity->replicate();
-            $tempEntity->roof_area_m2 = ($entity->roof_area_m2 ?? 0) * $factor;
-            $tempEntity->ground_area_m2 = ($entity->ground_area_m2 ?? 0) * $factor;
-            
-            $scenarios[] = [
-                'percent' => $factor * 100,
-                'analysis' => $this->solarService->analyzePotential($tempEntity),
-            ];
-        }
-
-        return view('solar-panel.simulate', [
-            'entity' => $entity,
-            'scenarios' => $scenarios,
-            'fullAnalysis' => $fullAnalysis,
-        ]);
+            ->with('success', 'Instalación solar configurada correctamente.');
     }
 }
