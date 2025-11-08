@@ -23,6 +23,17 @@
         </div>
     </x-slot>
 
+    {{-- DEBUG: Descomentar para inspección rápida --}}
+    {{--
+    @php(dd([
+        'user' => Auth::user()?->only(['id','email','company_id']),
+        'equipments_count' => $userEquipments->count(),
+        'tasks_count' => $applicableTasks->count(),
+        'equipment_type_ids' => $userEquipments->pluck('equipment_type_id')->unique()->values(),
+        'task_type_ids' => $applicableTasks->pluck('equipment_type_id')->unique()->values(),
+    ]))
+    --}}
+
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
         {{-- TAREAS VENCIDAS --}}
