@@ -51,10 +51,27 @@
                         </select>
                     </div>
 
+                    <!-- Nombre Personalizado (Opcional) -->
+                    <div>
+                        <label for="custom_name" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">3</span>
+                            Nombre Personalizado
+                            <span class="ml-2 text-xs font-normal text-gray-500">(opcional)</span>
+                        </label>
+                        <input type="text" id="custom_name" name="custom_name" maxlength="100"
+                               value="{{ old('custom_name', $equipment->custom_name) }}"
+                               placeholder="Ej: TV del Salón, Heladera Principal..."
+                               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        <p class="mt-1 text-xs text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Si no lo completas, se usará el nombre del tipo de equipo
+                        </p>
+                    </div>
+
                     <!-- Campo de Ubicación Condicional -->
                     <div id="location-wrapper">
                         <label for="location" class="block text-sm font-semibold text-gray-700 mb-2">
-                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">3</span>
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">4</span>
                             Ubicación
                         </label>
                         <select id="location" name="location" required 
@@ -75,7 +92,7 @@
                         <!-- Potencia -->
                         <div>
                             <label for="power_watts_override" class="block text-sm font-semibold text-gray-700 mb-2">
-                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">4</span>
+                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">5</span>
                                 Potencia (W)
                             </label>
                             <div class="relative">
@@ -86,13 +103,28 @@
                             </div>
                         </div>
 
-                        <!-- Minutos de uso -->
+                        <!-- Cantidad -->
                         <div>
-                            <label for="avg_daily_use_minutes_override" class="block text-sm font-semibold text-gray-700 mb-2">
-                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">5</span>
-                                Minutos/día
-                                <span class="ml-2 text-xs font-normal text-gray-500">(solo ajustable en snapshots por período)</span>
+                            <label for="quantity" class="block text-sm font-semibold text-gray-700 mb-2">
+                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">6</span>
+                                Cantidad
                             </label>
+                            <div class="relative">
+                                <input type="number" id="quantity" name="quantity" min="1" required
+                                       value="{{ old('quantity', $equipment->quantity ?? 1) }}"
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">uds</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Minutos de uso (DESHABILITADO) -->
+                    <div>
+                        <label for="avg_daily_use_minutes_override" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mr-2">7</span>
+                            Minutos/día
+                            <span class="ml-2 text-xs font-normal text-gray-500">(solo ajustable en snapshots por período)</span>
+                        </label>
                             <div class="relative">
                                 <input type="number" id="avg_daily_use_minutes_override" name="avg_daily_use_minutes_override" 
                                        min="0" max="1440" 
@@ -132,7 +164,12 @@
                             <i class="fas fa-save mr-2"></i>
                             Actualizar Equipo
                         </button>
-                        <a href="{{ route('entities.show', $equipment->entity_id) }}" 
+                        <a href="{{ route('entities.equipment.index', $equipment->entity_id) }}" 
+                           class="flex-1 sm:flex-initial px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg text-center transition-all duration-200">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Volver a Equipos
+                        </a>
+                        <a href="{{ route('entities.equipment.index', $equipment->entity_id) }}" 
                            class="flex-1 sm:flex-initial px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg text-center transition-all duration-200">
                             <i class="fas fa-times mr-2"></i>
                             Cancelar

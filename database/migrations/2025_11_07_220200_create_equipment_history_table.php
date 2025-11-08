@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('equipment_history', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('entity_equipment_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('entity_equipment_id')->constrained('entity_equipment')->cascadeOnDelete();
             $table->foreignId('company_id')->constrained()->cascadeOnDelete();
             
             // ¿Qué cambió?

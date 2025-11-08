@@ -301,10 +301,29 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <a href="{{ route('snapshots.create', $analysis->invoice) }}" 
-                                       class="inline-flex items-center justify-center px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 text-sm font-semibold rounded-lg transition whitespace-nowrap">
-                                        <i class="fas fa-sliders-h mr-2"></i> Ajustar
-                                    </a>
+                                    
+                                    {{-- Botón de ajuste con estado dinámico --}}
+                                    @if($analysis->snapshot_status === 'needs_first')
+                                        <a href="{{ route('snapshots.create', $analysis->invoice) }}" 
+                                           class="inline-flex items-center justify-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition whitespace-nowrap shadow-md">
+                                            <i class="fas fa-play-circle mr-2"></i> Primer Ajuste
+                                        </a>
+                                    @elseif($analysis->snapshot_status === 'needs_readjust')
+                                        <a href="{{ route('snapshots.create', $analysis->invoice) }}" 
+                                           class="inline-flex items-center justify-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition whitespace-nowrap shadow-md animate-pulse">
+                                            <i class="fas fa-exclamation-triangle mr-2"></i> Requiere Reajuste
+                                        </a>
+                                    @elseif($analysis->snapshot_status === 'adjusted')
+                                        <a href="{{ route('snapshots.create', $analysis->invoice) }}" 
+                                           class="inline-flex items-center justify-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-lg transition whitespace-nowrap">
+                                            <i class="fas fa-check-circle mr-2"></i> Ajustado
+                                        </a>
+                                    @else
+                                        <a href="{{ route('snapshots.create', $analysis->invoice) }}" 
+                                           class="inline-flex items-center justify-center px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 text-sm font-semibold rounded-lg transition whitespace-nowrap">
+                                            <i class="fas fa-sliders-h mr-2"></i> Ajustar
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
                         @endforeach

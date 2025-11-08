@@ -3,18 +3,25 @@
 @if ($analysis)
     @php
         $percentage = $analysis->percentage_explained ?? 0;
-        if ($percentage > 95) {
-            $status = 'Calibrado';
-            $statusColor = '#28a745'; // Green
+        $snapshotStatus = $analysis->snapshot_status ?? 'needs_first';
+        
+        // Determinar estado visual basado en snapshots
+        if ($snapshotStatus === 'adjusted') {
+            $status = 'Ajustado';
+            $statusColor = '#28a745'; // Verde
             $workflowStep = 3; // Análisis completo
-        } elseif ($percentage > 70) {
-            $status = 'Necesita Ajuste';
-            $statusColor = '#ffc107'; // Yellow
+        } elseif ($snapshotStatus === 'needs_readjust') {
+            $status = 'Requiere Reajuste';
+            $statusColor = '#ff6b6b'; // Rojo
             $workflowStep = 2; // Necesita ajuste
+        } elseif ($snapshotStatus === 'draft') {
+            $status = 'En Borrador';
+            $statusColor = '#ffc107'; // Amarillo
+            $workflowStep = 2; // Necesita confirmación
         } else {
-            $status = 'Desajuste';
-            $statusColor = '#dc3545'; // Red
-            $workflowStep = 2; // Necesita ajuste
+            $status = 'Necesita Ajuste';
+            $statusColor = '#3b82f6'; // Azul
+            $workflowStep = 1; // Primer ajuste
         }
     @endphp
 
@@ -37,11 +44,11 @@
             
             {{-- Paso 2: Ajustar Equipos --}}
             <div style="flex: 1; text-align: center; position: relative; z-index: 1;">
-                <div style="width: 40px; height: 40px; border-radius: 50%; background-color: {{ $workflowStep >= 2 ? ($percentage > 95 ? '#28a745' : '#ffc107') : '#dee2e6' }}; color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 1.5em; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-                    {{ $workflowStep >= 2 ? ($percentage > 95 ? '✓' : '⚠') : '2' }}
+                <div style="width: 40px; height: 40px; border-radius: 50%; background-color: {{ $workflowStep >= 2 ? ($snapshotStatus === 'adjusted' ? '#28a745' : ($snapshotStatus === 'needs_readjust' ? '#ff6b6b' : '#ffc107')) : '#dee2e6' }}; color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 1.5em; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                    {{ $workflowStep >= 2 ? ($snapshotStatus === 'adjusted' ? '✓' : '⚠') : '2' }}
                 </div>
                 <p style="margin: 10px 0 0 0; font-size: 0.85em; font-weight: 500;">
-                    {{ $percentage > 95 ? 'Equipos Ajustados' : 'Ajustar Equipos' }}
+                    {{ $snapshotStatus === 'adjusted' ? 'Equipos Ajustados' : ($snapshotStatus === 'needs_readjust' ? 'Requiere Reajuste' : 'Ajustar Equipos') }}
                 </p>
             </div>
             

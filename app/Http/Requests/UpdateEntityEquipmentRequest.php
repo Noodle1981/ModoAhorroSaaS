@@ -36,17 +36,13 @@ class UpdateEntityEquipmentRequest extends FormRequest
      */
     public function rules(): array
     {
-        // Mismas reglas que para la creación.
         return [
             'equipment_type_id' => ['required', 'exists:equipment_types,id'],
             'quantity' => ['required', 'integer', 'min:1'],
             'custom_name' => ['nullable', 'string', 'max:100'],
             'power_watts_override' => ['nullable', 'integer', 'min:0'],
-            'avg_daily_use_hours_override' => ['nullable', 'numeric', 'min:0', 'max:24'],
-            'avg_daily_use_minutes_override' => ['nullable', 'integer', 'min:0', 'max:1440'],
             'location' => ['nullable', 'string', 'max:100'],
             'has_standby_mode' => ['nullable', 'boolean'],
-
         ];
     }
 }

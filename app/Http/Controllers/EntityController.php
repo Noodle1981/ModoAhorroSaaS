@@ -104,6 +104,23 @@ public function show(Entity $entity, InventoryAnalysisService $analysisService)
             ? ($estimatedConsumption / $invoice->total_energy_consumed_kwh) * 100
             : 0;
 
+        // Determinar estado de snapshots para esta factura
+        $snapshotsForInvoice = \App\Models\EquipmentUsageSnapshot::where('invoice_id', $invoice->id)->get();
+        $snapshotStatus = 'needs_first'; // Por defecto: necesita primer ajuste
+        
+        if ($snapshotsForInvoice->count() > 0) {
+            $hasInvalidated = $snapshotsForInvoice->where('status', 'invalidated')->count() > 0;
+            $allConfirmed = $snapshotsForInvoice->where('status', 'confirmed')->count() === $snapshotsForInvoice->count();
+            
+            if ($hasInvalidated) {
+                $snapshotStatus = 'needs_readjust'; // Requiere reajuste
+            } elseif ($allConfirmed) {
+                $snapshotStatus = 'adjusted'; // Ajustado
+            } else {
+                $snapshotStatus = 'draft'; // Tiene borradores
+            }
+        }
+
         // Preparamos el resumen para este período.
         $periodsAnalysis[] = (object) [
             'invoice' => $invoice, // Pasamos la factura completa para el botón
@@ -112,6 +129,7 @@ public function show(Entity $entity, InventoryAnalysisService $analysisService)
             'estimated_consumption' => $estimatedConsumption,
             'total_amount' => $invoice->total_amount,
             'percentage_explained' => $percentageExplained,
+            'snapshot_status' => $snapshotStatus, // Estado de los snapshots
         ];
     }
 

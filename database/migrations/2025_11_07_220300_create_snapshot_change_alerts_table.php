@@ -14,10 +14,10 @@ return new class extends Migration
             $table->foreignId('company_id')->constrained()->cascadeOnDelete();
             
             // Trigger del cambio
-            $table->foreignId('entity_equipment_id')->nullable()->constrained()->nullOnDelete()
+            $table->foreignId('entity_equipment_id')->nullable()->constrained('entity_equipment')->nullOnDelete()
                 ->comment('Equipo que cambió y causó la invalidación');
             
-            $table->foreignId('equipment_history_id')->nullable()->constrained()->nullOnDelete()
+            $table->foreignId('equipment_history_id')->nullable()->constrained('equipment_history')->nullOnDelete()
                 ->comment('Referencia al cambio específico en equipment_history');
             
             // Detalles de la alerta
