@@ -174,11 +174,18 @@
                             @endif
                         </div>
 
-                        <!-- Botón de acción -->
-                        <div class="mt-4 flex justify-end">
+                        <!-- Botones de acción -->
+                        <div class="mt-4 flex flex-wrap gap-3 justify-end">
                             <a href="{{ route('solar-heater.interest', $entity) }}" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition">
                                 <i class="fas fa-hand-point-up mr-2"></i>Me Interesa / Actualizar Info
                             </a>
+                            <form method="POST" action="{{ route('solar-heater.lead.store') }}">
+                                @csrf
+                                <input type="hidden" name="entity_id" value="{{ $entity->id }}">
+                                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                                    <i class="fas fa-phone mr-2"></i>Solicitar Presupuesto
+                                </button>
+                            </form>
                         </div>
 
                     @else
@@ -191,9 +198,18 @@
                             <p class="text-sm text-gray-500 mb-4">
                                 ¿Tenés un calefón que no registraste? Agregalo en tu inventario o indicanos tu situación actual:
                             </p>
-                            <a href="{{ route('solar-heater.interest', $entity) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                                <i class="fas fa-plus-circle mr-2"></i>Informar mi Calefón Actual
-                            </a>
+                            <div class="flex items-center justify-center gap-3">
+                                <a href="{{ route('solar-heater.interest', $entity) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                                    <i class="fas fa-plus-circle mr-2"></i>Informar mi Calefón Actual
+                                </a>
+                                <form method="POST" action="{{ route('solar-heater.lead.store') }}">
+                                    @csrf
+                                    <input type="hidden" name="entity_id" value="{{ $entity->id }}">
+                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                                        <i class="fas fa-phone mr-2"></i>Solicitar Presupuesto
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     @endif
                 </div>

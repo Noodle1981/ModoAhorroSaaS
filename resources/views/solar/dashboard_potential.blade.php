@@ -226,12 +226,15 @@
                                 Ver Escenarios
                             </a>
 
-                            <button 
-                                onclick="alert('Funcionalidad de contacto en desarrollo')"
-                                class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                                <i class="fas fa-phone mr-2"></i>
-                                Solicitar Presupuesto
-                            </button>
+                            <form method="POST" action="{{ route('solar.lead.store') }}">
+                                @csrf
+                                <input type="hidden" name="entity_id" value="{{ $entity->id }}">
+                                <button type="submit"
+                                    class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                                    <i class="fas fa-phone mr-2"></i>
+                                    Solicitar Presupuesto
+                                </button>
+                            </form>
                         </div>
 
                     </div>

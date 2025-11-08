@@ -117,6 +117,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/solar-panel/{entity}/configure', [SolarPanelController::class, 'configure'])->name('solar-panel.configure');
     Route::post('/solar-panel/{entity}/configure', [SolarPanelController::class, 'storeConfig'])->name('solar-panel.configure.store');
     Route::get('/solar-panel/{entity}/simulate', [SolarPanelController::class, 'simulate'])->name('solar-panel.simulate');
+    // Leads solares (panel y calefón) - MVP solicitud de presupuesto
+    Route::post('/solar/lead', [\App\Http\Controllers\SolarLeadController::class, 'storePanel'])->name('solar.lead.store');
+    Route::post('/solar-heater/lead', [\App\Http\Controllers\SolarLeadController::class, 'storeHeater'])->name('solar-heater.lead.store');
 
     // Vacaciones (Modo Ahorro)
     Route::get('/vacations', [VacationController::class, 'index'])->name('vacations.index');
