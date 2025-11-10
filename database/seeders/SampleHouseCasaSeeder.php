@@ -107,76 +107,70 @@ class SampleHouseCasaSeeder extends Seeder
 
         $findType = fn(string $name) => EquipmentType::where('name', $name)->first();
 
-        // 4) Definición de equipos por ambiente (minutos override y potencia override cuando aplique)
+        // 4) Definición de equipos por ambiente (minutos override, potencia override y tipo_de_proceso)
         $equipmentByRoom = [
             'cocina / comedor' => [
-                ['name' => 'Aire Acondicionado Split 3000 frigorías', 'minutes' => 0, 'qty' => 1],
-                ['name' => 'Ventilador de Techo', 'minutes' => 300, 'qty' => 1], // 5 hs
-                ['name' => 'Microondas 20L', 'minutes' => 20, 'qty' => 1], // ~20 min
-                ['name' => 'Lámpara LED 12W', 'minutes' => 180, 'qty' => 3], // 3 luminarias 3 hs
-                ['name' => 'Tubo LED 18W', 'minutes' => 600, 'qty' => 1], // 10 hs
+                ['name' => 'Aire Acondicionado Split 3000 frigorías', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Motor'],
+                ['name' => 'Ventilador de Techo', 'minutes' => 300, 'qty' => 1, 'tipo_de_proceso' => 'Motor'], // 5 hs
+                ['name' => 'Microondas 20L', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Magnetrón'], // ~1h (0.33 en Python = 20min, ajustado a 60 para facilitar)
+                ['name' => 'Lámpara LED 12W', 'minutes' => 180, 'qty' => 3, 'tipo_de_proceso' => 'Electroluminiscencia'], // 3 luminarias 3 hs
+                ['name' => 'Tubo LED 18W', 'minutes' => 600, 'qty' => 1, 'tipo_de_proceso' => 'Electroluminiscencia'], // 10 hs
             ],
             'Living' => [
-                ['name' => 'TV LED 32"', 'minutes' => 480, 'qty' => 1], // 8 hs - ÚNICO TV
-                ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1],
-                ['name' => 'Ventilador de Techo', 'minutes' => 180, 'qty' => 1], // 3 hs
-                ['name' => 'Router WiFi', 'minutes' => 1440, 'qty' => 1], // 24 hs
+                ['name' => 'TV LED 32"', 'minutes' => 480, 'qty' => 1, 'tipo_de_proceso' => 'Electrónico'], // 8 hs
+                ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Electroluminiscencia'],
+                ['name' => 'Ventilador de Techo', 'minutes' => 180, 'qty' => 1, 'tipo_de_proceso' => 'Motor'], // 3 hs
+                ['name' => 'Router WiFi', 'minutes' => 1440, 'qty' => 1, 'tipo_de_proceso' => 'Electrónico'], // 24 hs
             ],
             'Baño' => [
-                ['name' => 'Lámpara LED 12W', 'minutes' => 180, 'qty' => 1],
-                // Equipos pequeños
-                ['name' => 'Afeitadora Eléctrica', 'minutes' => 5, 'qty' => 1, 'fallback' => ['category' => 8, 'power' => 10]],
-                ['name' => 'Secador de Pelo', 'minutes' => 5, 'qty' => 1],
+                ['name' => 'Lámpara LED 12W', 'minutes' => 180, 'qty' => 1, 'tipo_de_proceso' => 'Electroluminiscencia'],
+                ['name' => 'Afeitadora Eléctrica', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Motor', 'fallback' => ['category' => 8, 'power' => 10]],
+                ['name' => 'Secador de Pelo', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Motor & Resistencia'],
             ],
             'Habitación Mamá' => [
-                ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1],
-                ['name' => 'Lámpara de Escritorio LED', 'minutes' => 60, 'qty' => 1], // velador
-                ['name' => 'Ventilador de Techo', 'minutes' => 300, 'qty' => 1],
+                ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Electroluminiscencia'],
+                ['name' => 'Lámpara de Escritorio LED', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Electroluminiscencia'],
+                ['name' => 'Ventilador de Techo', 'minutes' => 300, 'qty' => 1, 'tipo_de_proceso' => 'Motor'],
             ],
             'Habitación Papá' => [
-                ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1],
-                ['name' => 'Lámpara de Escritorio LED', 'minutes' => 60, 'qty' => 1],
-                ['name' => 'Ventilador de Techo', 'minutes' => 300, 'qty' => 1],
-                ['name' => 'TV LED 43"', 'minutes' => 120, 'qty' => 1],
+                ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Electroluminiscencia'],
+                ['name' => 'Lámpara de Escritorio LED', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Electroluminiscencia'],
+                ['name' => 'Ventilador de Techo', 'minutes' => 300, 'qty' => 1, 'tipo_de_proceso' => 'Motor'],
+                ['name' => 'TV LED 43"', 'minutes' => 480, 'qty' => 1, 'tipo_de_proceso' => 'Electrónico'],
             ],
             'Habitación Omar' => [
-                ['name' => 'PC de Escritorio (Gaming)', 'minutes' => 180, 'qty' => 1], // 3 hs/día real
-                ['name' => 'Monitor LED 27"', 'minutes' => 180, 'qty' => 2], // Mismo tiempo que PC
-                ['name' => 'Tira LED 5 metros', 'minutes' => 180, 'qty' => 1], // 3 hs
-                ['name' => 'Aire Acondicionado Portátil', 'minutes' => 60, 'qty' => 1], // 1 h/día promedio anual
-                ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1],
-                ['name' => 'Lámpara de Escritorio LED', 'minutes' => 240, 'qty' => 1], // velador 4 hs
+                ['name' => 'PC de Escritorio (Gaming)', 'minutes' => 180, 'qty' => 1, 'tipo_de_proceso' => 'Electrónico'],
+                ['name' => 'Monitor LED 27"', 'minutes' => 180, 'qty' => 2, 'tipo_de_proceso' => 'Electrónico'],
+                ['name' => 'Tira LED 5 metros', 'minutes' => 180, 'qty' => 1, 'tipo_de_proceso' => 'Electroluminiscencia'],
+                ['name' => 'Aire Acondicionado Portátil', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Motor'],
+                ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Electroluminiscencia'],
+                ['name' => 'Lámpara de Escritorio LED', 'minutes' => 240, 'qty' => 1, 'tipo_de_proceso' => 'Electroluminiscencia'],
             ],
             'Hall' => [
-                ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1],
+                ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Electroluminiscencia'],
             ],
             'Fondo' => [
-                // Reflector LED 15W - no existe exacto, usamos Reflector LED y override potencia
-                ['name' => 'Reflector LED 50W', 'minutes' => 60, 'qty' => 1, 'power_override' => 15],
+                ['name' => 'Reflector LED 50W', 'minutes' => 60, 'qty' => 1, 'power_override' => 15, 'tipo_de_proceso' => 'Electroluminiscencia'],
             ],
             'Vereda' => [
-                // Lámpara vieja no LED -> Halógena 50W
-                ['name' => 'Lámpara Halógena 50W', 'minutes' => 60, 'qty' => 1],
+                ['name' => 'Lámpara Halógena 50W', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Electroluminiscencia'],
             ],
             'Garage' => [
-                ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1],
-                ['name' => 'Cortadora de Fiambre', 'minutes' => 60, 'qty' => 1, 'fallback' => ['category' => 4, 'power' => 250]],
-                ['name' => 'Heladera con Freezer (Cíclica)', 'minutes' => 1440, 'qty' => 1],
+                ['name' => 'Lámpara LED 12W', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Electroluminiscencia'],
+                ['name' => 'Cortadora de Fiambre', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Motor', 'fallback' => ['category' => 4, 'power' => 250]],
+                ['name' => 'Heladera con Freezer (Cíclica)', 'minutes' => 1440, 'qty' => 1, 'tipo_de_proceso' => 'Motor'],
             ],
             'Lavadero' => [
-                // Lavarropas: 2 ciclos de ~120 min por semana (NO diario) => promedio diario derivado ~34 min
-                ['name' => 'Lavarropas Automático 8kg', 'minutes' => null, 'qty' => 1, 'frequency' => [
+                ['name' => 'Lavarropas Automático 8kg', 'minutes' => 60, 'qty' => 1, 'tipo_de_proceso' => 'Motor & Resistencia', 'frequency' => [
                     'is_daily_use' => false,
                     'usage_days_per_week' => 2,
-                    'usage_weekdays' => [3,6], // Miércoles(3), Sábado(6) como ejemplo
-                    'minutes_per_session' => 120, // 2 horas por ciclo
+                    'usage_weekdays' => [3,6],
+                    'minutes_per_session' => 120,
                 ]],
             ],
             'Portátiles' => [
-                // Celulares - carga promedio 1-2 horas por día
-                ['name' => 'Cargador de Celular', 'minutes' => 90, 'qty' => 3], // 3 celulares
-                // Notebook - carga/uso promedio 4-6 horas
-                ['name' => 'Notebook 14"', 'minutes' => 300, 'qty' => 1],
+                ['name' => 'Cargador de Celular', 'minutes' => 90, 'qty' => 3, 'tipo_de_proceso' => 'Electrónico'],
+                ['name' => 'Notebook 14"', 'minutes' => 300, 'qty' => 1, 'tipo_de_proceso' => 'Electrónico'],
             ],
         ];
 
@@ -207,6 +201,7 @@ class SampleHouseCasaSeeder extends Seeder
                     'power_watts_override' => $item['power_override'] ?? null,
                     'avg_daily_use_minutes_override' => $item['minutes'] ?? null,
                     'location' => $room,
+                    'tipo_de_proceso' => $item['tipo_de_proceso'] ?? null,
                     // Solo TV en standby por defecto; el resto false
                     'has_standby_mode' => $isTv ? true : false,
                 ];

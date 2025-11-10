@@ -8,7 +8,7 @@ use App\Models\Entity;
 use App\Models\Locality;
 use App\Models\Province;
 use Illuminate\Support\Facades\Auth;
-use App\Services\InventoryAnalysisService; // Asegúrate de que este 'use' esté
+use App\Services\EquipmentCalculationService; // Servicio unificado de cálculos
 use Carbon\Carbon;
 
 class EntityController extends Controller
@@ -73,7 +73,7 @@ class EntityController extends Controller
      */
  // En app/Http/Controllers/EntityController.php
 
-public function show(Entity $entity, InventoryAnalysisService $analysisService)
+public function show(Entity $entity, EquipmentCalculationService $calculationService)
 {
     $this->authorize('view', $entity);
 
@@ -95,23 +95,17 @@ public function show(Entity $entity, InventoryAnalysisService $analysisService)
         // Calculamos cuántos días tiene el período de la factura.
         $periodDays = Carbon::parse($invoice->start_date)->diffInDays(Carbon::parse($invoice->end_date)) + 1;
 
-        // Llamamos al servicio de análisis para obtener el consumo estimado del inventario.
-        $inventoryReport = $analysisService->calculateEnergyProfileForPeriod($entity, $periodDays);
-        $estimatedConsumption = $inventoryReport->sum('consumo_kwh_total_periodo');
-        
-        // Calculamos el porcentaje del consumo que el inventario puede explicar.
-        $percentageExplained = $invoice->total_energy_consumed_kwh > 0 
-            ? ($estimatedConsumption / $invoice->total_energy_consumed_kwh) * 100
-            : 0;
+        // Calculamos tarifa promedio de esta factura
+        $tariff = $calculationService->calculateAverageTariff($invoice);
 
-        // Determinar estado de snapshots para esta factura
+        // Determinar si ya existen snapshots (ajustes) para esta factura.
         $snapshotsForInvoice = \App\Models\EquipmentUsageSnapshot::where('invoice_id', $invoice->id)->get();
         $snapshotStatus = 'needs_first'; // Por defecto: necesita primer ajuste
-        
+
         if ($snapshotsForInvoice->count() > 0) {
             $hasInvalidated = $snapshotsForInvoice->where('status', 'invalidated')->count() > 0;
             $allConfirmed = $snapshotsForInvoice->where('status', 'confirmed')->count() === $snapshotsForInvoice->count();
-            
+
             if ($hasInvalidated) {
                 $snapshotStatus = 'needs_readjust'; // Requiere reajuste
             } elseif ($allConfirmed) {
@@ -120,6 +114,27 @@ public function show(Entity $entity, InventoryAnalysisService $analysisService)
                 $snapshotStatus = 'draft'; // Tiene borradores
             }
         }
+
+        // Si existen snapshots, usamos su consumo registrado (fotografía del período).
+        if ($snapshotsForInvoice->count() > 0) {
+            $estimatedConsumption = $snapshotsForInvoice->sum('calculated_kwh_period');
+        } else {
+            // Obtenemos equipos de la entidad y calculamos desde el inventario actual
+            $equipments = $entity->equipments()
+                ->with(['equipmentType.equipmentCategory.calculationFactor'])
+                ->get();
+
+            // Llamamos al servicio UNIFICADO para obtener el consumo estimado del inventario
+            $bulkCalc = $calculationService->calculateBulkConsumption($equipments, $periodDays, $tariff);
+            $estimatedConsumption = $bulkCalc['total_kwh'];
+        }
+        
+        // Calculamos el porcentaje del consumo que el inventario puede explicar.
+        $percentageExplained = $invoice->total_energy_consumed_kwh > 0 
+            ? ($estimatedConsumption / $invoice->total_energy_consumed_kwh) * 100
+            : 0;
+
+        // (snapshotStatus ya fue calculado más arriba)
 
         // Preparamos el resumen para este período.
         $periodsAnalysis[] = (object) [
@@ -159,10 +174,11 @@ public function show(Entity $entity, InventoryAnalysisService $analysisService)
     // --- SEPARACIÓN DE DATOS PARA LA VISTA ---
     
     // El primer período (el más reciente) es para el medidor inteligente.
-    $meterAnalysis = array_shift($periodsAnalysis) ?? null;
+    $meterAnalysis = $periodsAnalysis[0] ?? null; // Usar el primero SIN sacarlo del array
     
-    // El resto de los períodos son para la lista del historial.
-    $historyPeriods = $periodsAnalysis;
+    // TODOS los períodos (incluyendo el actual) para la lista del historial
+    // Esto permite ajustar cualquier período, no solo los antiguos
+    $allPeriods = $periodsAnalysis;
 
     // --- FIN DE LA LÓGICA DE ANÁLISIS ---
 
@@ -170,7 +186,7 @@ public function show(Entity $entity, InventoryAnalysisService $analysisService)
         'entity' => $entity,
         'summary' => $summary,
         'meterAnalysis' => $meterAnalysis,
-        'periodsAnalysis' => $historyPeriods, // Renombrado para claridad en la vista
+        'periodsAnalysis' => $allPeriods, // Pasar TODOS los períodos para ajustar
     ]);
 }
 

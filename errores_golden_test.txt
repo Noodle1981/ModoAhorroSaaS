@@ -1,0 +1,7 @@
+# Errores de comparación golden test - Laravel vs Python
+
+Equipo: Lavarropas Automático 8kg | Tipo: Motor & Resistencia
+  Factor carga - Laravel: 0.80 vs Python: 0.80
+  Eficiencia - Laravel: 0.82 vs Python: 0.82
+  kWh/año - Laravel: 131.16 vs Python: 131.93 | Diff: -0.77
+

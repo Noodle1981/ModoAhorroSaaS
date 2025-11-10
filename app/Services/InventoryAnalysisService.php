@@ -10,10 +10,14 @@ use Carbon\CarbonPeriod;
 class InventoryAnalysisService
 {
     protected $replacementService;
+    protected $calculationService;
 
-    public function __construct(ReplacementAnalysisService $replacementService)
-    {
+    public function __construct(
+        ReplacementAnalysisService $replacementService,
+        EquipmentCalculationService $calculationService
+    ) {
         $this->replacementService = $replacementService;
+        $this->calculationService = $calculationService;
     }
 
     /**
@@ -75,6 +79,7 @@ class InventoryAnalysisService
 
     /**
      * Calcula el perfil energético del inventario para un período específico (ej: un mes).
+     * REFACTORIZADO: Ahora delega cálculos a EquipmentCalculationService para consistencia.
      *
      * @param Entity $entity
      * @param int $numberOfDays
@@ -86,63 +91,27 @@ class InventoryAnalysisService
             ->with(['equipmentType.equipmentCategory.calculationFactor'])
             ->get();
 
-        return $inventory->map(function ($equipment) use ($numberOfDays) {
+        // Obtener tarifa promedio de última factura
+        $supplyIds = $entity->supplies()->pluck('id');
+        $lastInvoice = \App\Models\Invoice::whereHas('contract', function($query) use ($supplyIds) {
+                $query->whereIn('supply_id', $supplyIds);
+            })
+            ->orderBy('end_date', 'desc')
+            ->first();
+
+        $tariff = $lastInvoice ? $this->calculationService->calculateAverageTariff($lastInvoice) : 0.2;
+
+        return $inventory->map(function ($equipment) use ($numberOfDays, $tariff) {
+            // DELEGAMOS TODO EL CÁLCULO al servicio unificado
+            $calc = $this->calculationService->calculateEquipmentConsumption($equipment, $numberOfDays, $tariff);
             
-            // --- CÁLCULO ACTIVO ---
-            $powerWatts = $equipment->power_watts_override ?? $equipment->equipmentType->default_power_watts ?? 0;
-            $avgDailyUseMinutes = $equipment->avg_daily_use_minutes_override ?? $equipment->equipmentType->default_avg_daily_use_minutes ?? 0;
-
-            // Derivar minutos diarios según frecuencia (si existen campos nuevos)
-            if (isset($equipment->is_daily_use) || isset($equipment->usage_days_per_week)) {
-                if ($equipment->is_daily_use) {
-                    // Si es diario y existe minutes_per_session, usar eso; sino el avg existente
-                    if (!empty($equipment->minutes_per_session)) {
-                        $avgDailyUseMinutes = $equipment->minutes_per_session;
-                    }
-                } else {
-                    $days = (int)($equipment->usage_days_per_week ?? 0);
-                    if ($days > 0) {
-                        if (!empty($equipment->minutes_per_session)) {
-                            // Derivar promedio diario: (días * minutos_sesión) / 7
-                            $avgDailyUseMinutes = (int)round(($equipment->minutes_per_session * $days) / 7);
-                        } else {
-                            // Si no hay minutes_per_session pero sí avg_daily ya lo usa, mantenerlo
-                            // (el usuario quizás lo ajustó manualmente sin setear el patrón)
-                        }
-                    } else {
-                        // Sin días declarados => 0 consumo activo
-                        $avgDailyUseMinutes = 0;
-                    }
-                }
-            }
-            
-            $consumoNominalKW = $powerWatts / 1000;
-            $horasDeUsoDiario = $avgDailyUseMinutes / 60;
-            $horasDeUsoPeriodo = $horasDeUsoDiario * $numberOfDays;
-
-            $calculationFactor = $equipment->equipmentType->equipmentCategory->calculationFactor;
-            $factorCarga = $calculationFactor->load_factor ?? 1;
-            $eficiencia = $calculationFactor->efficiency_factor ?? 1;
-
-            if ($eficiencia == 0) $eficiencia = 1;
-
-            $energiaSecundariaConsumida = $horasDeUsoPeriodo * $factorCarga * $equipment->quantity * $consumoNominalKW / $eficiencia;
-            
-            // --- CÁLCULO STAND BY ---
-            // Solo considerar standby si el equipo tiene modo standby habilitado explícitamente
-            $standbyPowerWatts = 0;
-            if (($equipment->has_standby_mode ?? false) === true) {
-                $standbyPowerWatts = $equipment->equipmentType->standby_power_watts ?? 0;
-            }
-            $horasStandByPeriodo = (24 * $numberOfDays) - $horasDeUsoPeriodo;
-            if ($horasStandByPeriodo < 0) $horasStandByPeriodo = 0;
-
-            $consumoStandByKwh = ($standbyPowerWatts / 1000) * $horasStandByPeriodo * $equipment->quantity;
-            
-            // --- RESULTADOS ---
-            $equipment->consumo_kwh_activo_periodo = round($energiaSecundariaConsumida, 2);
-            $equipment->consumo_kwh_standby_periodo = round($consumoStandByKwh, 2);
-            $equipment->consumo_kwh_total_periodo = $equipment->consumo_kwh_activo_periodo + $equipment->consumo_kwh_standby_periodo;
+            // Asignamos resultados al objeto equipment (para compatibilidad con código legacy)
+            $equipment->consumo_kwh_activo_periodo = $calc['kwh_activo'];
+            $equipment->consumo_kwh_standby_periodo = $calc['kwh_standby'];
+            $equipment->consumo_kwh_total_periodo = $calc['kwh_total'];
+            $equipment->costo_periodo = $calc['costo'];
+            $equipment->horas_uso_periodo = $calc['horas_uso'];
+            $equipment->horas_standby_periodo = $calc['horas_standby'];
 
             return $equipment;
         });

@@ -6,11 +6,24 @@ use App\Models\Invoice;
 use App\Models\EntityEquipment;
 use App\Models\EquipmentUsageSnapshot;
 use App\Services\WeatherService;
+use App\Services\EquipmentCalculationService;
+use App\Services\ClimateCorrelationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class UsageSnapshotController extends Controller
 {
+    protected $calculationService;
+    protected $climateService;
+
+    public function __construct(
+        EquipmentCalculationService $calculationService,
+        ClimateCorrelationService $climateService
+    ) {
+        $this->calculationService = $calculationService;
+        $this->climateService = $climateService;
+    }
+
     /**
      * Muestra el formulario para ajustar el uso de equipos para un período específico (factura).
      */
@@ -18,7 +31,8 @@ class UsageSnapshotController extends Controller
     {
         // Gating: confirmar Gestión de Uso antes de ajustar
         if (!session()->has('usage_confirmed_at')) {
-            return redirect()->route('usage.index')->with('warning', 'Antes de ajustar un período, confirmá la Gestión de Uso (días/semana)');
+            return redirect()->route('usage.index', ['invoice' => $invoice->id])
+                ->with('warning', 'Antes de ajustar un período, confirmá la Gestión de Uso (días/semana)');
         }
         // Obtenemos la entidad a través del suministro del contrato de la factura
         $entity = $invoice->contract->supply->entity;
@@ -70,19 +84,59 @@ class UsageSnapshotController extends Controller
             $similarPeriods = $weatherService->findSimilarPeriods($climateSnapshot, 5);
         }
         
+        // PRE-CALCULAR consumos con el Service (lógica centralizada)
+        $tariff = $this->calculationService->calculateAverageTariff($invoice);
+        
+        // Categorías que merecen ajuste por clima y margen de días
+        $categoriesWithClimateAdjustment = ['Climatización', 'Calefón Eléctrico', 'Calefacción'];
+        $daysDiscountRatio = 0.75; // 25% de descuento
+        $effectiveDaysCache = [];
+        
+        $equipmentsWithCalculations = $equipments->map(function($equipment) use ($periodDays, $tariff, $categoriesWithClimateAdjustment, $daysDiscountRatio, $invoice, &$effectiveDaysCache) {
+            $categoryName = $equipment->equipmentType?->equipmentCategory?->name ?? '';
+            if (in_array($categoryName, $categoriesWithClimateAdjustment)) {
+                // Obtener días efectivos por clima
+                if (!isset($effectiveDaysCache[$categoryName])) {
+                    $climateData = $this->climateService->getEffectiveDaysForClimateEquipment($invoice, $categoryName);
+                    $effectiveDaysCache[$categoryName] = $climateData;
+                }
+                $daysByClimate = $effectiveDaysCache[$categoryName]['effective_days'];
+                $daysByMargin = (int) max(1, round($periodDays * $daysDiscountRatio));
+                // Usar el menor entre clima y margen
+                $effectiveDays = min($daysByClimate, $daysByMargin);
+                $equipment->climate_adjusted = true;
+                $equipment->climate_data_source = $effectiveDaysCache[$categoryName]['data_source'] . ' + margen 25%';
+            } else {
+                $effectiveDays = $periodDays;
+                $equipment->climate_adjusted = false;
+            }
+            // Pre-cálculo usa días efectivos definitivos
+            $calc = $this->calculationService->calculateEquipmentConsumption($equipment, $effectiveDays, $tariff);
+            $equipment->precalc_kwh_activo = $calc['kwh_activo'];
+            $equipment->precalc_kwh_standby = $calc['kwh_standby'];
+            $equipment->precalc_kwh_total = $calc['kwh_total'];
+            $equipment->precalc_costo = $calc['costo'];
+            $equipment->precalc_horas_uso = $calc['horas_uso'];
+            $equipment->effective_days = $effectiveDays;
+            return $equipment;
+        });
+        
         return view('snapshots.create', [
             'invoice' => $invoice,
             'entity' => $entity,
-            'equipments' => $equipments,
+            'equipments' => $equipmentsWithCalculations,
             'existingSnapshots' => $existingSnapshots,
             'periodDays' => $periodDays,
             'climateSnapshot' => $climateSnapshot,
             'similarPeriods' => $similarPeriods,
+            'tariff' => $tariff,
+            'effectiveDaysCache' => $effectiveDaysCache, // Datos de ajuste climático
         ]);
     }
 
     /**
      * Guarda los ajustes de uso de equipos para el período de la factura.
+     * RECALCULA TODO con EquipmentCalculationService (ignora valores del frontend).
      */
     public function store(Request $request, Invoice $invoice)
     {
@@ -100,50 +154,42 @@ class UsageSnapshotController extends Controller
             // Soft-delete snapshots anteriores de esta factura (mantener historial)
             EquipmentUsageSnapshot::where('invoice_id', $invoice->id)->delete();
             
-            // Creamos los nuevos snapshots
+            $periodDays = $invoice->start_date->diffInDays($invoice->end_date) + 1;
+            $tariff = $this->calculationService->calculateAverageTariff($invoice);
+            
+            // Categorías con ajuste climático y margen de días
+            $categoriesWithClimateAdjustment = ['Climatización', 'Calefón Eléctrico', 'Calefacción'];
+            $daysDiscountRatio = 0.75;
+            $effectiveDaysCache = [];
             foreach ($request->equipments as $equipmentData) {
-                $entityEquipment = EntityEquipment::with('equipmentType')->find($equipmentData['entity_equipment_id']);
+                $entityEquipment = EntityEquipment::with(['equipmentType.equipmentCategory'])->find($equipmentData['entity_equipment_id']);
+                $categoryName = $entityEquipment->equipmentType?->equipmentCategory?->name ?? '';
+                if (in_array($categoryName, $categoriesWithClimateAdjustment)) {
+                    if (!isset($effectiveDaysCache[$categoryName])) {
+                        $climateData = $this->climateService->getEffectiveDaysForClimateEquipment($invoice, $categoryName);
+                        $effectiveDaysCache[$categoryName] = $climateData;
+                    }
+                    $daysByClimate = $effectiveDaysCache[$categoryName]['effective_days'];
+                    $daysByMargin = (int) max(1, round($periodDays * $daysDiscountRatio));
+                    $effectiveDays = min($daysByClimate, $daysByMargin);
+                } else {
+                    $effectiveDays = $periodDays;
+                }
+                $originalMinutes = $entityEquipment->avg_daily_use_minutes_override;
+                $entityEquipment->avg_daily_use_minutes_override = $equipmentData['avg_daily_use_minutes'];
+                $calc = $this->calculationService->calculateEquipmentConsumption(
+                    $entityEquipment,
+                    $effectiveDays,
+                    $tariff
+                );
+                $entityEquipment->avg_daily_use_minutes_override = $originalMinutes;
                 
-                // Obtenemos la potencia real (override o default)
+                // Obtenemos datos para el snapshot
                 $powerWatts = $entityEquipment->power_watts_override ?? $entityEquipment->equipmentType->default_power_watts;
-                
-                // Standby per-period es solo informativo: usar el valor global del equipo (no editable aquí)
                 $hasStandby = (bool)($entityEquipment->has_standby_mode ?? false);
-
-                // Calculamos el consumo del período (activo + standby si corresponde)
-                $periodDays = $invoice->start_date->diffInDays($invoice->end_date) + 1;
-                $dailyUseHours = $equipmentData['avg_daily_use_minutes'] / 60;
-
-                // Días efectivos según Gestión de Uso
                 $isDaily = (bool)($entityEquipment->is_daily_use ?? false);
                 $daysPerWeek = $entityEquipment->usage_days_per_week;
-                $usageWeekdays = $entityEquipment->usage_weekdays ?? null; // [1..7]
-
-                $effectiveDays = $periodDays;
-                if (!$isDaily) {
-                    if (is_array($usageWeekdays) && count($usageWeekdays) > 0) {
-                        // Contar días del rango que coinciden con los seleccionados
-                        $start = $invoice->start_date->copy();
-                        $end = $invoice->end_date->copy();
-                        $count = 0;
-                        for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
-                            $dow = (int)$date->isoWeekday(); // 1..7
-                            if (in_array($dow, $usageWeekdays)) { $count++; }
-                        }
-                        $effectiveDays = max(0, $count);
-                    } elseif (!is_null($daysPerWeek)) {
-                        $effectiveDays = (int) round(($daysPerWeek / 7) * $periodDays);
-                    }
-                }
-
-                $totalHours = $dailyUseHours * $effectiveDays;
-                $activeKwh = ($powerWatts / 1000) * $totalHours;
-
-                $standbyWatts = $hasStandby ? ($entityEquipment->equipmentType->standby_power_watts ?? 0) : 0;
-                $standbyHours = max(0, ($periodDays * 24) - $totalHours);
-                $standbyKwh = ($standbyWatts / 1000) * $standbyHours * max(1, (int)$entityEquipment->quantity);
-
-                $calculatedKwh = $activeKwh + $standbyKwh;
+                $usageWeekdays = $entityEquipment->usage_weekdays ?? null;
                 
                 EquipmentUsageSnapshot::create([
                     'entity_equipment_id' => $equipmentData['entity_equipment_id'],
@@ -158,7 +204,7 @@ class UsageSnapshotController extends Controller
                     'usage_weekdays' => $isDaily ? null : $usageWeekdays,
                     'minutes_per_session' => $entityEquipment->minutes_per_session,
                     'frequency_source' => 'inherited',
-                    'calculated_kwh_period' => $calculatedKwh,
+                    'calculated_kwh_period' => $calc['kwh_total'], // Valor calculado por el Service
                 ]);
             }
         });

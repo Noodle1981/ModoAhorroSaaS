@@ -15,7 +15,7 @@ class UsageSettingsController extends Controller
     /**
      * Panel de Gestión de Uso: configurar días de uso por semana y opciones relacionadas
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
 
@@ -29,7 +29,18 @@ class UsageSettingsController extends Controller
 
         $confirmedAt = session('usage_confirmed_at');
 
-        return view('usage.index', compact('equipments', 'confirmedAt'));
+        // Período (invoice) opcional para contexto
+        $invoiceId = $request->query('invoice');
+        $invoice = null;
+        if ($invoiceId) {
+            $invoice = \App\Models\Invoice::with('contract.supply.entity')
+                ->find($invoiceId);
+            if ($invoice && $invoice->contract->supply->entity->company_id !== $user->company_id) {
+                $invoice = null; // Seguridad: no mostrar períodos ajenos
+            }
+        }
+
+        return view('usage.index', compact('equipments', 'confirmedAt', 'invoice'));
     }
 
     /**
@@ -38,27 +49,54 @@ class UsageSettingsController extends Controller
     public function bulkUpdate(Request $request)
     {
         $user = auth()->user();
+
+        // Normalizar inputs: convertir '' o 'null' a null y forzar booleanos
+        $normalizedItems = collect($request->input('items', []))
+            ->map(function ($item) {
+                $item = is_array($item) ? $item : [];
+                $item['id'] = $item['id'] ?? null;
+                // Booleano a 0/1
+                $item['is_daily_use'] = isset($item['is_daily_use']) ? (int)!!$item['is_daily_use'] : null;
+                // Normalizar días por semana
+                if (!isset($item['usage_days_per_week']) || $item['usage_days_per_week'] === '' || $item['usage_days_per_week'] === 'null') {
+                    $item['usage_days_per_week'] = null;
+                }
+                return $item;
+            })
+            ->values()
+            ->all();
+
+        $request->merge(['items' => $normalizedItems]);
+
         $validated = $request->validate([
             'items' => ['required', 'array'],
             'items.*.id' => ['required', 'exists:entity_equipment,id'],
             'items.*.is_daily_use' => ['nullable', 'boolean'],
-            'items.*.usage_days_per_week' => ['nullable', 'integer', 'min:0', 'max:7'],
+            'items.*.usage_days_per_week' => ['nullable', 'integer', 'min:1', 'max:7'],
         ]);
 
         DB::transaction(function () use ($validated, $user) {
             foreach ($validated['items'] as $item) {
+                $isDaily = array_key_exists('is_daily_use', $item) ? (bool)$item['is_daily_use'] : null;
+                $days = $item['usage_days_per_week'] ?? null;
+                if ($isDaily === true) {
+                    $days = null; // Si es diario, no guardamos días
+                }
+
                 EntityEquipment::where('id', $item['id'])
                     ->whereHas('entity', function ($q) use ($user) {
                         $q->where('company_id', $user->company_id);
                     })
                     ->update([
-                        'is_daily_use' => array_key_exists('is_daily_use', $item) ? (bool)$item['is_daily_use'] : null,
-                        'usage_days_per_week' => $item['usage_days_per_week'] ?? null,
+                        'is_daily_use' => $isDaily,
+                        'usage_days_per_week' => $days,
                     ]);
             }
         });
 
-        return redirect()->route('usage.index')->with('success', 'Frecuencia de uso actualizada.');
+        $invoiceId = $request->input('invoice');
+        return redirect()->route('usage.index', $invoiceId ? ['invoice' => $invoiceId] : [])
+            ->with('success', 'Frecuencia de uso actualizada.');
     }
 
     /**

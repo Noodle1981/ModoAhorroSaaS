@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateEntityEquipmentRequest;
 use App\Models\Entity;
 use App\Models\EntityEquipment;
 use App\Models\EquipmentCategory;
+use App\Models\ProcessFactor;
 
 class EntityEquipmentController extends Controller
 {
@@ -58,7 +59,9 @@ class EntityEquipmentController extends Controller
             $data['activated_at'] = now()->toDateString();
         }
         
-        $entity->equipments()->create($data);
+        // Asignar factores y calcular energías automáticamente
+        $equipment = $entity->equipments()->create($data);
+        $this->assignFactorsAndCalculate($equipment);
 
         return redirect()->route('entities.equipment.index', $entity)
                          ->with('success', '¡Equipo añadido con éxito!');
@@ -101,6 +104,9 @@ class EntityEquipmentController extends Controller
     {
         $this->authorize('update', $equipment);
         $equipment->update($request->validated());
+        
+        // Recalcular factores y energías si cambió tipo_de_proceso o parámetros de uso
+        $this->assignFactorsAndCalculate($equipment);
 
         return redirect()->route('entities.equipment.index', $equipment->entity)
                          ->with('success', '¡Equipo actualizado con éxito!');
@@ -145,5 +151,42 @@ class EntityEquipmentController extends Controller
                              $equipmentName,
                              $snapshotsCount
                          ));
+    }
+
+    /**
+     * Asigna automáticamente factor_carga y eficiencia según tipo_de_proceso,
+     * y calcula energia_consumida_wh según la lógica del script Python.
+     */
+    private function assignFactorsAndCalculate(EntityEquipment $equipment)
+    {
+        // Si tiene tipo_de_proceso, buscar los factores
+        if ($equipment->tipo_de_proceso) {
+            $factor = ProcessFactor::where('tipo_de_proceso', $equipment->tipo_de_proceso)->first();
+            if ($factor) {
+                $equipment->factor_carga = $factor->factor_carga;
+                $equipment->eficiencia = $factor->eficiencia;
+            }
+        }
+
+        // Si no tiene factores asignados, usar defaults
+        if (!$equipment->factor_carga) {
+            $equipment->factor_carga = 1;
+        }
+        if (!$equipment->eficiencia) {
+            $equipment->eficiencia = 1;
+        }
+
+        // Calcular energía consumida (Wh) según la lógica Python
+        // EnergiaConsumida_Wh = horas_por_dia * factor_carga * cantidad * potencia_watts / eficiencia
+        $powerWatts = $equipment->power_watts_override ?? $equipment->equipmentType?->default_power_watts ?? 0;
+        $quantity = $equipment->quantity ?? 1;
+        $avgDailyUseMinutes = $equipment->avg_daily_use_minutes_override ?? (($equipment->equipmentType?->default_avg_daily_use_hours ?? 0) * 60);
+        $horasPorDia = $avgDailyUseMinutes / 60.0;
+
+        $equipment->energia_consumida_wh = ($horasPorDia * $equipment->factor_carga * $quantity * $powerWatts) / $equipment->eficiencia;
+        $equipment->energia_util_consumida_wh = $horasPorDia * $equipment->factor_carga * $quantity * $powerWatts * $equipment->eficiencia;
+
+        // Guardar silenciosamente para no disparar observers innecesarios
+        $equipment->saveQuietly();
     }
 }

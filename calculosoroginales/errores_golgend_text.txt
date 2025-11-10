@@ -1,0 +1,19 @@
+{
+        "nombre": "Tubo LED 18W",  
+        "categoria": "Iluminación",
+        'Tipo de proceso': ['Motor', 'Resistencia', 'Electrónico', 'Motor & Resistencia', 'Magnetrón', 'Electroluminiscencia'], #ERROR FALTA TIPO DE PROCESO
+        SI BIEN EL USUARIO NO LO ELIGE, ES PROPPIO DE LA SELECCION DE CATEGORÍA
+        "ubicacion": "cocina / comedor",
+        "cantidad": 1,
+        "potencia_watts": 18,
+        "potencia_kw": 0.018,
+        "horas_por_dia": 10,
+        "horas_por_año": 3650,
+        "tiene_standby": 1,      PUSE ESTADO 1 PARA TRUE Y 0 PARA FALSE
+        "standby_watts": 0,       #ERROR NO TIENE POTENCIA POR DEFECTO, NO CALCULA NADA, NO EXISTE BENEFICIO DE AHORRO NI NADA
+        "factor_carga": 1,        #ERROR FACTOR DE CARGA NUNCA SE CALCULÓ
+        "factor_eficiencia": 1,   #ERROR FACTOR DE EFICIENCIA NUNCA SE CALCULÓ
+        "kwh_activo_año": 65.7,
+        "kwh_standby_año": 0,
+        "kwh_total_año": 65.7
+    },

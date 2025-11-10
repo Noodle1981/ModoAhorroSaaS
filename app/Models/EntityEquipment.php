@@ -20,7 +20,11 @@ class EntityEquipment extends Model
         'power_last_changed_at', 'usage_last_changed_at',
         // Frecuencia de uso
         'is_daily_use', 'usage_days_per_week', 'usage_weekdays', 'minutes_per_session',
-        'optimization_profile'
+        'optimization_profile',
+        // Campos de cálculo (alineación con Python)
+        'tipo_de_proceso', 'factor_carga', 'eficiencia',
+        'energia_consumida_wh', 'energia_util_consumida_wh',
+        'energia_consumida_wh_periodo', 'costo_monetario_periodo'
     ];
 
     protected $casts = [
@@ -100,6 +104,11 @@ class EntityEquipment extends Model
     public function snapshots()
     {
         return $this->hasMany(EquipmentUsageSnapshot::class);
+    }
+
+    public function processFactor()
+    {
+        return $this->belongsTo(ProcessFactor::class, 'tipo_de_proceso', 'tipo_de_proceso');
     }
 
     public static function getUniqueLocationsForEntity(Entity $entity): \Illuminate\Support\Collection

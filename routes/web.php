@@ -118,6 +118,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/usage/recommendations', [UsageSettingsController::class, 'recommendations'])->name('usage.recommendations');
     Route::post('/usage/apply-recommendations', [UsageSettingsController::class, 'applyRecommendations'])->name('usage.apply-recommendations');
 
+    // --- CENTRO ECONÓMICO (Costos y Ahorros) ---
+    Route::get('/economics', [\App\Http\Controllers\EconomicsCenterController::class, 'index'])->name('economics.index');
+
     // --- SOLAR ---
     // Dashboard adaptativo (redirige según tenga o no instalación)
     Route::get('/solar', [SolarController::class, 'dashboard'])->name('solar.dashboard');

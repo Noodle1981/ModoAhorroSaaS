@@ -295,4 +295,137 @@ class ClimateCorrelationService
 
         return $recommendations;
     }
+
+    /**
+     * Calcula días efectivos de uso de climatización según temperatura real
+     * 
+     * @param Invoice $invoice
+     * @param string $equipmentType 'cooling' o 'heating'
+     * @param float $threshold Umbral de temperatura (ej: 24°C para refrigeración)
+     * @return array ['effective_days' => int, 'ratio' => float, 'total_days' => int]
+     */
+    public function calculateEffectiveDaysByTemperature(Invoice $invoice, string $equipmentType = 'cooling', float $threshold = 24.0): array
+    {
+        $locality = $invoice->contract->supply->entity->locality;
+        
+        if (!$locality) {
+            return $this->fallbackEffectiveDays($invoice, $equipmentType);
+        }
+
+        $periodDays = $invoice->start_date->diffInDays($invoice->end_date) + 1;
+
+        // Obtener datos climáticos del período
+        $weatherData = DailyWeatherLog::where('locality_id', $locality->id)
+            ->whereBetween('date', [$invoice->start_date, $invoice->end_date])
+            ->get();
+
+        if ($weatherData->isEmpty()) {
+            return $this->fallbackEffectiveDays($invoice, $equipmentType);
+        }
+
+        // Contar días según tipo de equipo
+        $effectiveDays = 0;
+        
+        if ($equipmentType === 'cooling') {
+            // Para refrigeración: días donde la temperatura superó el umbral
+            $effectiveDays = $weatherData->filter(function ($day) use ($threshold) {
+                return $day->avg_temp_celsius > $threshold;
+            })->count();
+        } else {
+            // Para calefacción: días donde la temperatura estuvo bajo el umbral
+            $effectiveDays = $weatherData->filter(function ($day) use ($threshold) {
+                return $day->avg_temp_celsius < $threshold;
+            })->count();
+        }
+
+        $ratio = $effectiveDays / max(1, $periodDays);
+
+        return [
+            'effective_days' => max(1, $effectiveDays), // Mínimo 1 día
+            'ratio' => $ratio,
+            'total_days' => $periodDays,
+            'data_source' => 'weather_logs',
+            'threshold' => $threshold,
+            'days_with_data' => $weatherData->count(),
+        ];
+    }
+
+    /**
+     * Fallback cuando no hay datos climáticos: estima según época del año (hemisferio sur)
+     */
+    private function fallbackEffectiveDays(Invoice $invoice, string $equipmentType): array
+    {
+        $periodDays = $invoice->start_date->diffInDays($invoice->end_date) + 1;
+        $startMonth = $invoice->start_date->month;
+        
+        // Hemisferio Sur: Verano dic-mar, Invierno jun-sep
+        $summerMonths = [12, 1, 2, 3];
+        $winterMonths = [6, 7, 8, 9];
+        
+        if ($equipmentType === 'cooling') {
+            // Refrigeración más probable en verano
+            $ratio = in_array($startMonth, $summerMonths) ? 0.75 : 0.40;
+        } else {
+            // Calefacción más probable en invierno
+            $ratio = in_array($startMonth, $winterMonths) ? 0.75 : 0.30;
+        }
+
+        return [
+            'effective_days' => (int) max(1, round($periodDays * $ratio)),
+            'ratio' => $ratio,
+            'total_days' => $periodDays,
+            'data_source' => 'seasonal_estimate',
+            'threshold' => null,
+            'days_with_data' => 0,
+        ];
+    }
+
+    /**
+     * Calcula días efectivos específicos por tipo de equipo de climatización
+     * 
+     * @param Invoice $invoice
+     * @param string $categoryName Nombre de categoría del equipo
+     * @return array
+     */
+    public function getEffectiveDaysForClimateEquipment(Invoice $invoice, string $categoryName): array
+    {
+        // Mapeo de categorías a tipos y umbrales
+        $climateConfig = [
+            'Climatización' => [
+                'type' => 'cooling',
+                'threshold_conservative' => 26.0, // Aires acondicionados
+                'threshold_moderate' => 24.0,      // Ventiladores
+            ],
+            'Calefacción' => [
+                'type' => 'heating',
+                'threshold_conservative' => 16.0,
+                'threshold_moderate' => 18.0,
+            ],
+            'Calefón Eléctrico' => [
+                'type' => 'heating',
+                'threshold_conservative' => 16.0,
+                'threshold_moderate' => 18.0,
+            ],
+        ];
+
+        if (!isset($climateConfig[$categoryName])) {
+            // No es equipo de clima, usar días completos
+            $periodDays = $invoice->start_date->diffInDays($invoice->end_date) + 1;
+            return [
+                'effective_days' => $periodDays,
+                'ratio' => 1.0,
+                'total_days' => $periodDays,
+                'data_source' => 'not_climate_equipment',
+            ];
+        }
+
+        $config = $climateConfig[$categoryName];
+        
+        // Usar umbral moderado como default
+        return $this->calculateEffectiveDaysByTemperature(
+            $invoice,
+            $config['type'],
+            $config['threshold_moderate']
+        );
+    }
 }

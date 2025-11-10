@@ -158,6 +158,18 @@
                         </p>
                     </a>
 
+                    <!-- Card: Centro Económico (Costos & Ahorros) -->
+                    <a href="{{ route('economics.index') }}" class="block p-6 bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg hover:shadow-lg transition-all hover:scale-105">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fas fa-chart-line text-3xl text-emerald-600"></i>
+                            <span class="px-2 py-1 text-xs font-semibold bg-emerald-200 text-emerald-800 rounded-full">Costos & Ahorros</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Centro Económico</h3>
+                        <p class="text-sm text-gray-600">
+                            Visualizá cuánto gasta cada sector, el ahorro generado por tus optimizaciones y el potencial de inversión con ROI.
+                        </p>
+                    </a>
+
                     <!-- Card: Placeholder - Gamificación -->
                     <div class="p-6 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-300 rounded-lg opacity-60">
                         <div class="flex items-center justify-between mb-4">

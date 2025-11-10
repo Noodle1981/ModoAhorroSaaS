@@ -202,7 +202,18 @@
                                         @php($inCurrent = in_array($d, $currentDays))
                                         @php($inRecommended = in_array($d, $result['weekdays_recomendados']))
                                         <div class="px-2 py-1 rounded text-xs flex items-center gap-1
-                                            @if($inRecommended && !$inCurrent) bg-green-100 text-green-700 border border-green-300 @elseif($inCurrent && !$inRecommended) bg-yellow-100 text-yellow-800 border border-yellow-300 @elseif($inCurrent && $inRecommended) bg-blue-100 text-blue-700 border border-blue-300 @else bg-gray-100 text-gray-400 border border-gray-300 @endif">
+                                            @if($result['frecuencia_sugerida'] == 1)
+                                                <div class="text-green-700 font-semibold text-sm mb-2">
+                                                    <i class="fas fa-check-circle mr-1"></i>
+                                                    ¡Felicitaciones! Usás el lavarropas solo una vez por semana, lo que es eficiente y ayuda a ahorrar energía y dinero.
+                                                </div>
+                                            @elseif($result['frecuencia_sugerida'] > 1)
+                                                <div class="text-yellow-700 font-semibold text-sm mb-2">
+                                                    <i class="fas fa-lightbulb mr-1"></i>
+                                                    Te recomendamos consolidar cargas y seguir la frecuencia sugerida para maximizar el ahorro y la eficiencia.
+                                                </div>
+                                            @endif
+                                            <ul class="text-xs text-gray-600 mb-2">
                                             <span>{{ $map[$d] }}</span>
                                             @if($inRecommended && !$inCurrent)
                                                 <i class="fas fa-plus-circle"></i>

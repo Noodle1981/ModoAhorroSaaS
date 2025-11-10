@@ -175,7 +175,9 @@
                                     <p class="text-sm text-gray-600 mb-2">
                                         <span class="font-medium">Desde:</span> {{ $invoice->start_date->format('d/m/Y') }}<br>
                                         <span class="font-medium">Hasta:</span> {{ $invoice->end_date->format('d/m/Y') }}<br>
-                                        <span class="font-medium">Duración:</span> {{ $periodDays }} días
+                                        <span class="font-medium">Duración:</span> {{ $periodDays }} días<br>
+                                        <span class="font-medium">Consumo total facturado:</span> {{ number_format($invoice->total_energy_consumed_kwh, 2) }} kWh<br>
+                                        <span class="font-medium">Valor pagado:</span> ${{ number_format($invoice->total_amount, 2) }}
                                     </p>
                                     <div class="mt-auto pt-3 border-t">
                                         <p class="text-xs text-gray-500">Esta información guía el cálculo del consumo estimado total para comparar contra el real.</p>
@@ -235,10 +237,25 @@
                                         @endif
                                     </div>
                                     <div class="mt-auto pt-3 border-t">
-                                        <p class="text-xs text-gray-500">
+                                        <p class="text-xs text-gray-500 mb-1">
                                             <i class="fas fa-info-circle mr-1"></i>
                                             Datos de Open-Meteo para {{ $entity->locality->name }}
                                         </p>
+                                        <div class="text-xs text-blue-700 mb-1">
+                                            <strong>Días efectivos usados en el cálculo:</strong>
+                                            @php
+                                                $shownCategories = [];
+                                            @endphp
+                                            @foreach($equipments as $eq)
+                                                @if($eq->climate_adjusted && !in_array($eq->equipmentType->equipmentCategory->name, $shownCategories))
+                                                    <span class="font-semibold">{{ $eq->effective_days }}</span> días para <span class="font-semibold">{{ $eq->equipmentType->equipmentCategory->name }}</span><br>
+                                                    @php $shownCategories[] = $eq->equipmentType->equipmentCategory->name; @endphp
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                        <div class="text-xs text-gray-600">
+                                            <strong>¿Cómo impacta el clima?</strong> El consumo estimado de climatización y calefón se ajusta según los días realmente calurosos/fríos y un margen del 25%. Más días calurosos/fríos = más uso y mayor consumo estimado; menos días = menor consumo. El resto de equipos usa todos los días del período.
+                                        </div>
                                     </div>
                                 </div>
                                 @endif
@@ -300,6 +317,9 @@
                                         <li>Standby: menor potencia pero 24h continuas.</li>
                                         <li>Objetivo ideal: 80–110% del consumo real.</li>
                                         <li>Si estás por debajo: puede faltar inventario.</li>
+                                        <li>
+                                            <span class="text-blue-700 font-medium">Climatización:</span> El sistema aplica automáticamente un margen del <strong>25%</strong> menos de días para compensar que en verano los usuarios suelen sobreestimar el tiempo real de uso. Así se ajusta el cálculo aunque no recuerdes los minutos exactos.
+                                        </li>
                                     </ul>
                                     <div class="mt-auto pt-3 border-t">
                                         <p class="text-xs text-gray-500">Ajusta minutos de uso hasta acercarte al rango óptimo.</p>
@@ -328,7 +348,12 @@
                                         : (bool)($equipment->has_standby_mode ?? false);
                                     $continuous = $defaultMinutes >= 720; // 12h+ lo consideramos continuo
                                     $usageType = $hasStandby || $continuous ? 'Continuo / Standby' : ($defaultMinutes <= 30 ? 'Esporádico' : 'Regular');
-                                    return compact('index','equipment','power','defaultMinutes','qty','room','category','usageType','hasStandby');
+                                    
+                                    // NUEVOS: Factores de cálculo (metodología Python)
+                                    $factorCarga = $equipment->factor_carga ?? 1.0;
+                                    $eficiencia = $equipment->eficiencia ?? 1.0;
+                                    
+                                    return compact('index','equipment','power','defaultMinutes','qty','room','category','usageType','hasStandby','factorCarga','eficiencia');
                                 });
                                 $byRoom = $normalized->groupBy('room');
                             @endphp
@@ -389,7 +414,7 @@
                                                             <tr class="hover:bg-gray-50 transition" data-equipment-id="{{ $equipment->id }}"
                                                                 x-show="showEquipment({ name: '{{ addslashes($equipment->custom_name ?? $equipment->equipmentType->name) }}', room: '{{ addslashes($room) }}', category: '{{ addslashes($categoryName) }}', minutes: minutes[{{ $index }}] })"
                                                                 :class="sortByImpact ? '' : ''"
-                                                                :style="sortByImpact ? 'order:' + (-1 * Math.round(itemKwh({ power: {{ $power }}, minutes: minutes[{{ $index }}], qty: {{ $qty }} })*1000)) : ''">
+                                                                :style="sortByImpact ? 'order:' + (-1 * Math.round(itemKwh({{ $index }})*1000)) : ''">
                                                                 
                                                                 <input type="hidden" name="equipments[{{ $index }}][entity_equipment_id]" value="{{ $equipment->id }}">
                                                                 
@@ -447,7 +472,7 @@
                                                                     <div class="space-y-2">
                                                                         <div class="flex flex-wrap items-center gap-2">
                                                                             <button type="button"
-                                                                                    @click="minutes[{{ $index }}] = Math.max(0, Number(minutes[{{ $index }}]||0) - 5); $dispatch('input')"
+                                                                                    @click="minutes[{{ $index }}] = Math.max(0, (minutes[{{ $index }}] || 0) - 5)"
                                                                                     class="px-2 py-1 text-xs rounded border hover:bg-gray-50">
                                                                                 –5
                                                                             </button>
@@ -458,7 +483,7 @@
                                                                                        class="w-full accent-blue-600">
                                                                             </div>
                                                                             <button type="button"
-                                                                                    @click="minutes[{{ $index }}] = Math.min(1440, Number(minutes[{{ $index }}]||0) + 5); $dispatch('input')"
+                                                                                    @click="minutes[{{ $index }}] = Math.min(1440, (minutes[{{ $index }}] || 0) + 5)"
                                                                                     class="px-2 py-1 text-xs rounded border hover:bg-gray-50">
                                                                                 +5
                                                                             </button>
@@ -466,8 +491,11 @@
                                                                                 <span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs font-medium tabular-nums min-w-[100px] justify-center" x-text="formatMinutes(minutes[{{ $index }}]||0)"></span>
                                                                             </div>
                                                                         </div>
-                                                                        <!-- Campo real para backend -->
-                                                                        <input type="hidden" name="equipments[{{ $index }}][avg_daily_use_minutes]" :value="minutes[{{ $index }}]">
+                                                                        <!-- Campo real para backend - SINCRONIZADO con Alpine -->
+                                                                        <input type="hidden" 
+                                                                               name="equipments[{{ $index }}][avg_daily_use_minutes]" 
+                                                                               x-model="minutes[{{ $index }}]"
+                                                                               :value="minutes[{{ $index }}]">
                                                                         <!-- Checkbox Standby por período -->
                                                                         <div class="pt-1 flex flex-col gap-1" x-data>
                                                                             <input type="checkbox" id="standby_{{ $index }}" data-standby-checkbox
@@ -506,13 +534,13 @@
                                                                 <!-- Consumo -->
                                                                 <td class="px-6 py-4 whitespace-nowrap text-right">
                                                                     <div class="text-sm font-semibold text-gray-900">
-                                                                        <span x-text="itemKwh({ power: {{ $power }}, minutes: minutes[{{ $index }}], qty: {{ $qty }} }).toFixed(2)"></span> kWh
+                                                                        <span x-text="itemKwh({{ $index }}).toFixed(2)"></span> kWh
                                                                     </div>
-                                                                    <div class="text-xs text-gray-500" x-text="((itemKwh({ power: {{ $power }}, minutes: minutes[{{ $index }}], qty: {{ $qty }} }) / (totalKwh || 1)) * 100).toFixed(1) + '%'"></div>
+                                                                    <div class="text-xs text-gray-500" x-text="((itemKwh({{ $index }}) / (totalKwh || 1)) * 100).toFixed(1) + '%'"></div>
                                                                 </td>
 
                                                                 <!-- Estado inicial de minutos -->
-                                                                <input type="hidden" x-init="setInitial({{ $index }}, {{ $power }}, {{ $qty }}, {{ $defaultMinutes }}, { name: '{{ addslashes($equipment->custom_name ?? $equipment->equipmentType->name) }}', room: '{{ addslashes($room) }}', category: '{{ addslashes($categoryName) }}', hasStandby: {{ $item['hasStandby'] ? 'true' : 'false' }} })">
+                                                                <input type="hidden" x-init="setInitial({{ $index }}, {{ $equipment->precalc_kwh_total ?? 0 }}, {{ $defaultMinutes }}, { name: '{{ addslashes($equipment->custom_name ?? $equipment->equipmentType->name) }}', room: '{{ addslashes($room) }}', category: '{{ addslashes($categoryName) }}', hasStandby: {{ $item['hasStandby'] ? 'true' : 'false' }} })">
                                                             </tr>
                                                         @endforeach
                                                     @endforeach
@@ -636,36 +664,41 @@
                 targetKwh: targetKwh || 0,
                 minutes: {},
                 hasStandby: {},
-                items: [], // {index, name, room, category, power, qty}
+                items: [], // {index, name, room, category, kwh (pre-calculado por backend)}
 
                 init() {
                     // Recolectar items desde el DOM (cada input hidden x-init setInitial)
                     this.recomputeTotal();
                 },
 
-                setInitial(index, power, qty, mins, meta = {}) {
+                setInitial(index, precalcKwh, mins, meta = {}) {
                     this.$nextTick(() => {
                         this.minutes[index] = Number(mins || 0);
-                        this.items.push({ index, power: Number(power || 0), qty: Number(qty || 1), ...meta });
+                        this.items.push({ 
+                            index, 
+                            kwh: Number(precalcKwh || 0), // Pre-calculado por BACKEND
+                            ...meta 
+                        });
                         this.hasStandby[index] = !!meta.hasStandby;
                         this.recomputeTotal();
                     });
                 },
 
-                itemKwh({ power, minutes, qty }) {
-                    const kwhDay = (power / 1000) * ((Number(minutes)||0) / 60);
-                    return (kwhDay * this.periodDays) * (qty || 1);
+                // Retorna el kWh pre-calculado (NO calcula nada, solo muestra)
+                itemKwh(index) {
+                    const item = this.getItem(index);
+                    return item ? item.kwh : 0;
                 },
 
                 get totalKwh() {
-                    return this.items.reduce((sum, it) => sum + this.itemKwh({ power: it.power, minutes: this.minutes[it.index], qty: it.qty }), 0);
+                    return this.items.reduce((sum, it) => sum + (it.kwh || 0), 0);
                 },
                 get totalKwhFiltered() {
                     // Suma sólo los ítems visibles según los filtros activos
                     return this.items.reduce((sum, it) => {
                         const visible = this.showEquipment({ name: it.name || '', room: it.room || '', category: it.category || '', minutes: this.minutes[it.index] });
                         if (!visible) return sum;
-                        return sum + this.itemKwh({ power: it.power, minutes: this.minutes[it.index], qty: it.qty });
+                        return sum + (it.kwh || 0);
                     }, 0);
                 },
                 get percent() {
@@ -744,7 +777,7 @@
                     return (indices||[]).reduce((sum, idx) => {
                         const it = this.getItem(idx);
                         if (!it) return sum;
-                        return sum + this.itemKwh({ power: it.power, minutes: this.minutes[idx], qty: it.qty });
+                        return sum + (it.kwh || 0);
                     }, 0);
                 },
                 roomKwhFiltered(indices) {
@@ -753,7 +786,7 @@
                         if (!it) return sum;
                         const visible = this.showEquipment({ name: it.name || '', room: it.room || '', category: it.category || '', minutes: this.minutes[idx] });
                         if (!visible) return sum;
-                        return sum + this.itemKwh({ power: it.power, minutes: this.minutes[idx], qty: it.qty });
+                        return sum + (it.kwh || 0);
                     }, 0);
                 },
             }

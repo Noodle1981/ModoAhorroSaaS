@@ -318,18 +318,20 @@ Al ajustar el consumo de equipos por período, la vista muestra:
 Esto permite al usuario correlacionar picos de consumo con condiciones climáticas extremas.
 ## 🧪 Testing
 
+La guía completa y plan de pruebas (unitarias, de features, cálculos y flujos críticos) se movió a `TESTING.md`.
+
+Acceso rápido:
+- `TESTING.md` para casos, estrategias y checklist por release.
+- `PROYECTO_ANALISIS_Y_TESTING.md` para análisis general del proyecto.
+
+Comandos básicos:
 ```bash
-# Ejecutar todos los tests
-php artisan test
-
-# Tests específicos
-php artisan test --filter=InventoryAnalysisTest
-
-# Con coverage
-php artisan test --coverage
+php artisan test              # Ejecutar suite completa
+php artisan test --filter=InventoryAnalysisTest  # Test específico
+php artisan test --coverage   # Con reporte de cobertura
 ```
 
-**Estado actual**: Tests pendientes de implementar. Ver [plan de testing](PROYECTO_ANALISIS_Y_TESTING.md#testing-strategy)
+Estado: iniciando cobertura sobre cálculos principales y flujos de standby/uso.
 
 ---
 

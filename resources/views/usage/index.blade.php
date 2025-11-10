@@ -20,6 +20,30 @@
             @endif
 
             <div class="bg-white shadow rounded-lg p-6">
+                @if($invoice)
+                    <div class="mb-5 border border-indigo-200 bg-indigo-50 rounded-lg p-4 flex flex-col gap-1">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-file-invoice text-indigo-600 text-xl"></i>
+                            <h3 class="text-sm font-semibold text-indigo-700 m-0">Ajustando Período Seleccionado</h3>
+                        </div>
+                        <p class="text-xs text-indigo-700 m-0">
+                            Factura #{{ $invoice->id }} • {{ $invoice->start_date->format('d/m/Y') }} – {{ $invoice->end_date->format('d/m/Y') }}
+                            ({{ $invoice->start_date->diffInDays($invoice->end_date) + 1 }} días)
+                        </p>
+                        @if(!$confirmedAt)
+                            <p class="text-[11px] text-yellow-700 mt-1 flex items-center gap-1">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Primero confirmá la gestión de uso para habilitar el ajuste del período.
+                            </p>
+                        @else
+                            <p class="text-[11px] text-green-700 mt-1 flex items-center gap-1">
+                                <i class="fas fa-check-circle"></i>
+                                Frecuencia confirmada: ya podés volver y ajustar minutos en este período.
+                                <a href="{{ route('snapshots.create', $invoice) }}" class="underline text-green-800 hover:text-green-900 ml-2" title="Ir a Ajustar">Ir a Ajustar →</a>
+                            </p>
+                        @endif
+                    </div>
+                @endif
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
                         <i class="fas fa-sliders-h text-blue-600"></i>
@@ -39,58 +63,98 @@
                     @endif
                 </div>
 
-                <p class="text-sm text-gray-600 mb-4">Definí cuántos días por semana se usa cada equipo. Esto mejora el cálculo real del período. Tras confirmar, podrás aplicar recomendaciones.</p>
+                <p class="text-sm text-gray-600 mb-4">Definí cuántos días por semana se usa cada equipo. Esto mejora el cálculo real del período. Tras confirmar, podrás aplicar recomendaciones. Esta configuración impacta en todos los períodos futuros y en el seleccionado si aún no está ajustado.</p>
+                <div class="mb-6 p-5 bg-blue-100 border-2 border-blue-400 rounded-xl text-base text-blue-900 shadow-md flex items-start gap-3">
+                    <div class="pt-1"><i class="fas fa-info-circle text-2xl"></i></div>
+                    <div>
+                        <strong>Climatización y Calefón:</strong><br>
+                        El sistema aplica automáticamente un margen del <strong>25%</strong> menos de días para compensar la sobreestimación típica en verano/invierno.<br>
+                        Además, se usan <strong>datos reales de temperatura</strong> de la API Open-Meteo para ajustar el cálculo según los días realmente calurosos o fríos del período.<br>
+                        <span class="text-sm text-blue-700">Esto permite estimaciones más precisas aunque no recuerdes los minutos exactos de uso.</span>
+                    </div>
+                </div>
 
                 <form method="POST" action="{{ route('usage.equipment.bulk') }}" x-data="usageManager()">
                     @csrf
-                    <div class="overflow-x-auto border rounded mb-4">
-                        <table class="min-w-full text-xs">
-                            <thead class="bg-gray-50 text-gray-600 uppercase">
-                                <tr>
-                                    <th class="px-3 py-2 text-left">Equipo</th>
-                                    <th class="px-3 py-2 text-left">Categoría</th>
-                                    <th class="px-3 py-2 text-center">Uso Diario</th>
-                                    <th class="px-3 py-2 text-center">Días/Semana</th>
-                                    <th class="px-3 py-2 text-left">Motivo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($equipments as $eq)
-                                    @php
-                                        $type = $eq->equipmentType;
-                                        $cat = $type?->equipmentCategory?->name;
-                                        $defaultMinutes = $eq->avg_daily_use_minutes_override ?? (($type?->default_avg_daily_use_hours ?? 0) * 60);
-                                    @endphp
-                                    <tr class="border-t" x-data="rowLogic({ id: {{ $eq->id }}, initialDaily: {{ $eq->is_daily_use ? 'true':'false' }}, initialDays: {{ $eq->usage_days_per_week ?? 'null' }}, minutes: {{ (int)$defaultMinutes }}, category: '{{ addslashes($cat) }}' })">
-                                        <td class="px-3 py-2">
-                                            <div class="font-medium text-gray-800">{{ $eq->custom_name ?? $type?->name }}</div>
-                                            <div class="text-[11px] text-gray-500">Pot: {{ $eq->power_watts_override ?? $type?->default_power_watts ?? 0 }} W · Min/día default: {{ $defaultMinutes }}</div>
-                                            <input type="hidden" name="items[{{ $eq->id }}][id]" value="{{ $eq->id }}">
-                                        </td>
-                                        <td class="px-3 py-2 text-gray-700">{{ $cat ?? 'Sin categoría' }}</td>
-                                        <td class="px-3 py-2 text-center">
-                                            <input type="checkbox" x-model="isDaily" @change="syncDays()" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                            <input type="hidden" :value="isDaily?1:0" name="items[{{ $eq->id }}][is_daily_use]">
-                                        </td>
-                                        <td class="px-3 py-2 text-center">
-                                            <template x-if="!isDaily">
-                                                <select x-model.number="daysPerWeek" name="items[{{ $eq->id }}][usage_days_per_week]" class="border-gray-300 rounded text-xs">
-                                                    <option :value="null">-</option>
-                                                    <template x-for="n in [1,2,3,4,5,6,7]" :key="n">
-                                                        <option :value="n" x-text="n"></option>
-                                                    </template>
-                                                </select>
-                                            </template>
-                                            <template x-if="isDaily">
-                                                <span class="text-[11px] text-gray-500">7</span>
-                                            </template>
-                                        </td>
-                                        <td class="px-3 py-2 text-[11px] text-gray-600" x-text="reason"></td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                    @if($invoice)
+                        <input type="hidden" name="invoice" value="{{ $invoice->id }}">
+                    @endif
+                    @php
+                        $byEntity = $equipments->groupBy(fn($e) => $e->entity?->name ?? 'Entidad');
+                    @endphp
+                    @foreach($byEntity as $entityName => $listByEntity)
+                        <div class="mb-5">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i class="fas fa-building text-gray-500"></i>
+                                <h4 class="text-sm font-semibold text-gray-700 m-0">{{ $entityName }}</h4>
+                            </div>
+                            @php $byRoom = $listByEntity->groupBy(fn($e) => $e->location ?? 'Sin ubicación'); @endphp
+                            @foreach($byRoom as $roomName => $listByRoom)
+                                <div class="mb-4 border rounded-lg overflow-hidden">
+                                    <div class="px-3 py-2 bg-gray-50 border-b flex items-center gap-2">
+                                        <i class="fas fa-door-open text-gray-500"></i>
+                                        <span class="text-xs font-medium text-gray-700">Ambiente: {{ $roomName }}</span>
+                                        <span class="ml-auto text-[11px] text-gray-500">{{ $listByRoom->count() }} equipos</span>
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full text-xs">
+                                            <thead class="bg-white text-gray-600 uppercase">
+                                                <tr>
+                                                    <th class="px-3 py-2 text-left">Equipo</th>
+                                                    <th class="px-3 py-2 text-left">Categoría</th>
+                                                    <th class="px-3 py-2 text-center">Uso Diario</th>
+                                                    <th class="px-3 py-2 text-center">Días/Semana</th>
+                                                    <th class="px-3 py-2 text-left">Motivo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @php $byCat = $listByRoom->groupBy(fn($e) => $e->equipmentType?->equipmentCategory?->name ?? 'Sin categoría'); @endphp
+                                                @foreach($byCat as $catName => $items)
+                                                    <tr class="bg-gray-100">
+                                                        <td colspan="5" class="px-3 py-1 text-[11px] font-semibold text-gray-700">
+                                                            <i class="fas fa-tags mr-1 text-gray-500"></i> {{ $catName }}
+                                                        </td>
+                                                    </tr>
+                                                    @foreach($items as $eq)
+                                                        @php
+                                                            $type = $eq->equipmentType;
+                                                            $defaultMinutes = $eq->avg_daily_use_minutes_override ?? (($type?->default_avg_daily_use_hours ?? 0) * 60);
+                                                        @endphp
+                                                        <tr class="border-t" x-data="rowLogic({ id: {{ $eq->id }}, initialDaily: {{ $eq->is_daily_use ? 'true':'false' }}, initialDays: {{ $eq->usage_days_per_week ?? 'null' }}, minutes: {{ (int)$defaultMinutes }}, category: '{{ addslashes($catName) }}' })">
+                                                            <td class="px-3 py-2">
+                                                                <div class="font-medium text-gray-800">{{ $eq->custom_name ?? $type?->name }}</div>
+                                                                <div class="text-[11px] text-gray-500">Pot: {{ $eq->power_watts_override ?? $type?->default_power_watts ?? 0 }} W · Min/día default: {{ $defaultMinutes }}</div>
+                                                                <input type="hidden" name="items[{{ $eq->id }}][id]" value="{{ $eq->id }}">
+                                                            </td>
+                                                            <td class="px-3 py-2 text-gray-700">{{ $catName }}</td>
+                                                            <td class="px-3 py-2 text-center">
+                                                                <input type="checkbox" x-model="isDaily" @change="syncDays()" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                                                <input type="hidden" :value="isDaily?1:0" name="items[{{ $eq->id }}][is_daily_use]">
+                                                            </td>
+                                                            <td class="px-3 py-2 text-center">
+                                                                <template x-if="!isDaily">
+                                                                    <select x-model.number="daysPerWeek" name="items[{{ $eq->id }}][usage_days_per_week]" class="border-gray-300 rounded text-xs">
+                                                                        <option :value="null">-</option>
+                                                                        <template x-for="n in [1,2,3,4,5,6,7]" :key="n">
+                                                                            <option :value="n" x-text="n"></option>
+                                                                        </template>
+                                                                    </select>
+                                                                </template>
+                                                                <template x-if="isDaily">
+                                                                    <span class="text-[11px] text-gray-500">7</span>
+                                                                </template>
+                                                            </td>
+                                                            <td class="px-3 py-2 text-[11px] text-gray-600" x-text="reason"></td>
+                                                        </tr>
+                                                    @endforeach
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endforeach
 
                     <div class="flex items-center justify-between">
                         <div class="text-[11px] text-gray-500">
@@ -101,21 +165,37 @@
                             <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-xs rounded shadow hover:bg-blue-700">
                                 <i class="fas fa-save mr-1"></i> Guardar Frecuencia
                             </button>
-                            @if($confirmedAt)
-                                <form method="POST" action="{{ route('usage.apply-recommendations') }}">
-                                    @csrf
-                                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white text-xs rounded shadow hover:bg-purple-700">
-                                        <i class="fas fa-magic mr-1"></i> Aplicar Recomendaciones
+                            @if($invoice)
+                                @if($confirmedAt)
+                                    <a href="{{ route('snapshots.create', $invoice) }}" class="px-4 py-2 bg-indigo-600 text-white text-xs rounded shadow hover:bg-indigo-700" title="Ir a Ajustar Período">
+                                        <i class="fas fa-edit mr-1"></i> Ir a Ajustar
+                                    </a>
+                                @else
+                                    <button type="button" disabled class="px-4 py-2 bg-indigo-300 text-white text-xs rounded shadow cursor-not-allowed" title="Confirmá primero">
+                                        <i class="fas fa-edit mr-1"></i> Ir a Ajustar
                                     </button>
-                                </form>
-                            @else
+                                @endif
+                            @endif
+                            @if(!$confirmedAt)
                                 <button type="button" disabled class="px-4 py-2 bg-purple-300 text-white text-xs rounded shadow cursor-not-allowed" title="Confirmá primero">
+                                    <i class="fas fa-magic mr-1"></i> Aplicar Recomendaciones
+                                </button>
+                            @else
+                                <!-- Botón separado para aplicar recomendaciones fuera del form principal -->
+                                <button form="applyRecsForm" type="submit" class="px-4 py-2 bg-purple-600 text-white text-xs rounded shadow hover:bg-purple-700">
                                     <i class="fas fa-magic mr-1"></i> Aplicar Recomendaciones
                                 </button>
                             @endif
                         </div>
                     </div>
                 </form>
+
+                @if($confirmedAt)
+                    <!-- Form separado para Aplicar Recomendaciones (evitar formularios anidados) -->
+                    <form id="applyRecsForm" method="POST" action="{{ route('usage.apply-recommendations') }}">
+                        @csrf
+                    </form>
+                @endif
 
                 <div class="mt-8" x-data="usageRecs()">
                     <div class="flex items-center justify-between mb-2">
